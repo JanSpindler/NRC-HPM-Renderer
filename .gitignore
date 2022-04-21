@@ -1,0 +1,17 @@
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+
+/.vs
+/.vscode
+/build
+/CMakeFiles
+/Debug
+/NRC-HPM-Renderer.dir
+/x64
+
+CMakeCache.txt
+cmake_install.cmake
+imgui.ini
+
