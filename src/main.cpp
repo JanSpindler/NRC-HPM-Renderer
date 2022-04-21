@@ -7,6 +7,8 @@
 #include <engine/renderer/ImGuiRenderer.hpp>
 #include <imgui.h>
 #include <engine/renderer/DensityPathTracer.hpp>
+#include <engine/read_file.hpp>
+#include <engine/vulkan/Texture3D.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -94,12 +96,13 @@ int main()
 	uint32_t width = 600;
 	uint32_t height = width;
 
-	// Start
+	// Start engine
 	en::Log::Info("Starting " + appName);
 
 	en::Window::Init(width, height, true, appName);
 	en::VulkanAPI::Init(appName);
 
+	// Setup rendering
 	en::Camera camera(
 		glm::vec3(0.0f, 0.0f, -5.0f),
 		glm::vec3(0.0f, 0.0f, 1.0f),
@@ -118,6 +121,11 @@ int main()
 
 	swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
 
+	// Load data
+	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
+	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+	// Main loop
 	VkDevice device = en::VulkanAPI::GetDevice();
 	VkQueue graphicsQueue = en::VulkanAPI::GetGraphicsQueue();
 	VkResult result;
@@ -154,6 +162,8 @@ int main()
 	ASSERT_VULKAN(result);
 
 	// End
+	density3DTex.Destroy();
+
 	en::ImGuiRenderer::Shutdown();
 
 	pathTracer->Destroy();

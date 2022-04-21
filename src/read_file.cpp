@@ -44,4 +44,34 @@ namespace en
 		stbi_image_free(data);
 		return values;
 	}
+
+	std::vector<std::vector<std::vector<float>>> ReadFileDensity3D(const std::string& fileName, size_t xSize, size_t ySize, size_t zSize)
+	{
+		size_t totalSize = xSize * ySize * zSize;
+
+		// Load raw data
+		std::vector<char> binaryData = ReadFileBinary(fileName);
+		float* rawData = reinterpret_cast<float*>(binaryData.data());
+
+		// Create and fill 3d array
+		std::vector<std::vector<std::vector<float>>> density3D(xSize);
+
+		for (size_t x = 0; x < xSize; x++)
+		{
+			density3D[x].resize(ySize);
+			for (size_t y = 0; y < ySize; y++)
+			{
+				density3D[x][y].resize(zSize);
+				for (size_t z = 0; z < zSize; z++)
+				{
+					size_t index = x * ySize * zSize + y * zSize + z;
+					float value = rawData[index];
+					//en::Log::Info(std::to_string(value));
+					density3D[x][y][z] = value;
+				}
+			}
+		}
+
+		return density3D;
+	}
 }
