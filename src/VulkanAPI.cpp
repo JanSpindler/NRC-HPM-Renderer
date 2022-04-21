@@ -5,6 +5,7 @@
 #include <engine/Window.hpp>
 #include <engine/Camera.hpp>
 #include <engine/vulkan/Texture2D.hpp>
+#include <engine/VolumeData.hpp>
 
 namespace en
 {
@@ -36,6 +37,7 @@ namespace en
 
 		Camera::Init();
 		vk::Texture2D::Init();
+		VolumeData::Init(m_Device);
 		/*Material::Init();
 		ModelInstance::Init();
 		CloudData::Init();
@@ -54,6 +56,7 @@ namespace en
 		CloudData::Shutdown();
 		ModelInstance::Shutdown();
 		Material::Shutdown();*/
+		VolumeData::Shutdown(m_Device);
 		vk::Texture2D::Shutdown();
 		Camera::Shutdown();
 
