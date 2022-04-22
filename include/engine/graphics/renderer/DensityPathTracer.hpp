@@ -4,13 +4,19 @@
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/Camera.hpp>
+#include <engine/graphics/Sun.hpp>
 
 namespace en
 {
 	class DensityPathTracer
 	{
 	public:
-		DensityPathTracer(uint32_t width, uint32_t height, const Camera* camera, const VolumeData* volumeData);
+		DensityPathTracer(
+			uint32_t width, 
+			uint32_t height, 
+			const Camera* camera, 
+			const VolumeData* volumeData,
+			const Sun* sun);
 
 		void Render(VkQueue queue) const;
 		void Destroy();
@@ -26,6 +32,7 @@ namespace en
 
 		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
+		const Sun* m_Sun;
 
 		VkRenderPass m_RenderPass;
 		vk::Shader m_VertShader;

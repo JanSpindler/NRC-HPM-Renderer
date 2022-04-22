@@ -12,6 +12,7 @@
 #include <engine/objects/VolumeData.hpp>
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
+#include <engine/graphics/Sun.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -108,7 +109,7 @@ int main()
 
 	// Load data
 	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
-	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
 	en::VolumeData volumeData(&density3DTex);
 
 	// Setup rendering
@@ -121,9 +122,11 @@ int main()
 		0.1f,
 		100.0f);
 
+	en::Sun sun(-1.57f, 0.0f, glm::vec3(1.0f));
+
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 	
-	pathTracer = new en::DensityPathTracer(width, height, &camera, &volumeData);
+	pathTracer = new en::DensityPathTracer(width, height, &camera, &volumeData, &sun);
 	
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
@@ -153,13 +156,15 @@ int main()
 		camera.UpdateUniformBuffer();
 
 		// Render
-		en::ImGuiRenderer::StartFrame();
 
 		pathTracer->Render(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
 
+		en::ImGuiRenderer::StartFrame();
+		
 		volumeData.RenderImGui();
+		sun.RenderImgui();
 
 		en::ImGuiRenderer::EndFrame(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
@@ -181,6 +186,8 @@ int main()
 	swapchain.Destroy(true);
 
 	camera.Destroy();
+
+	sun.Destroy();
 
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();

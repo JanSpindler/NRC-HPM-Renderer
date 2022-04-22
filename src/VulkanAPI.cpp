@@ -6,6 +6,7 @@
 #include <engine/graphics/Camera.hpp>
 #include <engine/graphics/vulkan/Texture2D.hpp>
 #include <engine/objects/VolumeData.hpp>
+#include <engine/graphics/Sun.hpp>
 
 namespace en
 {
@@ -38,24 +39,14 @@ namespace en
 		Camera::Init();
 		vk::Texture2D::Init();
 		VolumeData::Init(m_Device);
-		/*Material::Init();
-		ModelInstance::Init();
-		CloudData::Init();
-		vk::ComputePipeline::Init();
-		NoiseGenerator::Init();
-		Wind::Init();*/
+		Sun::Init();
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
-		/*Wind::Shutdown();
-		NoiseGenerator::Shutdown();
-		vk::ComputePipeline::Shutdown();
-		CloudData::Shutdown();
-		ModelInstance::Shutdown();
-		Material::Shutdown();*/
+		Sun::Shutdown();
 		VolumeData::Shutdown(m_Device);
 		vk::Texture2D::Shutdown();
 		Camera::Shutdown();

@@ -10,14 +10,21 @@ layout(set = 0, binding = 1) uniform camera_t
 
 layout(set = 1, binding = 0) uniform sampler3D densityTex;
 
+layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
+{
+	vec3 color;
+	float zenith;
+	vec3 dir;
+	float azimuth;
+} dir_light;
+
 layout(location = 0) out vec4 outColor;
 
-const vec3 skySize = vec3(125.0, 85.0, 153.0) / 10.0;
+const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
 
 #define PI 3.14159265359
 
-#define MAX_SECONDARY_SAMPLE_COUNT 8
 #define MAX_RAY_DISTANCE 100000.0
 #define MIN_RAY_DISTANCE 0.125
 #define DEPTH_MAX_TRANSMITTANCE 0.3
@@ -25,7 +32,17 @@ const vec3 skyPos = vec3(0.0);
 #define MIN_HEIGHT (skyPos.y - (skySize.y / 2))
 #define MAX_HEIGHT (MIN_HEIGHT + skySize.y)
 
-#define SAMPLE_COUNT 16
+#define SAMPLE_COUNT 40
+#define SECONDARY_SAMPLE_COUNT 8
+
+#define SIGMA_E 0.5
+#define SIGMA_S 0.5
+#define G 0.95
+
+float rand(vec2 co)
+{
+	return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
 float sky_sdf(vec3 pos)
 {
@@ -74,6 +91,98 @@ float getDensity(vec3 pos)
 	return texture(densityTex, get_sky_uvw(pos)).x;
 }
 
+float hg_phase_func(float cos_theta, float g)
+{
+	float g2 = g * g;
+	float result = 0.5 * (1 - g2) / pow(1 + g2 - (2 * g * cos_theta), 1.5);
+	return result;
+}
+
+float get_self_shadowing(vec3 pos)
+{
+	// Exit if not used
+	if (SECONDARY_SAMPLE_COUNT == 0)
+		return 1.0;
+
+	// Find exit from current pos
+	const vec3 exit = find_entry_exit(pos, -normalize(dir_light.dir))[1];
+
+	// Generate secondary sample points using lerp factors
+	const vec3 direction = exit - pos;
+	vec3 secondary_sample_points[SECONDARY_SAMPLE_COUNT];
+	for (int i = 0; i < SECONDARY_SAMPLE_COUNT; i++)
+		secondary_sample_points[i] = pos + direction * exp(float(i - SECONDARY_SAMPLE_COUNT));
+
+	// Calculate light reaching pos
+	float transmittance = 1.0;
+	const float sigma_e = SIGMA_E;
+	for (int i = 0; i < SECONDARY_SAMPLE_COUNT; i++)
+	{
+		const vec3 sample_point = secondary_sample_points[i];
+		const float density = getDensity(sample_point);
+		if (density > 0.0)
+		{
+			const float sample_sigma_e = sigma_e * density;
+			const float step_size = (i < SECONDARY_SAMPLE_COUNT - 1) ? 
+				length(secondary_sample_points[i + 1] - secondary_sample_points[i]) : 
+				1.0;
+			const float t_r = exp(-sample_sigma_e * step_size);
+			transmittance *= t_r;
+		}
+	}
+
+	return transmittance;
+}
+
+// x-z = scattered light | z = transmittance
+vec4 render_cloud(vec3 sample_points[SAMPLE_COUNT], vec3 out_dir, vec3 ro)
+{	
+	// out_dir should be normalized
+	// SAMPLE_COUNT should be > 0
+
+	vec3 scattered_light = vec3(0.0);
+	float transmittance = 1.0;
+
+	const float sigma_s = SIGMA_S;
+	const float sigma_e = SIGMA_E;
+	const float step_size = length(sample_points[1] - sample_points[0]);
+	const vec3 step_offset = 
+		rand(vec2(out_dir.x * out_dir.y, out_dir.z)) * 
+		out_dir * 
+		step_size;
+
+	bool depth_stored = false;
+	for (int i = 0; i < SAMPLE_COUNT; i++)
+	{
+		const vec3 sample_point = sample_points[i] + step_offset;
+		const float density = getDensity(sample_point);
+
+		if (density > 0.0)
+		{
+			const float sample_sigma_s = sigma_s * density;
+			const float sample_sigma_e = sigma_e * density;
+
+			const vec3 ambient_color = normalize(vec3(1.0, 1.0, 1.0));
+
+			const float phase_result = hg_phase_func(dot(dir_light.dir, out_dir), G);
+			const float self_shadowing = get_self_shadowing(sample_point);
+
+			const vec3 s = (vec3(self_shadowing * phase_result) + ambient_color) * sample_sigma_s;
+			const float t_r = exp(-sample_sigma_e * step_size);
+			const vec3 s_int = (s - (s * t_r)) / sample_sigma_e;
+
+			scattered_light += transmittance * s_int;
+			transmittance *= t_r;
+			
+			// Early exit
+			if (transmittance < 0.01)
+				break;
+		}
+	}
+
+	return vec4(scattered_light, transmittance);
+}
+
 void main()
 {
 	vec3 ro = camera.pos;
@@ -92,14 +201,8 @@ void main()
 	vec3[SAMPLE_COUNT] samplePoints;
 	gen_sample_points(entry, exit, samplePoints);
 
-	float densitySum = 0.0;
-	for (int i = 0; i < SAMPLE_COUNT; i++)
-	{
-		densitySum += getDensity(samplePoints[i]);
-	}
-	densitySum /= float(SAMPLE_COUNT);
-
-	outColor = vec4(densitySum);
+	vec4 result = render_cloud(samplePoints, -rd, ro);
+	outColor = vec4(result.xyz, 1.0 - result.w);
 }
 
 /*#version 450
