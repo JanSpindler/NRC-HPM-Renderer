@@ -1,5 +1,5 @@
-#include <engine/Window.hpp>
-#include <engine/Log.hpp>
+#include <engine/graphics/Window.hpp>
+#include <engine/util/Log.hpp>
 
 namespace en
 {
@@ -99,5 +99,10 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		return surface;
+	}
+
+	void Window::SetTitle(const std::string& title)
+	{
+		glfwSetWindowTitle(m_GLFWHandle, title.c_str());
 	}
 }

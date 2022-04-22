@@ -1,11 +1,11 @@
-#include <engine/vulkan/Texture2D.hpp>
+#include <engine/graphics/vulkan/Texture2D.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <engine/Log.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/vulkan/Buffer.hpp>
-#include <engine/vulkan/CommandPool.hpp>
-#include <engine/vulkan/CommandRecorder.hpp>
+#include <engine/util/Log.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/graphics/vulkan/Buffer.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/CommandRecorder.hpp>
 
 namespace en::vk
 {

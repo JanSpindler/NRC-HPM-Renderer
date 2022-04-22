@@ -1,14 +1,17 @@
-#include <engine/Log.hpp>
-#include <engine/Window.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/vulkan/Swapchain.hpp>
-#include <engine/vulkan/CommandRecorder.hpp>
-#include <engine/Camera.hpp>
-#include <engine/renderer/ImGuiRenderer.hpp>
+#include <engine/util/Log.hpp>
+#include <engine/graphics/Window.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/graphics/vulkan/Swapchain.hpp>
+#include <engine/graphics/vulkan/CommandRecorder.hpp>
+#include <engine/graphics/Camera.hpp>
+#include <engine/graphics/renderer/ImGuiRenderer.hpp>
 #include <imgui.h>
-#include <engine/renderer/DensityPathTracer.hpp>
-#include <engine/read_file.hpp>
-#include <engine/vulkan/Texture3D.hpp>
+#include <engine/graphics/renderer/DensityPathTracer.hpp>
+#include <engine/util/read_file.hpp>
+#include <engine/graphics/vulkan/Texture3D.hpp>
+#include <engine/objects/VolumeData.hpp>
+#include <engine/util/Input.hpp>
+#include <engine/util/Time.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -100,7 +103,13 @@ int main()
 	en::Log::Info("Starting " + appName);
 
 	en::Window::Init(width, height, true, appName);
+	en::Input::Init(en::Window::GetGLFWHandle());
 	en::VulkanAPI::Init(appName);
+
+	// Load data
+	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
+	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	en::VolumeData volumeData(&density3DTex);
 
 	// Setup rendering
 	en::Camera camera(
@@ -114,16 +123,12 @@ int main()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 	
-	pathTracer = new en::DensityPathTracer(width, height);
+	pathTracer = new en::DensityPathTracer(width, height, &camera, &volumeData);
 	
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
 
 	swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
-
-	// Load data
-	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
-	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
 	// Main loop
 	VkDevice device = en::VulkanAPI::GetDevice();
@@ -133,12 +138,15 @@ int main()
 	{
 		// Update
 		en::Window::Update();
-		//en::Input::Update();
-		//en::Time::Update();
+		en::Input::Update();
+		en::Time::Update();
+		
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
-		//float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
-		//en::Input::HandleUserCamInput(&camera, deltaTime);
+		
+		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
+		en::Input::HandleUserCamInput(&camera, deltaTime);
+		en::Window::SetTitle(appName + " | " + std::to_string(deltaTime) + "s");
 
 		// Physics
 		camera.SetAspectRatio(width, height);
@@ -151,7 +159,8 @@ int main()
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
 
-		ImGui::ShowDemoWindow();
+		volumeData.RenderImGui();
+
 		en::ImGuiRenderer::EndFrame(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
@@ -168,6 +177,10 @@ int main()
 
 	pathTracer->Destroy();
 	delete pathTracer;
+
+	swapchain.Destroy(true);
+
+	camera.Destroy();
 
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();

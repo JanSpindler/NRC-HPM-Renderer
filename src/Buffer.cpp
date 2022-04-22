@@ -1,5 +1,5 @@
-#include <engine/vulkan/Buffer.hpp>
-#include <engine/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/Buffer.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
 #include <cstring>
 
 namespace en::vk

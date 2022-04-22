@@ -1,5 +1,7 @@
-#include <engine/VolumeData.hpp>
+#include <engine/objects/VolumeData.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
 #include <vector>
+#include <imgui.h>
 
 namespace en
 {
@@ -58,23 +60,56 @@ namespace en
 		return m_DescriptorSetLayout;
 	}
 
-	VolumeData::VolumeData(const vk::Texture3D* densityTex)
+	VolumeData::VolumeData(const vk::Texture3D* densityTex) :
+		m_DensityTex(densityTex)
 	{
+		// Create and update descriptor set
+		VkDescriptorSetAllocateInfo descSetAI;
+		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descSetAI.pNext = nullptr;
+		descSetAI.descriptorPool = m_DescriptorPool;
+		descSetAI.descriptorSetCount = 1;
+		descSetAI.pSetLayouts = &m_DescriptorSetLayout;
 
-	}
+		VkResult result = vkAllocateDescriptorSets(VulkanAPI::GetDevice(), &descSetAI, &m_DescriptorSet);
+		ASSERT_VULKAN(result);
 
-	void VolumeData::Destroy()
-	{
-
+		UpdateDescriptorSet();
 	}
 
 	void VolumeData::RenderImGui()
 	{
+		ImGui::Begin("HPM Volume");
 
+		ImGui::End();
 	}
 
 	VkDescriptorSet VolumeData::GetDescriptorSet() const
 	{
-		return VK_NULL_HANDLE;
+		return m_DescriptorSet;
+	}
+
+	void VolumeData::UpdateDescriptorSet()
+	{
+		// Density tex
+		VkDescriptorImageInfo densityTexImageInfo;
+		densityTexImageInfo.sampler = m_DensityTex->GetSampler();
+		densityTexImageInfo.imageView = m_DensityTex->GetImageView();
+		densityTexImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkWriteDescriptorSet densityTexWrite;
+		densityTexWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		densityTexWrite.pNext = nullptr;
+		densityTexWrite.dstSet = m_DescriptorSet;
+		densityTexWrite.dstBinding = 0;
+		densityTexWrite.dstArrayElement = 0;
+		densityTexWrite.descriptorCount = 1;
+		densityTexWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		densityTexWrite.pImageInfo = &densityTexImageInfo;
+		densityTexWrite.pBufferInfo = nullptr;
+		densityTexWrite.pTexelBufferView = nullptr;
+
+		// Update
+		vkUpdateDescriptorSets(VulkanAPI::GetDevice(), 1, &densityTexWrite, 0, nullptr);
 	}
 }

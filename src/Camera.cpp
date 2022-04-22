@@ -1,5 +1,5 @@
-#include <engine/Camera.hpp>
-#include <engine/VulkanAPI.hpp>
+#include <engine/graphics/Camera.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
 #include <glm/gtx/transform.hpp>
 
 namespace en

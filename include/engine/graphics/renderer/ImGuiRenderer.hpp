@@ -1,8 +1,8 @@
 #pragma once
 
-#include <engine/common.hpp>
-#include <engine/vulkan/CommandPool.hpp>
-#include <engine/vulkan/Shader.hpp>
+#include <engine/graphics/common.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/Shader.hpp>
 
 namespace en
 {

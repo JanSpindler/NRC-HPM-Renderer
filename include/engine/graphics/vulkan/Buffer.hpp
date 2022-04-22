@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/VulkanAPI.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
 
 namespace en::vk
 {

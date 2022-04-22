@@ -1,6 +1,6 @@
-#include <engine/vulkan/ComputePipeline.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/ComputePipeline.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
 
 namespace en::vk
 {

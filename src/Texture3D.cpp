@@ -1,8 +1,8 @@
-#include <engine/vulkan/Texture3D.hpp>
-#include <engine/vulkan/CommandRecorder.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/vulkan/CommandPool.hpp>
-#include <engine/vulkan/Buffer.hpp>
+#include <engine/graphics/vulkan/Texture3D.hpp>
+#include <engine/graphics/vulkan/CommandRecorder.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/Buffer.hpp>
 #include <array>
 
 namespace en::vk

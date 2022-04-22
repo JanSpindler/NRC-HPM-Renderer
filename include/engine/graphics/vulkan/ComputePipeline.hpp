@@ -1,7 +1,7 @@
 #pragma once
 
-#include <engine/vulkan/Buffer.hpp>
-#include <engine/vulkan/Shader.hpp>
+#include <engine/graphics/vulkan/Buffer.hpp>
+#include <engine/graphics/vulkan/Shader.hpp>
 #include <glm/glm.hpp>
 
 namespace en::vk

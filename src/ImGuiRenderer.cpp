@@ -1,6 +1,6 @@
-#include <engine/renderer/ImGuiRenderer.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/Window.hpp>
+#include <engine/graphics/renderer/ImGuiRenderer.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/graphics/Window.hpp>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 

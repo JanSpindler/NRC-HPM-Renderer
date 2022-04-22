@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/vulkan/Texture3D.hpp>
+#include <engine/graphics/vulkan/Texture3D.hpp>
 
 namespace en
 {

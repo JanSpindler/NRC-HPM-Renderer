@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/common.hpp>
+#include <engine/graphics/common.hpp>
 #include <string>
 #include <vector>
 
@@ -22,6 +22,8 @@ namespace en
 		static bool IsClosed();
 		static std::vector<const char*> GetVulkanExtensions();
 		static VkSurfaceKHR CreateVulkanSurface(VkInstance vulkanInstance);
+
+		static void SetTitle(const std::string& title);
 
 	private:
 		static GLFWwindow* m_GLFWHandle;

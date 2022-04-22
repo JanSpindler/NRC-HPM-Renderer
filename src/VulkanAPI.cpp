@@ -1,11 +1,11 @@
-#include <engine/VulkanAPI.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
 #include <vector>
 #include <map>
-#include <engine/Log.hpp>
-#include <engine/Window.hpp>
-#include <engine/Camera.hpp>
-#include <engine/vulkan/Texture2D.hpp>
-#include <engine/VolumeData.hpp>
+#include <engine/util/Log.hpp>
+#include <engine/graphics/Window.hpp>
+#include <engine/graphics/Camera.hpp>
+#include <engine/graphics/vulkan/Texture2D.hpp>
+#include <engine/objects/VolumeData.hpp>
 
 namespace en
 {
@@ -179,7 +179,7 @@ namespace en
 
 		// Select wanted layers
 		std::vector<const char*> layers = {
-			// "VK_LAYER_KHRONOS_validation"
+			"VK_LAYER_KHRONOS_validation"
 		};
 
 		// List supported extensions

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <array>
-#include <engine/common.hpp>
+#include <engine/graphics/common.hpp>
 
 namespace en::vk
 {

@@ -1,14 +1,16 @@
-#include <engine/renderer/DensityPathTracer.hpp>
-#include <engine/VulkanAPI.hpp>
+#include <engine/graphics/renderer/DensityPathTracer.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
 
 namespace en
 {
-	DensityPathTracer::DensityPathTracer(uint32_t width, uint32_t height) :
+	DensityPathTracer::DensityPathTracer(uint32_t width, uint32_t height, const Camera* camera, const VolumeData* volumeData) :
 		m_FrameWidth(width),
 		m_FrameHeight(height),
 		m_VertShader("path-tracer/path-tracer.vert", false),
 		m_FragShader("path-tracer/path-tracer.frag", false),
-		m_CommandPool(0, VulkanAPI::GetGraphicsQFI())
+		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
+		m_Camera(camera),
+		m_VolumeData(volumeData)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
@@ -104,7 +106,7 @@ namespace en
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		VkAttachmentReference colorAttachmentReference;
 		colorAttachmentReference.attachment = 0;
@@ -148,12 +150,16 @@ namespace en
 
 	void DensityPathTracer::CreatePipelineLayout(VkDevice device)
 	{
+		std::vector<VkDescriptorSetLayout> layouts = {
+			Camera::GetDescriptorSetLayout(),
+			VolumeData::GetDescriptorSetLayout() };
+
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutCreateInfo.pNext = nullptr;
 		layoutCreateInfo.flags = 0;
-		layoutCreateInfo.setLayoutCount = 0;
-		layoutCreateInfo.pSetLayouts = nullptr;
+		layoutCreateInfo.setLayoutCount = layouts.size();
+		layoutCreateInfo.pSetLayouts = layouts.data();
 		layoutCreateInfo.pushConstantRangeCount = 0;
 		layoutCreateInfo.pPushConstantRanges = nullptr;
 
@@ -453,8 +459,17 @@ namespace en
 
 		vkCmdSetScissor(m_CommandBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(m_CommandBuffer, 3, 1, 0, 0);
+		// Bind descriptor sets
+		std::vector<VkDescriptorSet> descSets = { m_Camera->GetDescriptorSet(), m_VolumeData->GetDescriptorSet() };
+		vkCmdBindDescriptorSets(
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 
+			0, descSets.size(), descSets.data(), 
+			0, nullptr);
 
+		// Draw
+		vkCmdDraw(m_CommandBuffer, 6, 1, 0, 0);
+
+		// End
 		vkCmdEndRenderPass(m_CommandBuffer);
 
 		result = vkEndCommandBuffer(m_CommandBuffer);

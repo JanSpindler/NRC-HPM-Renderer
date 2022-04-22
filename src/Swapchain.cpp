@@ -1,7 +1,7 @@
-#include <engine/vulkan/Swapchain.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/Window.hpp>
-#include <engine/Log.hpp>
+#include <engine/graphics/vulkan/Swapchain.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/graphics/Window.hpp>
+#include <engine/util/Log.hpp>
 
 namespace en::vk
 {

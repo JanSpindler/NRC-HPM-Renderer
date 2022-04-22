@@ -1,14 +1,16 @@
 #pragma once
 
-#include <engine/vulkan/Shader.hpp>
-#include <engine/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/Shader.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/objects/VolumeData.hpp>
+#include <engine/graphics/Camera.hpp>
 
 namespace en
 {
 	class DensityPathTracer
 	{
 	public:
-		DensityPathTracer(uint32_t width, uint32_t height);
+		DensityPathTracer(uint32_t width, uint32_t height, const Camera* camera, const VolumeData* volumeData);
 
 		void Render(VkQueue queue) const;
 		void Destroy();
@@ -21,6 +23,9 @@ namespace en
 	private:
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
+
+		const Camera* m_Camera;
+		const VolumeData* m_VolumeData;
 
 		VkRenderPass m_RenderPass;
 		vk::Shader m_VertShader;

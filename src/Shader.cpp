@@ -1,7 +1,7 @@
-#include <engine/vulkan/Shader.hpp>
-#include <engine/VulkanAPI.hpp>
-#include <engine/Log.hpp>
-#include <engine/read_file.hpp>
+#include <engine/graphics/vulkan/Shader.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
+#include <engine/util/Log.hpp>
+#include <engine/util/read_file.hpp>
 
 const std::string compilerPath = "glslc";
 const std::string shaderDirPath = "data/shader/";

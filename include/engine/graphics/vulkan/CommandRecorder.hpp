@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/common.hpp>
+#include <engine/graphics/common.hpp>
 
 namespace en::vk
 {

@@ -1,5 +1,5 @@
-#include <engine/vulkan/CommandPool.hpp>
-#include <engine/VulkanAPI.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/graphics/VulkanAPI.hpp>
 
 namespace en::vk
 {

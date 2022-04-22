@@ -1,8 +1,8 @@
 #pragma once
 
-#include <engine/common.hpp>
+#include <engine/graphics/common.hpp>
 #include <vector>
-#include <engine/vulkan/CommandPool.hpp>
+#include <engine/graphics/vulkan/CommandPool.hpp>
 
 namespace en::vk
 {
