@@ -9,13 +9,13 @@ namespace en
 	struct VolumeUniformData
 	{
 		glm::vec4 random;
-		float lowPassFactor;
 		uint32_t singleScatter;
 		float densityFactor;
 		float g;
 		float sigmaS;
 		float sigmaE;
 		float brightness;
+		uint32_t lowPassIndex;
 	};
 
 	class VolumeData

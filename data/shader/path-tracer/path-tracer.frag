@@ -14,13 +14,13 @@ layout(set = 1, binding = 0) uniform sampler3D densityTex;
 layout(set = 1, binding = 1) uniform volumeData_t
 {
 	vec4 random;
-	float lowPassFactor;
 	uint singleScatter;
 	float densityFactor;
 	float g;
 	float sigmaS;
 	float sigmaE;
 	float brightness;
+	uint lowPassIndex;
 } volumeData;
 
 layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
@@ -51,17 +51,28 @@ const vec3 skyPos = vec3(0.0);
 #define SAMPLE_COUNT 40
 #define SECONDARY_SAMPLE_COUNT 12
 
-#define SAMPLE_COUNT0 24
-#define SAMPLE_COUNT1 4
-#define SAMPLE_COUNT2 4
-#define SAMPLE_COUNT3 16
+#define SAMPLE_COUNT0 16
+#define SAMPLE_COUNT1 8
+#define SAMPLE_COUNT2 8
+#define SAMPLE_COUNT3 8
 
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
 
+float preRand = volumeData.random.x;
+float prePreRand = volumeData.random.y;
+
 float rand(vec2 co)
 {
 	return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float myRand()
+{
+	float result = rand(vec2(preRand, prePreRand));
+	prePreRand = preRand;
+	preRand = result;
+	return result;
 }
 
 float sky_sdf(vec3 pos)
@@ -359,8 +370,8 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			const float sampleSigmaE = density * SIGMA_E;
 
 
-			float rayDirRand1 = rand(vec2(rayOrigin.x, volumeData.random.y));
-			float rayDirRand2 = rand(vec2(rayOrigin.z, volumeData.random.w));
+			float rayDirRand1 = myRand();
+			float rayDirRand2 = myRand();
 			vec3 randomDir = NewRayDir(rayDir, rayDirRand1, rayDirRand2);
 			const float prob = 1.0 / (4.0 * PI * PI);
 
@@ -416,8 +427,8 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const float sampleSigmaS = density * SIGMA_S;
 			const float sampleSigmaE = density * SIGMA_E;
 
-			float rayDirRand1 = rand(vec2(rayOrigin.x, volumeData.random.y));
-			float rayDirRand2 = rand(vec2(rayOrigin.z, volumeData.random.w));
+			float rayDirRand1 = myRand();
+			float rayDirRand2 = myRand();
 			vec3 randomDir = NewRayDir(rayDir, rayDirRand1, rayDirRand2);
 			const float prob = 1.0 / (4.0 * PI * PI);
 
@@ -474,7 +485,8 @@ void main()
 	}
 	else
 	{
-		float alpha = volumeData.lowPassFactor;
+		float lowPassIndex = float(volumeData.lowPassIndex);
+		float alpha = lowPassIndex / (lowPassIndex + 1.0);
 		vec4 oldColor = texture(lowPassTex, fragUV);
 		vec4 newColor = vec4(TracePath(ro, rd), 1.0);
 		outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
