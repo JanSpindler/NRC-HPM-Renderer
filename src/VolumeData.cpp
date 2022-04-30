@@ -2,6 +2,7 @@
 #include <engine/graphics/VulkanAPI.hpp>
 #include <vector>
 #include <imgui.h>
+#include <glm/gtc/random.hpp>
 
 namespace en
 {
@@ -18,7 +19,14 @@ namespace en
 		densityTexBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		densityTexBinding.pImmutableSamplers = nullptr;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings = { densityTexBinding };
+		VkDescriptorSetLayoutBinding uniformBufferBinding;
+		uniformBufferBinding.binding = 1;
+		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferBinding.descriptorCount = 1;
+		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		uniformBufferBinding.pImmutableSamplers = nullptr;
+
+		std::vector<VkDescriptorSetLayoutBinding> bindings = { densityTexBinding, uniformBufferBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -35,7 +43,11 @@ namespace en
 		densityTexPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		densityTexPoolSize.descriptorCount = 1;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { densityTexPoolSize };
+		VkDescriptorPoolSize uniformBufferPoolSize;
+		uniformBufferPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferPoolSize.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { densityTexPoolSize, uniformBufferPoolSize };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -61,7 +73,18 @@ namespace en
 	}
 
 	VolumeData::VolumeData(const vk::Texture3D* densityTex) :
-		m_DensityTex(densityTex)
+		m_DensityTex(densityTex),
+		m_UniformBuffer(
+			sizeof(VolumeUniformData), 
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			{}),
+		m_UniformData({ 
+			.random = glm::vec4(0.0f),
+			.lowPassFactor = 0.05f,
+			.singleScatter = 1,
+			.densityFactor = 1.0f,
+			.g = 0.99f })
 	{
 		// Create and update descriptor set
 		VkDescriptorSetAllocateInfo descSetAI;
@@ -77,9 +100,26 @@ namespace en
 		UpdateDescriptorSet();
 	}
 
+	void VolumeData::Update()
+	{
+		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
+
+		m_UniformBuffer.MapMemory(sizeof(VolumeUniformData), &m_UniformData, 0, 0);
+	}
+
+	void VolumeData::Destroy()
+	{
+		m_UniformBuffer.Destroy();
+	}
+
 	void VolumeData::RenderImGui()
 	{
 		ImGui::Begin("HPM Volume");
+
+		ImGui::SliderFloat("Low Pass Factor", &m_UniformData.lowPassFactor, 0.0f, 1.0f);
+		ImGui::Checkbox("Single Scatter", reinterpret_cast<bool*>(&m_UniformData.singleScatter));
+		ImGui::SliderFloat("Density Factor", &m_UniformData.densityFactor, 0.0f, 16.0f);
+		ImGui::SliderFloat("G", &m_UniformData.g, 0.001f, 0.999f);
 
 		ImGui::End();
 	}
@@ -109,7 +149,27 @@ namespace en
 		densityTexWrite.pBufferInfo = nullptr;
 		densityTexWrite.pTexelBufferView = nullptr;
 
+		// Uniform buffer
+		VkDescriptorBufferInfo uniformBufferInfo;
+		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
+		uniformBufferInfo.offset = 0;
+		uniformBufferInfo.range = sizeof(VolumeUniformData);
+
+		VkWriteDescriptorSet uniformBufferWrite;
+		uniformBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		uniformBufferWrite.pNext = nullptr;
+		uniformBufferWrite.dstSet = m_DescriptorSet;
+		uniformBufferWrite.dstBinding = 1;
+		uniformBufferWrite.dstArrayElement = 0;
+		uniformBufferWrite.descriptorCount = 1;
+		uniformBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferWrite.pImageInfo = nullptr;
+		uniformBufferWrite.pBufferInfo = &uniformBufferInfo;
+		uniformBufferWrite.pTexelBufferView = nullptr;
+
 		// Update
-		vkUpdateDescriptorSets(VulkanAPI::GetDevice(), 1, &densityTexWrite, 0, nullptr);
+		std::vector<VkWriteDescriptorSet> writes = { densityTexWrite, uniformBufferWrite };
+
+		vkUpdateDescriptorSets(VulkanAPI::GetDevice(), writes.size(), writes.data(), 0, nullptr);
 	}
 }

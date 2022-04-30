@@ -1,9 +1,20 @@
 #pragma once
 
 #include <engine/graphics/vulkan/Texture3D.hpp>
+#include <glm/glm.hpp>
+#include <engine/graphics/vulkan/Buffer.hpp>
 
 namespace en
 {
+	struct VolumeUniformData
+	{
+		glm::vec4 random;
+		float lowPassFactor;
+		uint32_t singleScatter;
+		float densityFactor;
+		float g;
+	};
+
 	class VolumeData
 	{
 	public:
@@ -12,6 +23,9 @@ namespace en
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
 		VolumeData(const vk::Texture3D* densityTex);
+
+		void Update();
+		void Destroy();
 
 		void RenderImGui();
 
@@ -24,6 +38,9 @@ namespace en
 		VkDescriptorSet m_DescriptorSet;
 
 		const vk::Texture3D* m_DensityTex;
+
+		VolumeUniformData m_UniformData;
+		vk::Buffer m_UniformBuffer;
 
 		void UpdateDescriptorSet();
 	};

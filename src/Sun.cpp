@@ -76,7 +76,8 @@ namespace en
 			color,
 			zenith,
 			VecFromAngles(zenith, azimuth),
-			azimuth },
+			azimuth,
+			1.0f },
 			m_UniformBuffer{ vk::Buffer(
 				sizeof(SunData),
 				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
@@ -154,13 +155,13 @@ namespace en
 	void Sun::RenderImgui()
 	{
 		ImGui::Begin("Sun");
-		// use | so both are evaluated.
-		if (ImGui::DragFloat("zenith", &m_SunData.m_Zenith, 0.001) |
-			ImGui::DragFloat("azimuth", &m_SunData.m_Azimuth, 0.001)) {
+		ImGui::DragFloat("zenith", &m_SunData.m_Zenith, 0.001);
+		ImGui::DragFloat("azimuth", &m_SunData.m_Azimuth, 0.001);
+		ImGui::DragFloat("Strength", &m_SunData.m_Strenth, 0.1);
 
-			m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, m_SunData.m_Azimuth);
-			m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);
-		}
+		m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, m_SunData.m_Azimuth);
+		m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);
+
 		ImGui::End();
 	}
 }

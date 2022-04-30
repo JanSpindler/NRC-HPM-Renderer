@@ -143,7 +143,7 @@ int main()
 		en::Window::Update();
 		en::Input::Update();
 		en::Time::Update();
-		
+
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
 		
@@ -164,6 +164,7 @@ int main()
 		en::ImGuiRenderer::StartFrame();
 		
 		volumeData.RenderImGui();
+		volumeData.Update();
 		sun.RenderImgui();
 
 		en::ImGuiRenderer::EndFrame(graphicsQueue);
@@ -177,6 +178,8 @@ int main()
 
 	// End
 	density3DTex.Destroy();
+
+	volumeData.Destroy();
 
 	en::ImGuiRenderer::Shutdown();
 

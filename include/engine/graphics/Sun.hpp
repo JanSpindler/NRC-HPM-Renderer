@@ -10,6 +10,7 @@ struct SunData
 	float m_Zenith;
 	glm::vec3 m_SunDir;
 	float m_Azimuth;
+	float m_Strenth;
 };
 
 namespace en

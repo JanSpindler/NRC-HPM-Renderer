@@ -7,6 +7,13 @@ vec2 pos[4] = vec2[](
 	vec2(1.0, 1.0),
 	vec2(1.0, -1.0));
 
+vec2 uv[4] = vec2[] (
+	vec2(0.0, 0.0),
+	vec2(0.0, 1.0),
+	vec2(1.0, 1.0),
+	vec2(1.0, 0.0)
+);
+
 int indices[6] = int[] ( 0, 1, 2, 2, 3, 0 );
 
 layout(set = 0, binding = 0) uniform camMat_t
@@ -16,6 +23,7 @@ layout(set = 0, binding = 0) uniform camMat_t
 } camMat;
 
 layout(location = 0) out vec3 pixelWorldPos;
+layout(location = 1) out vec2 fragUV;
 
 void main()
 {
@@ -27,4 +35,6 @@ void main()
 
 	vec4 worldPos = inverse(camMat.projView) * screenCoord;
 	pixelWorldPos = worldPos.xyz / worldPos.w;
+
+	fragUV = uv[index];
 }
