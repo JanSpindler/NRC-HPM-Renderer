@@ -84,7 +84,10 @@ namespace en
 			.lowPassFactor = 0.05f,
 			.singleScatter = 1,
 			.densityFactor = 1.0f,
-			.g = 0.99f })
+			.g = 0.99f,
+			.sigmaS = 0.5f,
+			.sigmaE = 0.5f,
+			.brightness = 1.0f })
 	{
 		// Create and update descriptor set
 		VkDescriptorSetAllocateInfo descSetAI;
@@ -116,10 +119,13 @@ namespace en
 	{
 		ImGui::Begin("HPM Volume");
 
-		ImGui::SliderFloat("Low Pass Factor", &m_UniformData.lowPassFactor, 0.0f, 1.0f);
+		ImGui::SliderFloat("Low Pass Factor", &m_UniformData.lowPassFactor, 0.0f, 0.999f);
 		ImGui::Checkbox("Single Scatter", reinterpret_cast<bool*>(&m_UniformData.singleScatter));
 		ImGui::SliderFloat("Density Factor", &m_UniformData.densityFactor, 0.0f, 16.0f);
 		ImGui::SliderFloat("G", &m_UniformData.g, 0.001f, 0.999f);
+		ImGui::SliderFloat("Sigma S", &m_UniformData.sigmaS, 0.001f, 1.0f);
+		ImGui::SliderFloat("Sigma E", &m_UniformData.sigmaE, 0.001f, 1.0f);
+		ImGui::SliderFloat("Brightness", &m_UniformData.brightness, 0.0f, 1.0f);
 
 		ImGui::End();
 	}

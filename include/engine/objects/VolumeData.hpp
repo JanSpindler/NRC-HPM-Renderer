@@ -13,6 +13,9 @@ namespace en
 		uint32_t singleScatter;
 		float densityFactor;
 		float g;
+		float sigmaS;
+		float sigmaE;
+		float brightness;
 	};
 
 	class VolumeData
