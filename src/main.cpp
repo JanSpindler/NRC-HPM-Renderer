@@ -13,6 +13,7 @@
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
 #include <engine/graphics/Sun.hpp>
+#include <MNN/MNNDefine.h>
 
 en::DensityPathTracer* pathTracer = nullptr;
 

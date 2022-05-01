@@ -45,22 +45,19 @@ const vec3 skyPos = vec3(0.0);
 #define MIN_RAY_DISTANCE 0.125
 #define DEPTH_MAX_TRANSMITTANCE 0.3
 
-#define MIN_HEIGHT (skyPos.y - (skySize.y / 2))
-#define MAX_HEIGHT (MIN_HEIGHT + skySize.y)
-
 #define SAMPLE_COUNT 40
 #define SECONDARY_SAMPLE_COUNT 12
 
 #define SAMPLE_COUNT0 16
-#define SAMPLE_COUNT1 8
+#define SAMPLE_COUNT1 16
 #define SAMPLE_COUNT2 8
 #define SAMPLE_COUNT3 8
 
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
 
-float preRand = volumeData.random.x;
-float prePreRand = volumeData.random.y;
+float preRand = volumeData.random.x * fragUV.x;
+float prePreRand = volumeData.random.y * fragUV.y;
 
 float rand(vec2 co)
 {
