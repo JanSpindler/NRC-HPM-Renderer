@@ -13,7 +13,7 @@
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
 #include <engine/graphics/Sun.hpp>
-#include <MNN/MNNDefine.h>
+#include <engine/graphics/NeuralRadianceCache.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -133,6 +133,8 @@ int main()
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
 
 	swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
+
+	en::NeuralRadianceCache nrc;
 
 	// Main loop
 	VkDevice device = en::VulkanAPI::GetDevice();

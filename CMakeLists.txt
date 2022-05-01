@@ -38,10 +38,3 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${STB_INCLUDE_DIRS})
 # IMGUI
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
-
-# MNN
-find_path(MNN_INCLUDE_DIRS "MNN/MNNDefine.h")
-target_include_directories(${PROJECT_NAME} PRIVATE ${MNN_INCLUDE_DIRS})
-
-find_library(MNN_LIB "MNN.lib")
-target_link_libraries(${PROJECT_NAME} PRIVATE ${MNN_LIB})
