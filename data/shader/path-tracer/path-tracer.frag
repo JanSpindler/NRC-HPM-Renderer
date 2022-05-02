@@ -56,6 +56,8 @@ const vec3 skyPos = vec3(0.0);
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
 
+// --------------- Start: random ----------------
+
 float preRand = volumeData.random.x * fragUV.x;
 float prePreRand = volumeData.random.y * fragUV.y;
 
@@ -71,6 +73,68 @@ float myRand()
 	preRand = result;
 	return result;
 }
+
+/*const uint64_t PCG32_DEFAULT_STATE  = 0x853c49e6748fea9bUL;
+const uint64_t PCG32_DEFAULT_STREAM = 0xda3e39cb94b95bdbUL;
+const uint64_t PCG32_MULT           = 0x5851f42d4c957f2dUL;
+
+struct pcg32_t
+{
+	uint64_t state;
+	uint64_t inc;
+};
+
+pcg32_t pcg32;
+
+uint Pcg32NextUInt()
+{
+	uint64_t oldState = pcg32.state;
+	pcg32.state = PCG32_MULT + pcg32.inc;
+	uint xorShifted = uint(((oldState >> 18u) ^ oldState) >> 27u);
+	uint rot = uint(oldState >> 59u);
+	return (xorShifted >> rot) | (xorShifted << ((~rot + 1u) & 32));
+}
+
+uint Pcg32NextUInt(uint bound)
+{
+	uint threshold = (~bound + 1u) % bound;
+	while (true)
+	{
+		uint r = Pcg32NextUInt();
+		if (r >= threshold)
+			return r % bound;
+	}
+}
+
+float Pcg32NextFloat()
+{
+	uint u = (Pcg32NextUInt() >> 9) | 0x3f800000u;
+	vec2 f = unpackHalf2x16(u);
+	return rand(f);
+}
+
+void Pcg32Seed()
+{
+	uint64_t initstate = PCG32_DEFAULT_STATE;
+	uint64_t initseq = PCG32_DEFAULT_STREAM;
+
+	pcg32.state = packHalf2x16(vec2(myRand(), myRand()));
+	//pcg32.state = 0U;
+	pcg32.inc = (initseq << 1u) | 1u;
+	Pcg32NextUInt();
+	pcg32.state += initstate;
+	Pcg32NextUInt();
+}*/
+
+float RandFloat(float maxVal)
+{
+	float f = myRand();
+	return f * maxVal;
+}
+
+// --------------- End: random ----------------
+
+// --------------- Start: util -----------------
 
 float sky_sdf(vec3 pos)
 {
@@ -127,6 +191,23 @@ float hg_phase_func(const float cos_theta)
 	return result;
 }
 
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
+}
+
+// --------------- End: util -----------------
+
+// --------------- Start: single scatter -----------------
+
 float get_self_shadowing(vec3 pos)
 {
 	// Exit if not used
@@ -175,10 +256,7 @@ vec4 render_cloud(vec3 sample_points[SAMPLE_COUNT], vec3 out_dir, vec3 ro)
 	const float sigma_s = SIGMA_S;
 	const float sigma_e = SIGMA_E;
 	const float step_size = length(sample_points[1] - sample_points[0]);
-	const vec3 step_offset = 
-		rand(vec2(out_dir.x * out_dir.y, out_dir.z * volumeData.random.x)) * 
-		out_dir * 
-		step_size;
+	const vec3 step_offset = RandFloat(step_size) * out_dir;
 
 	bool depth_stored = false;
 	for (int i = 0; i < SAMPLE_COUNT; i++)
@@ -210,20 +288,11 @@ vec4 render_cloud(vec3 sample_points[SAMPLE_COUNT], vec3 out_dir, vec3 ro)
 	return vec4(scattered_light, transmittance);
 }
 
-mat4 rotationMatrix(vec3 axis, float angle)
-{
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
-}
+// --------------- End: util -----------------
 
-vec3 NewRayDir(vec3 oldRayDir, const float rand1, const float rand2)
+// --------------- Start: Path trace -----------------
+
+vec3 NewRayDir(vec3 oldRayDir)
 {
 	// Assert: length(oldRayDir) == 1.0
 	// Assert: rand's are in [0.0, 1.0]
@@ -236,12 +305,12 @@ vec3 NewRayDir(vec3 oldRayDir, const float rand1, const float rand2)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-	float angle = rand1 * PI;
+	float angle = RandFloat(PI);
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
 	// Rotate around oldRayDir
-	angle = rand2 * 2.0 * PI;
+	angle = RandFloat(2.0 * PI);
 	rotMat = rotationMatrix(oldRayDir, angle);
 	newRayDir = (rotMat * vec4(newRayDir, 1.0)).xyz;
 
@@ -300,10 +369,7 @@ vec3 TracePath2(vec3 rayOrigin, vec3 rayDir)
 		samplePoints[i] = entry + dir * (float(i) / float(SAMPLE_COUNT2));
 
 	const float stepSize = length(samplePoints[1] - samplePoints[0]);
-	const vec3 step_offset = 
-		rand(vec2(rayDir.x * rayDir.y, rayDir.z * volumeData.random.x)) * 
-		rayDir * 
-		stepSize;
+	const vec3 step_offset = RandFloat(stepSize) * rayDir;
 
 	for (uint i = 0; i < SAMPLE_COUNT2; i++)
 	{
@@ -351,10 +417,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 		samplePoints[i] = entry + dir * (float(i) / float(SAMPLE_COUNT1));
 
 	const float stepSize = length(samplePoints[1] - samplePoints[0]);
-	const vec3 step_offset = 
-		rand(vec2(rayDir.x * rayDir.y, rayDir.z * volumeData.random.x)) * 
-		rayDir * 
-		stepSize;
+	const vec3 step_offset = RandFloat(stepSize) * rayDir;
 
 	for (uint i = 0; i < SAMPLE_COUNT1; i++)
 	{
@@ -366,10 +429,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			const float sampleSigmaS = density * SIGMA_S;
 			const float sampleSigmaE = density * SIGMA_E;
 
-
-			float rayDirRand1 = myRand();
-			float rayDirRand2 = myRand();
-			vec3 randomDir = NewRayDir(rayDir, rayDirRand1, rayDirRand2);
+			vec3 randomDir = NewRayDir(rayDir);
 			const float prob = 1.0 / (4.0 * PI * PI);
 
 			const float phase = hg_phase_func(dot(randomDir, -rayDir));
@@ -409,10 +469,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 		samplePoints[i] = entry + dir * (float(i) / float(SAMPLE_COUNT0));
 
 	const float stepSize = length(samplePoints[1] - samplePoints[0]);
-	const vec3 step_offset = 
-		rand(vec2(rayDir.x * rayDir.y, rayDir.z * volumeData.random.x)) * 
-		rayDir * 
-		stepSize;
+	const vec3 step_offset = RandFloat(stepSize) * rayDir;
 
 	for (uint i = 0; i < SAMPLE_COUNT0; i++)
 	{
@@ -424,16 +481,12 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const float sampleSigmaS = density * SIGMA_S;
 			const float sampleSigmaE = density * SIGMA_E;
 
-			float rayDirRand1 = myRand();
-			float rayDirRand2 = myRand();
-			vec3 randomDir = NewRayDir(rayDir, rayDirRand1, rayDirRand2);
+			vec3 randomDir = NewRayDir(rayDir);
 			const float prob = 1.0 / (4.0 * PI * PI);
 
 			const float phase = hg_phase_func(dot(randomDir, -rayDir));
 
 			const vec3 incomingLight = TracePath1(samplePoint, randomDir);
-			//const vec3 incomingLight = TracePath3(samplePoint);
-			//const vec3 incomingLight = vec3(get_self_shadowing(samplePoint)) * dir_light.strength;
 
 			const vec3 s = sampleSigmaS * incomingLight * phase * density / prob;
 			const float t_r = exp(-sampleSigmaE * stepSize);
@@ -455,6 +508,10 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
 	return TracePath0(rayOrigin, rayDir) * volumeData.brightness;
 }
+
+// --------------- End: path trace -----------------
+
+// --------------- Main -----------------
 
 void main()
 {

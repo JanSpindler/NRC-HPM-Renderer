@@ -397,9 +397,8 @@ namespace en
 		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = &priority;
 
-		// enable float64 for sky-vertex shader.
+		// Features
 		VkPhysicalDeviceFeatures features{};
-		features.shaderFloat64 = VK_TRUE;
 
 		// Create
 		VkDeviceCreateInfo createInfo;

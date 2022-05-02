@@ -34,6 +34,23 @@ namespace en
 		m_VkBuffer.MapMemory(m_MemorySize, m_HostData, 0, 0);
 	}
 
+	Tensor Tensor::operator+(const Tensor& other) const
+	{
+		if (this->m_Shape != other.m_Shape)
+			Log::Error("Tensor addition requires equal shape", true);
+
+		Tensor result(m_Shape, 0.0f);
+		for (size_t i = 0; i < m_FloatCount; i++)
+			result.SetValue(i, this->GetValue(i) + other.GetValue(i));
+
+		return result;
+	}
+
+	Tensor Tensor::operator*(const Tensor& other) const
+	{
+		return Tensor({ 1 }, 0.0f);
+	}
+
 	void Tensor::Destroy()
 	{
 		m_VkBuffer.Destroy();
