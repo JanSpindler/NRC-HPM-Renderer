@@ -157,7 +157,7 @@ namespace en
 		ImGui::Begin("Sun");
 		ImGui::DragFloat("zenith", &m_SunData.m_Zenith, 0.001);
 		ImGui::DragFloat("azimuth", &m_SunData.m_Azimuth, 0.001);
-		ImGui::DragFloat("Strength", &m_SunData.m_Strenth, 0.1);
+		ImGui::DragFloat("Strength", &m_SunData.m_Strenth, 0.01);
 
 		m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, m_SunData.m_Azimuth);
 		m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);

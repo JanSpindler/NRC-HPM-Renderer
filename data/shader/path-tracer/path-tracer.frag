@@ -506,7 +506,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 
 vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
-	return TracePath0(rayOrigin, rayDir) * volumeData.brightness;
+	return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
 }
 
 // --------------- End: path trace -----------------
