@@ -119,7 +119,7 @@ namespace en
 
 		vkUpdateDescriptorSets(device, 1, &writeDescSet, 0, nullptr);
 
-		m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);
+		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
 	}
 
 	void Sun::Destroy()
@@ -131,20 +131,20 @@ namespace en
 	{
 		m_SunData.m_Zenith = z;
 		m_SunData.m_SunDir = VecFromAngles(z, m_SunData.m_Azimuth);
-		m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);
+		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
 	}
 
 	void Sun::SetAzimuth(float a)
 	{
 		m_SunData.m_Azimuth = a;
 		m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, a);
-		m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);
+		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
 	}
 
 	void Sun::SetColor(glm::vec3 c)
 	{
 		m_SunData.m_Color = c;
-		m_UniformBuffer.MapMemory(sizeof(glm::vec3), &c, offsetof(SunData, m_Color), 0);
+		m_UniformBuffer.SetData(sizeof(glm::vec3), &c, offsetof(SunData, m_Color), 0);
 	}
 
 	VkDescriptorSet Sun::GetDescriptorSet() const
@@ -160,7 +160,7 @@ namespace en
 		ImGui::DragFloat("Strength", &m_SunData.m_Strenth, 0.01);
 
 		m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, m_SunData.m_Azimuth);
-		m_UniformBuffer.MapMemory(sizeof(SunData), &m_SunData, 0, 0);
+		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
 
 		ImGui::End();
 	}

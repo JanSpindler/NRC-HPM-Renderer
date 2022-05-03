@@ -110,7 +110,7 @@ namespace en
 		if (m_UniformData.singleScatter == 0 && m_UniformData.lowPassIndex < 1000000)
 			m_UniformData.lowPassIndex++;
 
-		m_UniformBuffer.MapMemory(sizeof(VolumeUniformData), &m_UniformData, 0, 0);
+		m_UniformBuffer.SetData(sizeof(VolumeUniformData), &m_UniformData, 0, 0);
 	}
 
 	void VolumeData::Destroy()

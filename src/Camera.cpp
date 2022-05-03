@@ -168,8 +168,8 @@ namespace en
 		glm::mat4 viewMat = glm::lookAt(m_Pos, m_Pos + m_ViewDir, m_Up);
 		m_Matrices.projView = projMat * viewMat;
 
-		m_MatrixUniformBuffer->MapMemory(sizeof(CameraMatrices), &m_Matrices, 0, 0);
-		m_PosUniformBuffer->MapMemory(sizeof(glm::vec3), &m_Pos, 0, 0);
+		m_MatrixUniformBuffer->SetData(sizeof(CameraMatrices), &m_Matrices, 0, 0);
+		m_PosUniformBuffer->SetData(sizeof(glm::vec3), &m_Pos, 0, 0);
 	}
 
 	void Camera::Move(const glm::vec3& move)

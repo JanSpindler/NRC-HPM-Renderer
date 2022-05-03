@@ -131,7 +131,7 @@ namespace en::vk
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			{});
 
-		stagingBuffer.MapMemory(size, data, 0, 0);
+		stagingBuffer.SetData(size, data, 0, 0);
 
 		// Create Image
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;

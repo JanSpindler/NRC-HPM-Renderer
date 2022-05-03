@@ -52,6 +52,7 @@ namespace en::vk
 	}
 
 	Buffer::Buffer(VkDeviceSize size, VkMemoryPropertyFlags memoryProperties, VkBufferUsageFlags usage, const std::vector<uint32_t>& qfis) :
+		m_Mapped(false),
 		m_UsedSize(size)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
@@ -107,7 +108,50 @@ namespace en::vk
 		vkDestroyBuffer(device, m_VulkanHandle, nullptr);
 	}
 
-	void Buffer::MapMemory(VkDeviceSize size, const void* data, VkDeviceSize offset, VkMemoryMapFlags mapFlags)
+	void Buffer::MapMemory(VkDeviceSize offset, void** memory)
+	{
+		if (m_Mapped)
+			Log::Error("Vulkan Device Memory is already mapped", true);
+
+		VkResult result = vkMapMemory(VulkanAPI::GetDevice(), m_DeviceMemory, offset, m_UsedSize, 0, memory);
+		ASSERT_VULKAN(result);
+
+		m_Mapped = true;
+	}
+
+	void Buffer::UnmapMemory()
+	{
+		if (!m_Mapped)
+			Log::Warn("Vulkan Device Memory was not mapped");
+
+		vkUnmapMemory(VulkanAPI::GetDevice(), m_DeviceMemory);
+
+		m_Mapped = false;
+	}
+
+	VkBuffer Buffer::GetVulkanHandle() const
+	{
+		return m_VulkanHandle;
+	}
+
+	VkDeviceSize Buffer::GetUsedSize() const
+	{
+		return m_UsedSize;
+	}
+
+	void Buffer::GetData(VkDeviceSize size, void* dst, VkDeviceSize offset, VkMemoryMapFlags mapFlags)
+	{
+		VkDevice device = VulkanAPI::GetDevice();
+		
+		void* mappedMemory;
+		MapMemory(0, &mappedMemory);
+
+		memcpy(dst, mappedMemory, static_cast<size_t>(size));
+
+		UnmapMemory();
+	}
+
+	void Buffer::SetData(VkDeviceSize size, const void* data, VkDeviceSize offset, VkMemoryMapFlags mapFlags)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 		VkResult result;
@@ -121,26 +165,4 @@ namespace en::vk
 		vkUnmapMemory(device, m_DeviceMemory);
 	}
 
-	void Buffer::GetData(VkDeviceSize size, void* dst, VkDeviceSize offset, VkMemoryMapFlags mapFlags)
-	{
-		VkDevice device = VulkanAPI::GetDevice();
-		
-		void* mappedMemory;
-		VkResult result = vkMapMemory(device, m_DeviceMemory, offset, size, mapFlags, &mappedMemory);
-		ASSERT_VULKAN(result);
-
-		memcpy(dst, mappedMemory, static_cast<size_t>(size));
-
-		vkUnmapMemory(device, m_DeviceMemory);
-	}
-
-	VkBuffer Buffer::GetVulkanHandle() const
-	{
-		return m_VulkanHandle;
-	}
-
-	VkDeviceSize Buffer::GetUsedSize() const
-	{
-		return m_UsedSize;
-	}
 }
