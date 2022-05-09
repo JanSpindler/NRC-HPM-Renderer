@@ -14,6 +14,7 @@
 #include <engine/util/Time.hpp>
 #include <engine/graphics/Sun.hpp>
 #include <engine/graphics/NeuralRadianceCache.hpp>
+#include <engine/compute/Matrix.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -136,6 +137,18 @@ int main()
 
 	en::NeuralRadianceCache nrc;
 
+	// Test compute
+	std::vector<std::vector<float>> matVals = { { 1.0f, 1.0f }, { 1.0f, 0.0f } };
+	en::vk::Matrix testMat1(matVals);
+	en::Log::Info(testMat1.ToString());
+
+	matVals = { { 1.0f }, { 1.0f } };
+	en::vk::Matrix testMat2(matVals);
+	en::Log::Info(testMat2.ToString());
+
+	en::vk::Matrix testMat3 = testMat1 * testMat2;
+	en::Log::Info(testMat3.ToString());
+
 	// Main loop
 	VkDevice device = en::VulkanAPI::GetDevice();
 	VkQueue graphicsQueue = en::VulkanAPI::GetGraphicsQueue();
@@ -160,7 +173,6 @@ int main()
 		camera.UpdateUniformBuffer();
 
 		// Render
-
 		pathTracer->Render(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
@@ -181,6 +193,10 @@ int main()
 	ASSERT_VULKAN(result);
 
 	// End
+	testMat1.Destroy();
+	testMat2.Destroy();
+	testMat3.Destroy();
+	
 	density3DTex.Destroy();
 
 	volumeData.Destroy();
