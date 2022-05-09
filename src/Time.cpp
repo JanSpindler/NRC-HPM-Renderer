@@ -17,4 +17,10 @@ namespace en
     {
         return m_DeltaTime;
     }
+
+    uint32_t Time::GetFps()
+    {
+        double invDeltaTime = 1.0 / m_DeltaTime;
+        return static_cast<uint32_t>(invDeltaTime);
+    }
 }

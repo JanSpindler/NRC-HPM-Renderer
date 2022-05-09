@@ -151,8 +151,9 @@ int main()
 		height = en::Window::GetHeight();
 		
 		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
+		uint32_t fps = en::Time::GetFps();
 		en::Input::HandleUserCamInput(&camera, deltaTime);
-		en::Window::SetTitle(appName + " | " + std::to_string(deltaTime) + "s");
+		en::Window::SetTitle(appName + " | Delta time: " + std::to_string(deltaTime) + "s | Fps: " + std::to_string(fps));
 
 		// Physics
 		camera.SetAspectRatio(width, height);
