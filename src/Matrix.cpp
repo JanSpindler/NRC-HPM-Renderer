@@ -121,6 +121,11 @@ namespace en::vk
 		return m_ColCount;
 	}
 
+	uint32_t Matrix::GetMemorySize() const
+	{
+		return m_MemorySize;
+	}
+
 	const float* Matrix::GetData() const
 	{
 		return m_HostMemory;
@@ -159,6 +164,11 @@ namespace en::vk
 		str += "]";
 
 		return str;
+	}
+
+	VkBuffer Matrix::GetBufferVulkanHandle() const
+	{
+		return m_Buffer.GetVulkanHandle();
 	}
 
 	void Matrix::SetValue(uint32_t row, uint32_t col, float value)

@@ -22,10 +22,12 @@ namespace en::vk
 
 		uint32_t GetRowCount() const;
 		uint32_t GetColCount() const;
+		uint32_t GetMemorySize() const;
 		uint32_t GetLinearIndex(uint32_t row, uint32_t col) const;
 		float GetValue(uint32_t row, uint32_t col) const;
 		const float* GetData() const;
 		std::string ToString() const;
+		VkBuffer GetBufferVulkanHandle() const;
 
 		void SetValue(uint32_t row, uint32_t col, float value);
 

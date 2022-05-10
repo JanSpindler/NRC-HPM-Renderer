@@ -1,6 +1,7 @@
 #version 450
+//#extension GL_EXT_debug_printf : enable
 
-layout(set = 0, binding = 0) readonly buffer Config
+layout(set = 0, binding = 0) uniform Config
 {
     uint aRowCount;
     uint aColCount;
@@ -16,7 +17,7 @@ layout(set = 0, binding = 1) readonly buffer MatrixA
 layout(set = 0, binding = 2) readonly buffer MatrixB
 {
     float data[];
-} matrixB;
+} matrixB; 
 
 layout(set = 0, binding = 3) writeonly buffer MatrixC
 {
@@ -36,7 +37,9 @@ void main()
 
     // Check row and col
     if (outRow >= outRowCount || outCol >= outColCount)
+    {
         return;
+    }
 
     // Matrix multiplication A * B
     float dotProduct = 0.0;
@@ -48,5 +51,6 @@ void main()
         dotProduct += leftVal * rightVal;
     }
 
-    matrixC.data[outRow * outColCount + outCol] = dotProduct;
+    uint outIndex = outRow * outColCount + outCol;
+    matrixC.data[outIndex] = dotProduct;
 }

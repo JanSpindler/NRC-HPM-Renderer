@@ -15,6 +15,7 @@
 #include <engine/graphics/Sun.hpp>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/compute/Matrix.hpp>
+#include <engine/compute/Matmul.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -146,7 +147,9 @@ int main()
 	en::vk::Matrix testMat2(matVals);
 	en::Log::Info(testMat2.ToString());
 
-	en::vk::Matrix testMat3 = testMat1 * testMat2;
+	//en::vk::Matrix testMat3 = testMat1 * testMat2;
+	en::vk::Matrix testMat3(testMat1.GetRowCount(), testMat2.GetColCount());
+	en::vk::Matmul::Execute(&testMat1, &testMat2, &testMat3);
 	en::Log::Info(testMat3.ToString());
 
 	// Main loop

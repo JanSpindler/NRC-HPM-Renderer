@@ -144,7 +144,7 @@ namespace en::vk
 		VkDevice device = VulkanAPI::GetDevice();
 		
 		void* mappedMemory;
-		MapMemory(0, &mappedMemory);
+		MapMemory(offset, &mappedMemory);
 
 		memcpy(dst, mappedMemory, static_cast<size_t>(size));
 
