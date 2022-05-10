@@ -47,8 +47,12 @@ namespace en::vk
 	void Matmul::Execute(Matrix* matA, Matrix* matB, Matrix* matC)
 	{
 		// Check size
-		if (matC->GetRowCount() != matA->GetRowCount() || matC->GetColCount() != matB->GetColCount())
+		if (matC->GetRowCount() != matA->GetRowCount() ||
+			matC->GetColCount() != matB->GetColCount() ||
+			matA->GetColCount() != matB->GetRowCount())
+		{
 			Log::Error("Matrix sizes not fit for Matmul::Execute()", true);
+		}
 
 		// Copy data to device
 		matA->CopyToDevice();

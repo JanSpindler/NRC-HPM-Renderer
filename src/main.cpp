@@ -139,11 +139,17 @@ int main()
 	en::NeuralRadianceCache nrc;
 
 	// Test compute
-	std::vector<std::vector<float>> matVals = { { 1.0f, 1.0f }, { 1.0f, 0.0f } };
+	std::vector<std::vector<float>> matVals = { 
+		{ 1.0f, 0.0f, 0.0f }, 
+		{ 0.0f, 1.0f, 0.0f }, 
+		{ 0.0f, 0.0f, 1.0f } };
 	en::vk::Matrix testMat1(matVals);
 	en::Log::Info(testMat1.ToString());
 
-	matVals = { { 1.0f }, { 1.0f } };
+	matVals = { 
+		{ 1.0f }, 
+		{ 1.0f },
+		{ 0.4f } };
 	en::vk::Matrix testMat2(matVals);
 	en::Log::Info(testMat2.ToString());
 
