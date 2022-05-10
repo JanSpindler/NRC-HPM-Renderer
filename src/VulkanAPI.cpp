@@ -8,6 +8,7 @@
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/Sun.hpp>
 #include <engine/graphics/renderer/DensityPathTracer.hpp>
+#include <engine/compute/Matmul.hpp>
 
 namespace en
 {
@@ -42,12 +43,14 @@ namespace en
 		VolumeData::Init(m_Device);
 		Sun::Init();
 		DensityPathTracer::Init(m_Device);
+		vk::Matmul::Init(m_Device);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
+		vk::Matmul::Shutdown(m_Device);
 		DensityPathTracer::Shutdown(m_Device);
 		Sun::Shutdown();
 		VolumeData::Shutdown(m_Device);
