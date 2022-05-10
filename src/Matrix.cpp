@@ -2,10 +2,10 @@
 
 namespace en::vk
 {
-	Matrix::Matrix(size_t rowCount, size_t colCount, float diagonal) :
+	Matrix::Matrix(uint32_t rowCount, uint32_t colCount, float diagonal) :
 		m_RowCount(rowCount),
 		m_ColCount(colCount),
-		m_MemorySize(rowCount * colCount * sizeof(float)),
+		m_MemorySize(rowCount* colCount * sizeof(float)),
 		m_HostMemory(reinterpret_cast<float*>(malloc(m_MemorySize))),
 		m_Buffer(
 			m_MemorySize,
@@ -15,9 +15,9 @@ namespace en::vk
 	{
 		if (!isnan(diagonal))
 		{
-			for (size_t row = 0; row < m_RowCount; row++)
+			for (uint32_t row = 0; row < m_RowCount; row++)
 			{
-				for (size_t col = 0; col < m_ColCount; col++)
+				for (uint32_t col = 0; col < m_ColCount; col++)
 				{
 					float value = row == col ? diagonal : 0.0f;
 					SetValue(row, col, value);
@@ -37,9 +37,9 @@ namespace en::vk
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{})
 	{
-		for (size_t row = 0; row < m_RowCount; row++)
+		for (uint32_t row = 0; row < m_RowCount; row++)
 		{
-			for (size_t col = 0; col < m_ColCount; col++)
+			for (uint32_t col = 0; col < m_ColCount; col++)
 			{
 				SetValue(row, col, values[row][col]);
 			}
@@ -54,9 +54,9 @@ namespace en::vk
 
 		// Create new matrix
 		Matrix result(m_RowCount, m_ColCount);
-		for (size_t row = 0; row < m_RowCount; row++)
+		for (uint32_t row = 0; row < m_RowCount; row++)
 		{
-			for (size_t col = 0; col < m_ColCount; col++)
+			for (uint32_t col = 0; col < m_ColCount; col++)
 			{
 				float value = GetValue(row, col) + other.GetValue(row, col);
 				result.SetValue(row, col, value);
@@ -75,13 +75,13 @@ namespace en::vk
 		// Create new matrix
 		Matrix result(m_RowCount, other.m_ColCount);
 		
-		for (size_t row = 0; row < m_RowCount; row++)
+		for (uint32_t row = 0; row < m_RowCount; row++)
 		{
-			for (size_t col = 0; col < other.m_ColCount; col++)
+			for (uint32_t col = 0; col < other.m_ColCount; col++)
 			{
 				float dotProduct = 0.0f;
 
-				for (size_t oldCounter = 0; oldCounter < other.m_RowCount; oldCounter++)
+				for (uint32_t oldCounter = 0; oldCounter < other.m_RowCount; oldCounter++)
 				{
 					float leftVal = GetValue(row, oldCounter);
 					float rightVal = other.GetValue(oldCounter, col);
@@ -101,19 +101,24 @@ namespace en::vk
 		free(m_HostMemory);
 	}
 
-	size_t Matrix::GetRowCount() const
+	void Matrix::CopyToDevice()
+	{
+		m_Buffer.SetData(m_MemorySize, m_HostMemory, 0, 0);
+	}
+
+	void Matrix::CopyToHost()
+	{
+		m_Buffer.GetData(m_MemorySize, m_HostMemory, 0, 0);
+	}
+
+	uint32_t Matrix::GetRowCount() const
 	{
 		return m_RowCount;
 	}
 
-	size_t Matrix::GetColCount() const
+	uint32_t Matrix::GetColCount() const
 	{
 		return m_ColCount;
-	}
-
-	size_t Matrix::GetMemorySize() const
-	{
-		return m_MemorySize;
 	}
 
 	const float* Matrix::GetData() const
@@ -121,7 +126,7 @@ namespace en::vk
 		return m_HostMemory;
 	}
 
-	size_t Matrix::GetLinearIndex(size_t row, size_t col) const
+	uint32_t Matrix::GetLinearIndex(uint32_t row, uint32_t col) const
 	{
 		if (row >= m_RowCount || col >= m_ColCount)
 			Log::Error("Matrix[row, col] is outside of matrix memory", true);
@@ -129,7 +134,7 @@ namespace en::vk
 		return m_ColCount * row + col;
 	}
 
-	float Matrix::GetValue(size_t row, size_t col) const
+	float Matrix::GetValue(uint32_t row, uint32_t col) const
 	{
 		return m_HostMemory[GetLinearIndex(row, col)];
 	}
@@ -138,11 +143,11 @@ namespace en::vk
 	{
 		std::string str = "[";
 
-		for (size_t row = 0; row < m_RowCount; row++)
+		for (uint32_t row = 0; row < m_RowCount; row++)
 		{
 			str += "[";
 			
-			for (size_t col = 0; col < m_ColCount; col++)
+			for (uint32_t col = 0; col < m_ColCount; col++)
 			{
 				str += std::to_string(GetValue(row, col));
 				str += col == m_ColCount - 1 ? "" : ", ";
@@ -156,7 +161,7 @@ namespace en::vk
 		return str;
 	}
 
-	void Matrix::SetValue(size_t row, size_t col, float value)
+	void Matrix::SetValue(uint32_t row, uint32_t col, float value)
 	{
 		m_HostMemory[GetLinearIndex(row, col)] = value;
 	}

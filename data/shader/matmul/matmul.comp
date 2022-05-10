@@ -1,20 +1,24 @@
 #version 450
 
-layout(set = 0, binding = 0) readonly buffer MatrixA
+layout(set = 0, binding = 0) readonly buffer Config
 {
-    uint rowCount;
-    uint colCount;
+    uint aRowCount;
+    uint aColCount;
+    uint bRowCount;
+    uint bColCount;
+} config;
+
+layout(set = 0, binding = 1) readonly buffer MatrixA
+{
     float data[];
 } matrixA;
 
-layout(set = 0, binding = 1) readonly buffer MatrixB
+layout(set = 0, binding = 2) readonly buffer MatrixB
 {
-    uint rowCount;
-    uint colCount;
     float data[];
 } matrixB;
 
-layout(set = 0, binding = 2) writeonly buffer MatrixC
+layout(set = 0, binding = 3) writeonly buffer MatrixC
 {
     float data[];
 } matrixC;
@@ -25,8 +29,8 @@ void main()
     const uint outRow = gl_GlobalInvocationID.x;
     const uint outCol = gl_GlobalInvocationID.y;
 
-    const uint outRowCount = matrixA.rowCount;
-    const uint outColCount = matrixB.colCount;
+    const uint outRowCount = config.aRowCount;
+    const uint outColCount = config.bColCount;
     
     // ASSERT: matrixA.colCount == matrixB.rowCount;
 
@@ -37,10 +41,10 @@ void main()
     // Matrix multiplication A * B
     float dotProduct = 0.0;
     
-    for (uint i = 0; i < matrixB.rowCount; i++)
+    for (uint i = 0; i < config.bRowCount; i++)
     {
-        float leftVal = matrixA.data[outRow * matrixA.colCount + i];
-        float rightVal = matrixB.data[i * matrixB.colCount + outCol];
+        float leftVal = matrixA.data[outRow * config.aColCount + i];
+        float rightVal = matrixB.data[i * config.bColCount + outCol];
         dotProduct += leftVal * rightVal;
     }
 

@@ -9,7 +9,7 @@ namespace en::vk
 	class Matrix
 	{
 	public:
-		Matrix(size_t rowCount, size_t colCount, float diagonal = NAN);
+		Matrix(uint32_t rowCount, uint32_t colCount, float diagonal = NAN);
 		Matrix(const std::vector<std::vector<float>>& values);
 
 		Matrix operator+(const Matrix& other) const;
@@ -17,20 +17,22 @@ namespace en::vk
 
 		void Destroy();
 
-		size_t GetRowCount() const;
-		size_t GetColCount() const;
-		size_t GetMemorySize() const;
-		size_t GetLinearIndex(size_t row, size_t col) const;
-		float GetValue(size_t row, size_t col) const;
+		void CopyToDevice();
+		void CopyToHost();
+
+		uint32_t GetRowCount() const;
+		uint32_t GetColCount() const;
+		uint32_t GetLinearIndex(uint32_t row, uint32_t col) const;
+		float GetValue(uint32_t row, uint32_t col) const;
 		const float* GetData() const;
 		std::string ToString() const;
 
-		void SetValue(size_t row, size_t col, float value);
+		void SetValue(uint32_t row, uint32_t col, float value);
 
 	private:
-		size_t m_RowCount;
-		size_t m_ColCount;
-		size_t m_MemorySize;
+		uint32_t m_RowCount;
+		uint32_t m_ColCount;
+		uint32_t m_MemorySize;
 		float* m_HostMemory;
 		vk::Buffer m_Buffer;
 	};
