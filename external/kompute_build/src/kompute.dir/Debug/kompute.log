@@ -1,0 +1,32 @@
+﻿  Building Custom Rule C:/Users/JS/source/repos/NRC-HPM-Renderer/external/kompute/src/CMakeLists.txt
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.31.31107 for x64
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  cl /c /I"C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include" /I"C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\single_include" /IC:\VulkanSDK\1.3.204.1\Include /I"C:\Users\JS\git\vcpkg\installed\x64-windows\include" /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D DEBUG=1 /D USE_DEBUG_EXTENTIONS /D FMT_LOCALE /D FMT_SHARED /D "CMAKE_INTDIR=\"Debug\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++14 /Fo"kompute.dir\Debug\\" /Fd"C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute_build\src\Debug\kompute.pdb" /external:W3 /Gd /TP /errorReport:prompt "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Algorithm.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Manager.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\OpAlgoDispatch.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\OpMemoryBarrier.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\OpTensorCopy.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\OpTensorSyncDevice.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\OpTensorSyncLocal.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Sequence.cpp" "C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Tensor.cpp"
+  Algorithm.cpp
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Algorithm.cpp(157,75): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Algorithm.cpp(197,55): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+  Manager.cpp
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Manager.cpp(181,41): warning C4996: 'getenv': This function or variable may be unsafe. Consider using _dupenv_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Manager.cpp(295,50): warning C4267: 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Manager.cpp(395,64): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Tensor.hpp(310,1): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Tensor.hpp(299): message : while compiling class template member function 'kp::TensorT<float>::TensorT(std::shared_ptr<vk::PhysicalDevice>,std::shared_ptr<vk::Device>,const std::vector<float,std::allocator<float>> &,const kp::Tensor::TensorTypes &)'
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Manager.hpp(87): message : see reference to function template instantiation 'kp::TensorT<float>::TensorT(std::shared_ptr<vk::PhysicalDevice>,std::shared_ptr<vk::Device>,const std::vector<float,std::allocator<float>> &,const kp::Tensor::TensorTypes &)' being compiled
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Manager.hpp(87): message : see reference to class template instantiation 'kp::TensorT<float>' being compiled
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Manager.hpp(101): message : see reference to function template instantiation 'std::shared_ptr<kp::TensorT<float>> kp::Manager::tensorT<float>(const std::vector<float,std::allocator<float>> &,kp::Tensor::TensorTypes)' being compiled
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Algorithm.hpp(99,1): warning C4267: 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Algorithm.hpp(57): message : see reference to function template instantiation 'void kp::Algorithm::rebuild<float,float>(const std::vector<std::shared_ptr<kp::Tensor>,std::allocator<std::shared_ptr<kp::Tensor>>> &,const std::vector<uint32_t,std::allocator<uint32_t>> &,const kp::Workgroup &,const std::vector<float,std::allocator<float>> &,const std::vector<float,std::allocator<float>> &)' being compiled
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Manager.hpp(183): message : see reference to function template instantiation 'kp::Algorithm::Algorithm<float,float>(std::shared_ptr<vk::Device>,const std::vector<std::shared_ptr<kp::Tensor>,std::allocator<std::shared_ptr<kp::Tensor>>> &,const std::vector<uint32_t,std::allocator<uint32_t>> &,const kp::Workgroup &,const std::vector<float,std::allocator<float>> &,const std::vector<float,std::allocator<float>> &)' being compiled
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Manager.hpp(149): message : see reference to function template instantiation 'std::shared_ptr<kp::Algorithm> kp::Manager::algorithm<float,float>(const std::vector<std::shared_ptr<kp::Tensor>,std::allocator<std::shared_ptr<kp::Tensor>>> &,const std::vector<uint32_t,std::allocator<uint32_t>> &,const kp::Workgroup &,const std::vector<float,std::allocator<float>> &,const std::vector<float,std::allocator<float>> &)' being compiled
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\include\kompute/Algorithm.hpp(114,1): warning C4267: 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
+  OpAlgoDispatch.cpp
+  OpMemoryBarrier.cpp
+  OpTensorCopy.cpp
+  OpTensorSyncDevice.cpp
+  OpTensorSyncLocal.cpp
+  Sequence.cpp
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Sequence.cpp(294,35): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute\src\Sequence.cpp(386,68): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+  Tensor.cpp
+  Generating Code...
+  kompute.vcxproj -> C:\Users\JS\source\repos\NRC-HPM-Renderer\external\kompute_build\src\Debug\kompute.lib

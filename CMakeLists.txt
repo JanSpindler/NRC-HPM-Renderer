@@ -18,9 +18,18 @@ target_include_directories(${PROJECT_NAME} PUBLIC "include")
 
 # Dependencies
 
+# It is necessary to pass the DEBUG or RELEASE flag accordingly to Kompute
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=1 ${KOMPUTE_EXTRA_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DRELEASE=1 ${KOMPUTE_EXTRA_CXX_FLAGS}")
+
+# Kompute
+add_subdirectory("external/kompute" ${CMAKE_CURRENT_BINARY_DIR}/external/kompute_build)
+target_link_libraries(${PROJECT_NAME} PRIVATE kompute::kompute)
+include_directories("external/kompute/single_include")
+
 # Vulkan
 find_package(Vulkan REQUIRED)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 
 # GLFW

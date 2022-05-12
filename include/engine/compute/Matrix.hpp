@@ -11,6 +11,7 @@ namespace en::vk
 	public:
 		Matrix(uint32_t rowCount, uint32_t colCount, float diagonal = NAN);
 		Matrix(const std::vector<std::vector<float>>& values);
+		~Matrix();
 
 		Matrix operator+(const Matrix& other) const;
 		Matrix operator*(const Matrix& other) const;
@@ -35,7 +36,7 @@ namespace en::vk
 		uint32_t m_RowCount;
 		uint32_t m_ColCount;
 		uint32_t m_MemorySize;
-		float* m_HostMemory;
+		float* m_HostMemory = nullptr;
 		vk::Buffer m_Buffer;
 	};
 }

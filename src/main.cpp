@@ -17,6 +17,7 @@
 #include <engine/compute/Matrix.hpp>
 #include <engine/compute/Matmul.hpp>
 #include <mnist/mnist_reader.hpp>
+#include <kompute/Kompute.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -243,12 +244,19 @@ void TestNN()
 	en::Log::Info("Number of training labels = " + std::to_string(dataset.training_labels.size()));
 	en::Log::Info("Number of test images = " + std::to_string(dataset.test_images.size()));
 	en::Log::Info("Number of test labels = " + std::to_string(dataset.test_labels.size()));
+
+	// Kompute
+	kp::Manager mgr;
+
+	auto tensorInA = mgr.tensor({ 2.0, 4.0, 6.0 });
+	auto tensorInB = mgr.tensor({ 0.0, 1.0, 2.0 });
+	auto tensorOut = mgr.tensor({ 0.0, 0.0, 0.0 });
 }
 
 int main()
 {
-	TestNN();
 	//RunNrcHpm();
+	TestNN();
 
 	return 0;
 }
