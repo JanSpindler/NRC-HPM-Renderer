@@ -23,7 +23,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=1 ${KOMPUTE_EXTRA_CX
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DRELEASE=1 ${KOMPUTE_EXTRA_CXX_FLAGS}")
 
 # Kompute
-add_subdirectory("external/kompute" ${CMAKE_CURRENT_BINARY_DIR}/external/kompute_build)
+add_subdirectory("external/kompute")
 target_link_libraries(${PROJECT_NAME} PRIVATE kompute::kompute)
 include_directories("external/kompute/single_include")
 
