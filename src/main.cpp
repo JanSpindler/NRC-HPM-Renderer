@@ -16,6 +16,7 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/compute/Matrix.hpp>
 #include <engine/compute/Matmul.hpp>
+#include <mnist/mnist_reader.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -97,7 +98,7 @@ void SwapchainResizeCallback()
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
 }
 
-int main()
+void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
 	uint32_t width = 600;
@@ -128,9 +129,9 @@ int main()
 	en::Sun sun(-1.57f, 0.0f, glm::vec3(1.0f));
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
-	
+
 	pathTracer = new en::DensityPathTracer(width, height, &camera, &volumeData, &sun);
-	
+
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
 
@@ -139,15 +140,15 @@ int main()
 	en::NeuralRadianceCache nrc;
 
 	// Test compute
-	std::vector<std::vector<float>> matVals = { 
+	std::vector<std::vector<float>> matVals = {
 		{ 1.0f, 0.0f, 0.0f },
 		{ 0.0f, 1.0f, 0.0f },
 		{ 0.0f, 0.0f, 1.0f } };
 	en::vk::Matrix testMat1(matVals);
 	en::Log::Info(testMat1.ToString());
 
-	matVals = { 
-		{ 1.0f }, 
+	matVals = {
+		{ 1.0f },
 		{ 0.5f },
 		{ 0.25f } };
 	en::vk::Matrix testMat2(matVals);
@@ -171,7 +172,7 @@ int main()
 
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
-		
+
 		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
 		uint32_t fps = en::Time::GetFps();
 		en::Input::HandleUserCamInput(&camera, deltaTime);
@@ -187,7 +188,7 @@ int main()
 		ASSERT_VULKAN(result);
 
 		en::ImGuiRenderer::StartFrame();
-		
+
 		volumeData.RenderImGui();
 		volumeData.Update(camera.HasChanged());
 		sun.RenderImgui();
@@ -205,7 +206,7 @@ int main()
 	testMat1.Destroy();
 	testMat2.Destroy();
 	testMat3.Destroy();
-	
+
 	density3DTex.Destroy();
 
 	volumeData.Destroy();
@@ -225,6 +226,29 @@ int main()
 	en::Window::Shutdown();
 
 	en::Log::Info("Ending " + appName);
+}
+
+void TestNN()
+{
+	en::Log::Info("Testing Neural Network");
+
+	// Mnist
+	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> dataset =
+		mnist::read_dataset<std::vector, std::vector, uint8_t>("data/mnist");
+
+	dataset.resize_training(20000);
+	dataset.resize_test(5000);
+
+	en::Log::Info("Number of training images = " + std::to_string(dataset.training_images.size()));
+	en::Log::Info("Number of training labels = " + std::to_string(dataset.training_labels.size()));
+	en::Log::Info("Number of test images = " + std::to_string(dataset.test_images.size()));
+	en::Log::Info("Number of test labels = " + std::to_string(dataset.test_labels.size()));
+}
+
+int main()
+{
+	TestNN();
+	//RunNrcHpm();
 
 	return 0;
 }
