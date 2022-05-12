@@ -3,6 +3,7 @@
 #include <engine/graphics/vulkan/Texture3D.hpp>
 #include <glm/glm.hpp>
 #include <engine/graphics/vulkan/Buffer.hpp>
+#include <engine/graphics/Camera.hpp>
 
 namespace en
 {
@@ -27,7 +28,7 @@ namespace en
 
 		VolumeData(const vk::Texture3D* densityTex);
 
-		void Update();
+		void Update(bool cameraChanged);
 		void Destroy();
 
 		void RenderImGui();

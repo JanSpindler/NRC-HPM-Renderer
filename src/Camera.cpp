@@ -80,6 +80,7 @@ namespace en
 		m_Pos(pos),
 		m_ViewDir(glm::normalize(viewDir)),
 		m_Up(glm::normalize(up)),
+		m_Changed(false),
 		m_AspectRatio(aspectRatio),
 		m_Fov(fov),
 		m_NearPlane(nearPlane),
@@ -219,6 +220,16 @@ namespace en
 	void Camera::SetUp(const glm::vec3& up)
 	{
 		m_Up = glm::normalize(up);
+	}
+
+	bool Camera::HasChanged() const
+	{
+		return m_Changed;
+	}
+
+	void Camera::SetChanged(bool changed)
+	{
+		m_Changed = changed;
 	}
 
 	float Camera::GetAspectRatio() const

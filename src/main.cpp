@@ -140,16 +140,16 @@ int main()
 
 	// Test compute
 	std::vector<std::vector<float>> matVals = { 
-		{ 1.0f, 0.0f, 0.0f }, 
-		{ 0.0f, 1.0f, 0.0f }, 
+		{ 1.0f, 0.0f, 0.0f },
+		{ 0.0f, 1.0f, 0.0f },
 		{ 0.0f, 0.0f, 1.0f } };
 	en::vk::Matrix testMat1(matVals);
 	en::Log::Info(testMat1.ToString());
 
 	matVals = { 
 		{ 1.0f }, 
-		{ 1.0f },
-		{ 0.4f } };
+		{ 0.5f },
+		{ 0.25f } };
 	en::vk::Matrix testMat2(matVals);
 	en::Log::Info(testMat2.ToString());
 
@@ -189,7 +189,7 @@ int main()
 		en::ImGuiRenderer::StartFrame();
 		
 		volumeData.RenderImGui();
-		volumeData.Update();
+		volumeData.Update(camera.HasChanged());
 		sun.RenderImgui();
 
 		en::ImGuiRenderer::EndFrame(graphicsQueue);

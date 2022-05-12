@@ -39,6 +39,9 @@ namespace en
 		const glm::vec3& GetUp() const;
 		void SetUp(const glm::vec3& up);
 
+		bool HasChanged() const;
+		void SetChanged(bool changed);
+
 		float GetAspectRatio() const;
 		void SetAspectRatio(float aspectRatio);
 		void SetAspectRatio(uint32_t width, uint32_t height);
@@ -61,6 +64,8 @@ namespace en
 		glm::vec3 m_Pos;
 		glm::vec3 m_ViewDir;
 		glm::vec3 m_Up;
+
+		bool m_Changed;
 
 		float m_AspectRatio;
 		float m_Fov;

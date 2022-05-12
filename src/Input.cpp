@@ -48,6 +48,8 @@ namespace en
 
     void Input::HandleUserCamInput(Camera* cam, float deltaTime)
     {
+        bool cameraChanged = false;
+
         // Mouse input handling
         bool mouseRightPressed = en::Input::IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
         en::Window::EnableCursor(!mouseRightPressed);
@@ -55,6 +57,9 @@ namespace en
         {
             glm::vec2 mouseMove = 0.005f * -en::Input::GetMouseMove();
             cam->RotateViewDir(mouseMove.x, mouseMove.y);
+
+            if (mouseMove != glm::vec2(0.0f, 0.0f))
+                cameraChanged = true;
         }
 
         // Keyboard input handling
@@ -83,6 +88,11 @@ namespace en
             camMove *= 10.0f;
 
         if (camMove != glm::vec3(0.f, 0.f, 0.f))
+        {
             cam->Move(camMove);
+            cameraChanged = true;
+        }
+
+        cam->SetChanged(cameraChanged);
     }
 }
