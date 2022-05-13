@@ -17,6 +17,7 @@
 #include <engine/compute/Matrix.hpp>
 #include <mnist/mnist_reader.hpp>
 #include <kompute/Kompute.hpp>
+#include <engine/compute/Matmul.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -241,56 +242,6 @@ void TestNN()
 	// Kompute
 	kp::Manager mgr;
 
-	std::string shader(R"(
-        // The version to use 
-        #version 450
-
-		// Push constants
-		layout(push_constant) uniform PushConstants
-		{
-            uint leftRowCount;
-			uint leftColCount;
-			uint rightRowCount;
-			uint rightColCount;
-        } config;
-
-        // The buffers are provided via the tensors
-        layout(binding = 0) readonly buffer MatLeft { float matLeft[]; };
-        layout(binding = 1) readonly buffer MatRight { float matRight[]; };
-        layout(binding = 2) writeonly buffer MatResult { float matResult[]; };
-
-        void main()
-		{
-			// Get row / col / counts
-			const uint outRow = gl_GlobalInvocationID.x;
-			const uint outCol = gl_GlobalInvocationID.y;
-
-			const uint outRowCount = config.leftRowCount;
-			const uint outColCount = config.rightColCount;
-
-			// ASSERT: matLeft.colCount == matRight.rowCount;
-
-			// Check row and col
-			if (outRow >= outRowCount || outCol >= outColCount)
-			{
-			    return;
-			}
-
-			// Matrix multiplication A * B
-			float dotProduct = 0.0;
-			
-			for (uint i = 0; i < config.rightRowCount; i++)
-			{
-			    float leftVal = matLeft[outRow * config.leftColCount + i];
-			    float rightVal = matRight[i * config.rightColCount + outCol];
-			    dotProduct += leftVal * rightVal;
-			}
-
-			uint outIndex = outRow * outColCount + outCol;
-			matResult[outIndex] = dotProduct;
-        }
-      )");
-
 	//en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
 	//en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
 	//en::Matrix matC(mgr, 8, 1);
@@ -301,25 +252,16 @@ void TestNN()
 
 	std::vector<std::shared_ptr<kp::Tensor>> params = { matA.GetTensor(), matB.GetTensor(), matC.GetTensor()};
 
-	struct MatmulConfig
-	{
-		uint32_t leftRowCount;
-		uint32_t leftColCount;
-		uint32_t rightRowCount;
-		uint32_t rightColCount;
-	};
-
-	std::shared_ptr<kp::Algorithm> algo = mgr.algorithm<float, MatmulConfig>(
+	std::shared_ptr<kp::Algorithm> algo = mgr.algorithm<float, en::Matmul::Config>(
 		params,
-		compileSource(shader),
+		en::Matmul::GetShaderSpirV(),
 		{ matA.GetRowCount(), matB.GetColCount(), 1 },
 		{},
 		{ { 1, 1, 1, 1 } });
 
 	mgr.sequence()
 		->record<kp::OpTensorSyncDevice>(params)
-		->record<kp::OpAlgoDispatch>(algo, std::vector<MatmulConfig>{
-			{ matA.GetRowCount(), matA.GetColCount(), matB.GetRowCount(), matB.GetColCount() } })
+		->record<kp::OpAlgoDispatch>(algo, std::vector<en::Matmul::Config>{ en::Matmul::GetConfig(matA, matB) })
 		->record<kp::OpTensorSyncLocal>(params)
 		->eval();
 
