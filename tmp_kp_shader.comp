@@ -2,17 +2,48 @@
         // The version to use 
         #version 450
 
-        // The execution structure
-        layout (local_size_x = 1) in;
+		// Push constants
+		layout(push_constant) uniform PushConstants
+		{
+            uint leftRowCount;
+			uint leftColCount;
+			uint rightRowCount;
+			uint rightColCount;
+        } config;
 
         // The buffers are provided via the tensors
-        layout(binding = 0) buffer bufA { float a[]; };
-        layout(binding = 1) buffer bufB { float b[]; };
-        layout(binding = 2) buffer bufOut { float o[]; };
+        layout(binding = 0) readonly buffer MatLeft { float matLeft[]; };
+        layout(binding = 1) readonly buffer MatRight { float matRight[]; };
+        layout(binding = 2) writeonly buffer MatResult { float matResult[]; };
 
-        void main() {
-            uint index = gl_GlobalInvocationID.x;
+        void main()
+		{
+			// Get row / col / counts
+			const uint outRow = gl_GlobalInvocationID.x;
+			const uint outCol = gl_GlobalInvocationID.y;
 
-            o[index] = a[index] * b[index];
+			const uint outRowCount = config.leftRowCount;
+			const uint outColCount = config.rightColCount;
+
+			// ASSERT: matLeft.colCount == matRight.rowCount;
+
+			// Check row and col
+			if (outRow >= outRowCount || outCol >= outColCount)
+			{
+			    return;
+			}
+
+			// Matrix multiplication A * B
+			float dotProduct = 0.0;
+			
+			for (uint i = 0; i < config.rightRowCount; i++)
+			{
+			    float leftVal = matLeft[outRow * config.leftColCount + i];
+			    float rightVal = matRight[i * config.rightColCount + outCol];
+			    dotProduct += leftVal * rightVal;
+			}
+
+			uint outIndex = outRow * outColCount + outCol;
+			matResult[outIndex] = dotProduct;
         }
       

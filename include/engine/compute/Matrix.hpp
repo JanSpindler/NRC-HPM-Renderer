@@ -1,42 +1,36 @@
 #pragma once
 
-#include <engine/graphics/vulkan/Buffer.hpp>
-#include <string>
-#include <vector>
+#include <kompute/Kompute.hpp>
 
-namespace en::vk
+namespace en
 {
 	class Matrix
 	{
 	public:
-		Matrix(uint32_t rowCount, uint32_t colCount, float diagonal = NAN);
-		Matrix(const std::vector<std::vector<float>>& values);
-		~Matrix();
+		enum class FillType
+		{
+			None = 0,
+			Diagonal = 1,
+			All = 2,
+		};
 
-		Matrix operator+(const Matrix& other) const;
-		Matrix operator*(const Matrix& other) const;
-
-		void Destroy();
-
-		void CopyToDevice();
-		void CopyToHost();
+		Matrix(kp::Manager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType = FillType::None, float value = 0.0f);
 
 		uint32_t GetRowCount() const;
 		uint32_t GetColCount() const;
-		uint32_t GetMemorySize() const;
-		uint32_t GetLinearIndex(uint32_t row, uint32_t col) const;
-		float GetValue(uint32_t row, uint32_t col) const;
-		const float* GetData() const;
-		std::string ToString() const;
-		VkBuffer GetBufferVulkanHandle() const;
-
-		void SetValue(uint32_t row, uint32_t col, float value);
+		std::shared_ptr<kp::Tensor> GetTensor();
+		std::vector<float> GetDataVector() const;
 
 	private:
 		uint32_t m_RowCount;
 		uint32_t m_ColCount;
-		uint32_t m_MemorySize;
-		float* m_HostMemory = nullptr;
-		vk::Buffer m_Buffer;
+		uint32_t m_ElementCount;
+		uint32_t m_DataSize;
+		float* m_Data;
+		std::shared_ptr<kp::Tensor> m_Tensor;
+
+		uint32_t GetLinearIndex(uint32_t row, uint32_t col) const;
+		float GetValue(uint32_t row, uint32_t col) const;
+		void SetValue(uint32_t row, uint32_t col, float value);
 	};
 }

@@ -15,7 +15,6 @@
 #include <engine/graphics/Sun.hpp>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/compute/Matrix.hpp>
-#include <engine/compute/Matmul.hpp>
 #include <mnist/mnist_reader.hpp>
 #include <kompute/Kompute.hpp>
 
@@ -140,26 +139,6 @@ void RunNrcHpm()
 
 	en::NeuralRadianceCache nrc;
 
-	// Test compute
-	std::vector<std::vector<float>> matVals = {
-		{ 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f },
-		{ 0.0f, 0.0f, 1.0f } };
-	en::vk::Matrix testMat1(matVals);
-	en::Log::Info(testMat1.ToString());
-
-	matVals = {
-		{ 1.0f },
-		{ 0.5f },
-		{ 0.25f } };
-	en::vk::Matrix testMat2(matVals);
-	en::Log::Info(testMat2.ToString());
-
-	//en::vk::Matrix testMat3 = testMat1 * testMat2;
-	en::vk::Matrix testMat3(testMat1.GetRowCount(), testMat2.GetColCount());
-	en::vk::Matmul::Execute(&testMat1, &testMat2, &testMat3);
-	en::Log::Info(testMat3.ToString());
-
 	// Main loop
 	VkDevice device = en::VulkanAPI::GetDevice();
 	VkQueue graphicsQueue = en::VulkanAPI::GetGraphicsQueue();
@@ -204,10 +183,6 @@ void RunNrcHpm()
 	ASSERT_VULKAN(result);
 
 	// End
-	testMat1.Destroy();
-	testMat2.Destroy();
-	testMat3.Destroy();
-
 	density3DTex.Destroy();
 
 	volumeData.Destroy();
@@ -266,45 +241,108 @@ void TestNN()
 	// Kompute
 	kp::Manager mgr;
 
-	auto tensorInA = mgr.tensor({ 2.0, 4.0, 6.0 });
-	auto tensorInB = mgr.tensor({ 0.0, 1.0, 2.0 });
-	auto tensorOut = mgr.tensor({ 0.0, 0.0, 0.0 });
-
 	std::string shader(R"(
         // The version to use 
         #version 450
 
-        // The execution structure
-        layout (local_size_x = 1) in;
+		// Push constants
+		layout(push_constant) uniform PushConstants
+		{
+            uint leftRowCount;
+			uint leftColCount;
+			uint rightRowCount;
+			uint rightColCount;
+        } config;
 
         // The buffers are provided via the tensors
-        layout(binding = 0) buffer bufA { float a[]; };
-        layout(binding = 1) buffer bufB { float b[]; };
-        layout(binding = 2) buffer bufOut { float o[]; };
+        layout(binding = 0) readonly buffer MatLeft { float matLeft[]; };
+        layout(binding = 1) readonly buffer MatRight { float matRight[]; };
+        layout(binding = 2) writeonly buffer MatResult { float matResult[]; };
 
-        void main() {
-            uint index = gl_GlobalInvocationID.x;
+        void main()
+		{
+			// Get row / col / counts
+			const uint outRow = gl_GlobalInvocationID.x;
+			const uint outCol = gl_GlobalInvocationID.y;
 
-            o[index] = a[index] * b[index];
+			const uint outRowCount = config.leftRowCount;
+			const uint outColCount = config.rightColCount;
+
+			// ASSERT: matLeft.colCount == matRight.rowCount;
+
+			// Check row and col
+			if (outRow >= outRowCount || outCol >= outColCount)
+			{
+			    return;
+			}
+
+			// Matrix multiplication A * B
+			float dotProduct = 0.0;
+			
+			for (uint i = 0; i < config.rightRowCount; i++)
+			{
+			    float leftVal = matLeft[outRow * config.leftColCount + i];
+			    float rightVal = matRight[i * config.rightColCount + outCol];
+			    dotProduct += leftVal * rightVal;
+			}
+
+			uint outIndex = outRow * outColCount + outCol;
+			matResult[outIndex] = dotProduct;
         }
       )");
 
-	std::vector<std::shared_ptr<kp::Tensor>> params = { tensorInA,
-														tensorInB,
-														tensorOut };
+	en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
+	en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
+	en::Matrix matC(mgr, 8, 1);
 
-	std::shared_ptr<kp::Algorithm> algo =
-		mgr.algorithm(params, compileSource(shader));
+	std::vector<std::shared_ptr<kp::Tensor>> params = { matA.GetTensor(), matB.GetTensor(), matC.GetTensor()};
+
+	struct MatmulConfig
+	{
+		uint32_t leftRowCount;
+		uint32_t leftColCount;
+		uint32_t rightRowCount;
+		uint32_t rightColCount;
+	};
+
+	std::shared_ptr<kp::Algorithm> algo = mgr.algorithm<float, MatmulConfig>(
+		params,
+		compileSource(shader),
+		{ matA.GetRowCount(), matB.GetColCount(), 1 },
+		{},
+		{ { 1, 1, 1, 1 } });
 
 	mgr.sequence()
 		->record<kp::OpTensorSyncDevice>(params)
-		->record<kp::OpAlgoDispatch>(algo)
+		->record<kp::OpAlgoDispatch>(algo, std::vector<MatmulConfig>{
+			{ matA.GetRowCount(), matA.GetColCount(), matB.GetRowCount(), matB.GetColCount() } })
 		->record<kp::OpTensorSyncLocal>(params)
 		->eval();
 
-	// prints "Output {  0  4  12  }"
+	// prints output
+	std::vector<float> vectorOut = matA.GetDataVector();
+
 	std::cout << "Output: {  ";
-	for (const float& elem : tensorOut->vector()) {
+	for (const float& elem : vectorOut)
+	{
+		std::cout << elem << "  ";
+	}
+	std::cout << "}" << std::endl;
+
+	vectorOut = matB.GetDataVector();
+
+	std::cout << "Output: {  ";
+	for (const float& elem : vectorOut)
+	{
+		std::cout << elem << "  ";
+	}
+	std::cout << "}" << std::endl;
+
+	vectorOut = matC.GetDataVector();
+
+	std::cout << "Output: {  ";
+	for (const float& elem : vectorOut)
+	{
 		std::cout << elem << "  ";
 	}
 	std::cout << "}" << std::endl;

@@ -1,123 +1,35 @@
 #include <engine/compute/Matrix.hpp>
+#include <engine/util/Log.hpp>
 
-namespace en::vk
+namespace en
 {
-	Matrix::Matrix(uint32_t rowCount, uint32_t colCount, float diagonal) :
+	Matrix::Matrix(kp::Manager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType, float value) :
 		m_RowCount(rowCount),
 		m_ColCount(colCount),
-		m_MemorySize(rowCount* colCount * sizeof(float)),
-		m_HostMemory(reinterpret_cast<float*>(malloc(m_MemorySize))),
-		m_Buffer(
-			m_MemorySize,
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // TODO: device only memory functionality
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			{})
+		m_ElementCount(rowCount * colCount),
+		m_DataSize(m_ElementCount * sizeof(float)),
+		m_Data(reinterpret_cast<float*>(malloc(m_DataSize)))
 	{
-		if (!isnan(diagonal))
+		if (fillType == FillType::Diagonal)
 		{
 			for (uint32_t row = 0; row < m_RowCount; row++)
 			{
 				for (uint32_t col = 0; col < m_ColCount; col++)
 				{
-					float value = row == col ? diagonal : 0.0f;
-					SetValue(row, col, value);
+					float setValue = row == col ? value : 0.0f;
+					SetValue(row, col, setValue);
 				}
 			}
 		}
-	}
-
-	Matrix::Matrix(const std::vector<std::vector<float>>& values) :
-		m_RowCount(values.size()),
-		m_ColCount(values[0].size()),
-		m_MemorySize(m_RowCount * m_ColCount * sizeof(float)),
-		m_HostMemory(reinterpret_cast<float*>(malloc(m_MemorySize))),
-		m_Buffer(
-			m_MemorySize,
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // TODO: device only memory functionality
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			{})
-	{
-		for (uint32_t row = 0; row < m_RowCount; row++)
+		else if (fillType == FillType::All)
 		{
-			for (uint32_t col = 0; col < m_ColCount; col++)
+			for (uint32_t i = 0; i < m_ElementCount; i++)
 			{
-				SetValue(row, col, values[row][col]);
-			}
-		}
-	}
-
-	Matrix::~Matrix()
-	{
-		Destroy();
-	}
-
-	Matrix Matrix::operator+(const Matrix& other) const
-	{
-		// Check size
-		if (m_RowCount != other.m_RowCount || m_ColCount != other.m_ColCount)
-			Log::Error("Matrix addition requires equal size", true);
-
-		// Create new matrix
-		Matrix result(m_RowCount, m_ColCount);
-		for (uint32_t row = 0; row < m_RowCount; row++)
-		{
-			for (uint32_t col = 0; col < m_ColCount; col++)
-			{
-				float value = GetValue(row, col) + other.GetValue(row, col);
-				result.SetValue(row, col, value);
+				m_Data[i] = value;
 			}
 		}
 
-		return result;
-	}
-
-	Matrix Matrix::operator*(const Matrix& other) const
-	{
-		// Check size
-		if (m_ColCount != other.m_RowCount)
-			Log::Error("Matrix sizes not fit for Matrix multiplication", true);
-
-		// Create new matrix
-		Matrix result(m_RowCount, other.m_ColCount);
-		
-		for (uint32_t row = 0; row < m_RowCount; row++)
-		{
-			for (uint32_t col = 0; col < other.m_ColCount; col++)
-			{
-				float dotProduct = 0.0f;
-
-				for (uint32_t oldCounter = 0; oldCounter < other.m_RowCount; oldCounter++)
-				{
-					float leftVal = GetValue(row, oldCounter);
-					float rightVal = other.GetValue(oldCounter, col);
-					dotProduct += leftVal * rightVal;
-				}
-
-				result.SetValue(row, col, dotProduct);
-			}
-		}
-
-		return result;
-	}
-
-	void Matrix::Destroy()
-	{
-		if (m_HostMemory != nullptr)
-		{
-			m_Buffer.Destroy();
-			free(m_HostMemory);
-			m_HostMemory = nullptr;
-		}
-	}
-
-	void Matrix::CopyToDevice()
-	{
-		m_Buffer.SetData(m_MemorySize, m_HostMemory, 0, 0);
-	}
-
-	void Matrix::CopyToHost()
-	{
-		m_Buffer.GetData(m_MemorySize, m_HostMemory, 0, 0);
+		m_Tensor = manager.tensor(m_Data, m_ElementCount, sizeof(float), kp::Tensor::TensorDataTypes::eFloat);
 	}
 
 	uint32_t Matrix::GetRowCount() const
@@ -130,58 +42,32 @@ namespace en::vk
 		return m_ColCount;
 	}
 
-	uint32_t Matrix::GetMemorySize() const
+	std::shared_ptr<kp::Tensor> Matrix::GetTensor()
 	{
-		return m_MemorySize;
+		return m_Tensor;
 	}
 
-	const float* Matrix::GetData() const
+	std::vector<float> Matrix::GetDataVector() const
 	{
-		return m_HostMemory;
+		return m_Tensor->vector<float>();
+		//return { m_Data, m_Data + m_ElementCount };
 	}
 
 	uint32_t Matrix::GetLinearIndex(uint32_t row, uint32_t col) const
 	{
 		if (row >= m_RowCount || col >= m_ColCount)
-			Log::Error("Matrix[row, col] is outside of matrix memory", true);
+			Log::Error("row or col too large for this Matrix", true);
 
-		return m_ColCount * row + col;
+		return row * m_ColCount + col;
 	}
 
 	float Matrix::GetValue(uint32_t row, uint32_t col) const
 	{
-		return m_HostMemory[GetLinearIndex(row, col)];
-	}
-
-	std::string Matrix::ToString() const
-	{
-		std::string str = "[";
-
-		for (uint32_t row = 0; row < m_RowCount; row++)
-		{
-			str += "[";
-			
-			for (uint32_t col = 0; col < m_ColCount; col++)
-			{
-				str += std::to_string(GetValue(row, col));
-				str += col == m_ColCount - 1 ? "" : ", ";
-			}
-
-			str += row == m_RowCount - 1 ? "]" : "], ";
-		}
-
-		str += "]";
-
-		return str;
-	}
-
-	VkBuffer Matrix::GetBufferVulkanHandle() const
-	{
-		return m_Buffer.GetVulkanHandle();
+		return m_Data[GetLinearIndex(row, col)];
 	}
 
 	void Matrix::SetValue(uint32_t row, uint32_t col, float value)
 	{
-		m_HostMemory[GetLinearIndex(row, col)] = value;
+		m_Data[GetLinearIndex(row, col)] = value;
 	}
 }
