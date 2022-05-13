@@ -17,7 +17,7 @@
 #include <engine/compute/Matrix.hpp>
 #include <mnist/mnist_reader.hpp>
 #include <kompute/Kompute.hpp>
-#include <engine/compute/Matmul.hpp>
+#include <engine/compute/MatmulOp.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -205,24 +205,6 @@ void RunNrcHpm()
 	en::Log::Info("Ending " + appName);
 }
 
-static std::vector<uint32_t> compileSource(const std::string& source)
-{
-	std::ofstream fileOut("tmp_kp_shader.comp");
-	fileOut << source;
-	fileOut.close();
-	if (system(
-		std::string(
-			"glslangValidator -V tmp_kp_shader.comp -o tmp_kp_shader.comp.spv")
-		.c_str()))
-		throw std::runtime_error("Error running glslangValidator command");
-	std::ifstream fileStream("tmp_kp_shader.comp.spv", std::ios::binary);
-	std::vector<char> buffer;
-	buffer.insert(
-		buffer.begin(), std::istreambuf_iterator<char>(fileStream), {});
-	return { (uint32_t*)buffer.data(),
-			 (uint32_t*)(buffer.data() + buffer.size()) };
-}
-
 void TestNN()
 {
 	en::Log::Info("Testing Neural Network");
@@ -242,26 +224,28 @@ void TestNN()
 	// Kompute
 	kp::Manager mgr;
 
-	//en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
-	//en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
-	//en::Matrix matC(mgr, 8, 1);
+	en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
+	en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
+	en::Matrix matC(mgr, 8, 1);
 
-	en::Matrix matA(mgr, { { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.5f, 0.5f } });
-	en::Matrix matB(mgr, { { 1.0f }, { 0.5f } });
-	en::Matrix matC(mgr, 3, 1);
+	//en::Matrix matA(mgr, { { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.5f, 0.5f } });
+	//en::Matrix matB(mgr, { { 1.0f }, { 0.5f } });
+	//en::Matrix matC(mgr, 3, 1);
+
+	en::MatmulOp::Config matmulConfig = en::MatmulOp::GetConfig(matA, matB);
 
 	std::vector<std::shared_ptr<kp::Tensor>> params = { matA.GetTensor(), matB.GetTensor(), matC.GetTensor()};
 
-	std::shared_ptr<kp::Algorithm> algo = mgr.algorithm<float, en::Matmul::Config>(
+	std::shared_ptr<kp::Algorithm> algo = mgr.algorithm<float, en::MatmulOp::Config>(
 		params,
-		en::Matmul::GetShaderSpirV(),
-		{ matA.GetRowCount(), matB.GetColCount(), 1 },
+		en::MatmulOp::GetShaderSpirV(),
+		en::MatmulOp::GetWorkgroup(matmulConfig),
 		{},
-		{ { 1, 1, 1, 1 } });
+		{ { 0, 0, 0, 0 } });
 
 	mgr.sequence()
 		->record<kp::OpTensorSyncDevice>(params)
-		->record<kp::OpAlgoDispatch>(algo, std::vector<en::Matmul::Config>{ en::Matmul::GetConfig(matA, matB) })
+		->record<kp::OpAlgoDispatch>(algo, std::vector<en::MatmulOp::Config>{ matmulConfig })
 		->record<kp::OpTensorSyncLocal>(params)
 		->eval();
 

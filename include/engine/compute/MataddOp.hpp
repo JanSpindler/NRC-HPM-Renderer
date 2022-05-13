@@ -4,19 +4,17 @@
 
 namespace en
 {
-	// Matmul wraps helper functions for matrix multiplication using the Kompute library
-	class Matmul
+	class MataddOp
 	{
 	public:
 		struct Config
 		{
-			uint32_t leftRowCount;
-			uint32_t leftColCount;
-			uint32_t rightRowCount;
-			uint32_t rightColCount;
+			uint32_t rowCount;
+			uint32_t colCount;
 		};
 
 		static Config GetConfig(const Matrix& matLeft, const Matrix& matRight);
+		static kp::Workgroup GetWorkgroup(const Config& config);
 		static const std::vector<uint32_t>& GetShaderSpirV();
 
 	private:

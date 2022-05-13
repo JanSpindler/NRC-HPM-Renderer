@@ -1,10 +1,10 @@
-#include <engine/compute/Matmul.hpp>
+#include <engine/compute/MatmulOp.hpp>
 #include <engine/util/compile_shader.hpp>
 #include <engine/util/Log.hpp>
 
 namespace en
 {
-	std::string Matmul::m_ShaderCode = std::string(R"(
+	std::string MatmulOp::m_ShaderCode = std::string(R"(
         // The version to use 
         #version 450
 
@@ -54,10 +54,10 @@ namespace en
         }
       )");
 
-	std::vector<uint32_t> Matmul::m_ShaderSpirV;
-	bool Matmul::m_Compiled = false;
+	std::vector<uint32_t> MatmulOp::m_ShaderSpirV;
+	bool MatmulOp::m_Compiled = false;
 
-	Matmul::Config Matmul::GetConfig(const Matrix& matLeft, const Matrix& matRight)
+	MatmulOp::Config MatmulOp::GetConfig(const Matrix& matLeft, const Matrix& matRight)
 	{
 		// Check size for matrix multiplication
 		if (matLeft.GetColCount() != matRight.GetRowCount())
@@ -73,7 +73,12 @@ namespace en
 		return config;
 	}
 	
-	const std::vector<uint32_t>& Matmul::GetShaderSpirV()
+	kp::Workgroup MatmulOp::GetWorkgroup(const MatmulOp::Config& config)
+	{
+		return kp::Workgroup({ config.leftRowCount, config.rightColCount, 1 });
+	}
+
+	const std::vector<uint32_t>& MatmulOp::GetShaderSpirV()
 	{
 		if (!m_Compiled)
 		{
