@@ -32,6 +32,20 @@ namespace en
 		m_Tensor = manager.tensor(m_Data, m_ElementCount, sizeof(float), kp::Tensor::TensorDataTypes::eFloat);
 	}
 
+	Matrix::~Matrix()
+	{
+		if (m_Data != nullptr)
+		{
+			delete m_Data;
+			m_Data = nullptr;
+		}
+	}
+
+	void Matrix::SyncTensorToMatrix()
+	{
+		memcpy(m_Data, m_Tensor->rawData(), m_DataSize);
+	}
+
 	uint32_t Matrix::GetRowCount() const
 	{
 		return m_RowCount;
@@ -49,8 +63,31 @@ namespace en
 
 	std::vector<float> Matrix::GetDataVector() const
 	{
+		// TODO
 		return m_Tensor->vector<float>();
 		//return { m_Data, m_Data + m_ElementCount };
+	}
+
+	std::string Matrix::ToString() const
+	{
+		std::string str = "[";
+		for (uint32_t row = 0; row < m_RowCount; row++)
+		{
+			str += "[";
+			for (uint32_t col = 0; col < m_ColCount; col++)
+			{
+				str += std::to_string(GetValue(row, col));
+				
+				if (col < m_ColCount - 1)
+					str += ", ";
+			}
+			str += "]";
+
+			if (row < m_RowCount - 1)
+				str += ",\n";
+		}
+
+		return str;
 	}
 
 	uint32_t Matrix::GetLinearIndex(uint32_t row, uint32_t col) const

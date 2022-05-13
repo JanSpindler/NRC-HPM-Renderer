@@ -320,32 +320,14 @@ void TestNN()
 		->eval();
 
 	// prints output
-	std::vector<float> vectorOut = matA.GetDataVector();
+	matA.SyncTensorToMatrix();
+	en::Log::Info(matA.ToString());
 
-	std::cout << "Output: {  ";
-	for (const float& elem : vectorOut)
-	{
-		std::cout << elem << "  ";
-	}
-	std::cout << "}" << std::endl;
+	matB.SyncTensorToMatrix();
+	en::Log::Info(matB.ToString());
 
-	vectorOut = matB.GetDataVector();
-
-	std::cout << "Output: {  ";
-	for (const float& elem : vectorOut)
-	{
-		std::cout << elem << "  ";
-	}
-	std::cout << "}" << std::endl;
-
-	vectorOut = matC.GetDataVector();
-
-	std::cout << "Output: {  ";
-	for (const float& elem : vectorOut)
-	{
-		std::cout << elem << "  ";
-	}
-	std::cout << "}" << std::endl;
+	matC.SyncTensorToMatrix();
+	en::Log::Info(matC.ToString());
 }
 
 int main()
