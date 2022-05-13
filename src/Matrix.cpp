@@ -32,6 +32,24 @@ namespace en
 		m_Tensor = manager.tensor(m_Data, m_ElementCount, sizeof(float), kp::Tensor::TensorDataTypes::eFloat);
 	}
 
+	Matrix::Matrix(kp::Manager& manager, const std::vector<std::vector<float>> values) :
+		m_RowCount(values.size()),
+		m_ColCount(values[0].size()),
+		m_ElementCount(m_RowCount * m_ColCount),
+		m_DataSize(m_ElementCount * sizeof(float)),
+		m_Data(reinterpret_cast<float*>(malloc(m_DataSize)))
+	{
+		for (uint32_t row = 0; row < m_RowCount; row++)
+		{
+			for (uint32_t col = 0; col < m_ColCount; col++)
+			{
+				SetValue(row, col, values[row][col]);
+			}
+		}
+
+		m_Tensor = manager.tensor(m_Data, m_ElementCount, sizeof(float), kp::Tensor::TensorDataTypes::eFloat);
+	}
+
 	Matrix::~Matrix()
 	{
 		if (m_Data != nullptr)

@@ -16,6 +16,7 @@ namespace en
 		};
 
 		Matrix(kp::Manager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType = FillType::None, float value = 0.0f);
+		Matrix(kp::Manager& manager, const std::vector<std::vector<float>> values);
 		~Matrix();
 
 		void SyncTensorToMatrix();

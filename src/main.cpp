@@ -291,9 +291,13 @@ void TestNN()
         }
       )");
 
-	en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
-	en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
-	en::Matrix matC(mgr, 8, 1);
+	//en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
+	//en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
+	//en::Matrix matC(mgr, 8, 1);
+
+	en::Matrix matA(mgr, { { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.5f, 0.5f } });
+	en::Matrix matB(mgr, { { 1.0f }, { 0.5f } });
+	en::Matrix matC(mgr, 3, 1);
 
 	std::vector<std::shared_ptr<kp::Tensor>> params = { matA.GetTensor(), matB.GetTensor(), matC.GetTensor()};
 
