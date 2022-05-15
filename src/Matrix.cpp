@@ -1,5 +1,10 @@
 #include <engine/compute/Matrix.hpp>
 #include <engine/util/Log.hpp>
+#include <random>
+
+std::random_device randomDevice{};
+std::mt19937 gen{ randomDevice() };
+std::normal_distribution<> normalDistribution{ 0, 1 };
 
 namespace en
 {
@@ -26,6 +31,17 @@ namespace en
 			for (uint32_t i = 0; i < m_ElementCount; i++)
 			{
 				m_Data[i] = value;
+			}
+		}
+		else if (fillType == FillType::AllRandom)
+		{
+			for (uint32_t row = 0; row < m_RowCount; row++)
+			{
+				for (uint32_t col = 0; col < m_ColCount; col++)
+				{
+					float setValue = normalDistribution(gen);
+					SetValue(row, col, setValue);
+				}
 			}
 		}
 
@@ -74,7 +90,7 @@ namespace en
 		return m_ColCount;
 	}
 
-	std::shared_ptr<kp::Tensor> Matrix::GetTensor()
+	std::shared_ptr<kp::Tensor> Matrix::GetTensor() const
 	{
 		return m_Tensor;
 	}

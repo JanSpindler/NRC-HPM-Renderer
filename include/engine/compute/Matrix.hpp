@@ -13,6 +13,7 @@ namespace en
 			None = 0,
 			Diagonal = 1,
 			All = 2,
+			AllRandom = 3,
 		};
 
 		Matrix(kp::Manager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType = FillType::None, float value = 0.0f);
@@ -23,7 +24,7 @@ namespace en
 
 		uint32_t GetRowCount() const;
 		uint32_t GetColCount() const;
-		std::shared_ptr<kp::Tensor> GetTensor();
+		std::shared_ptr<kp::Tensor> GetTensor() const;
 		std::vector<float> GetDataVector() const;
 		std::string ToString() const;
 
