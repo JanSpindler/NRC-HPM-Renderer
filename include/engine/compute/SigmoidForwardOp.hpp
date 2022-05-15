@@ -6,7 +6,8 @@ namespace en
 {
 	class SigmoidForwardOp
 	{
-		static kp::Workgroup GetWorkgroup(const Matrix& mat);
+	public:
+		static kp::Workgroup GetWorkgroup(const Matrix& input, const Matrix& output);
 		static const std::vector<uint32_t>& GetShaderSpirV();
 
 	private:

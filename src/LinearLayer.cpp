@@ -10,29 +10,31 @@ namespace en
 	{
 	}
 
-	std::shared_ptr<kp::Sequence> LinearLayer::record(
+	std::shared_ptr<kp::Sequence> LinearLayer::RecordForward(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
-		const Matrix& input,
-		const Matrix& output) const
+		const Matrix& input) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> params = { 
 			input.GetTensor(), 
 			m_Weights.GetTensor(), 
 			m_Biases.GetTensor(), 
-			output.GetTensor() };
-		
-		LinearLayerForwardOp::Config algoConfig = LinearLayerForwardOp::GetConfig(input, m_Weights, m_Biases, output);
+			m_Output.GetTensor() };
+		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = { params.begin() + 1, params.end() };
+
+		LinearLayerForwardOp::Config algoConfig = LinearLayerForwardOp::GetConfig(input, m_Weights, m_Biases, m_Output);
 		
 		kp::Workgroup workgroup = LinearLayerForwardOp::GetWorkgroup(algoConfig);
 
 		std::shared_ptr<kp::Algorithm> algo = manager.algorithm<float, LinearLayerForwardOp::Config>(
-			params, 
-			LinearLayerForwardOp::GetShaderSpirV(), 
-			workgroup, 
-			{}, 
+			params,
+			LinearLayerForwardOp::GetShaderSpirV(),
+			workgroup,
+			{},
 			{ algoConfig });
 
-		return sequence->record<kp::OpAlgoDispatch>(algo, std::vector<LinearLayerForwardOp::Config>{ algoConfig });
+		return sequence
+			->record<kp::OpTensorSyncDevice>(syncTensors)
+			->record<kp::OpAlgoDispatch>(algo, std::vector<LinearLayerForwardOp::Config>{ algoConfig });
 	}
 }

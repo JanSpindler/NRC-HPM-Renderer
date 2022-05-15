@@ -17,14 +17,24 @@ namespace en
 
 	Matrix NeuralNetwork::Forward(kp::Manager& manager, const Matrix& input) const
 	{
-		std::shared_ptr<kp::Sequence> sequence = manager.sequence();
+		Matrix currentInput = input;
+
+		std::shared_ptr<kp::Sequence> sequence = 
+			manager.sequence()
+			->record<kp::OpTensorSyncDevice>(std::vector<std::shared_ptr<kp::Tensor>>{input.GetTensor()});
+
 		for (uint32_t i = 0; i < m_Layers.size(); i++)
 		{
 			Layer* layer = m_Layers[i];
-			//sequence = layer->record(manager)
+			sequence = layer->RecordForward(manager, sequence, currentInput);
+			currentInput = layer->GetOutput();
 		}
+		
+		sequence
+			->record<kp::OpTensorSyncLocal>({ currentInput.GetTensor() })
+			->eval();
 
-		return Matrix(manager, 1, 1);
+		return currentInput;
 	}
 
 	void NeuralNetwork::Backprop(kp::Manager& manager, const Matrix& input, const Matrix& target) const

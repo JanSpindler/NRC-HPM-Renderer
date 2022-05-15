@@ -1,29 +1,25 @@
 #pragma once
 
-#include <engine/compute/Matrix.hpp>
+#include <engine/compute/Layer.hpp>
 
 namespace en
 {
-	class Layer
+	class SigmoidLayer : public Layer
 	{
 	public:
-		Layer(kp::Manager& manager, uint32_t inSize, uint32_t outSize);
+		SigmoidLayer(kp::Manager& manager, uint32_t size);
 
 		virtual std::shared_ptr<kp::Sequence> RecordForward(
 			kp::Manager& manager,
 			std::shared_ptr<kp::Sequence> sequence,
-			const Matrix& input) const = 0;
+			const Matrix& input) const override;
 
 		virtual std::shared_ptr<kp::Sequence> RecordBackprop(
 			kp::Manager& manager,
 			std::shared_ptr<kp::Sequence> sequence,
 			const Matrix& preJacobian,
-			float learningRate) const = 0;
+			float learningRate) const override;
 
-		const Matrix& GetOutput() const;
-
-	protected:
-		Matrix m_Output;
-		Matrix m_TotalJacobian;
+	private:
 	};
 }

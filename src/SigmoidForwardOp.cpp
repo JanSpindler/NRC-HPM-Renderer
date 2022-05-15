@@ -23,14 +23,18 @@ namespace en
 	std::vector<uint32_t> SigmoidForwardOp::m_ShaderSpirV;
 	bool SigmoidForwardOp::m_Compiled = false;
 
-	kp::Workgroup SigmoidForwardOp::GetWorkgroup(const Matrix& mat)
+	kp::Workgroup SigmoidForwardOp::GetWorkgroup(const Matrix& input, const Matrix& output)
 	{
 		// Check if matrix is column vector
-		if (mat.GetColCount() != 1)
+		if (input.GetColCount() != 1 || output.GetColCount() != 1)
 			Log::Error("Matrix needs to be column vector for sigmoid forwars", true);
 
+		// Check if matrix is equally sized
+		if (input.GetRowCount() != output.GetRowCount())
+			Log::Error("Sigmoid forward requires equal size of input and output", true);
+
 		// Return workgroup
-		return kp::Workgroup({ mat.GetRowCount(), 1, 1 });
+		return kp::Workgroup({ input.GetRowCount(), 1, 1 });
 	}
 
 	const std::vector<uint32_t>& SigmoidForwardOp::GetShaderSpirV()

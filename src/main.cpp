@@ -18,6 +18,9 @@
 #include <mnist/mnist_reader.hpp>
 #include <kompute/Kompute.hpp>
 #include <engine/compute/MatmulOp.hpp>
+#include <engine/compute/NeuralNetwork.hpp>
+#include <engine/compute/SigmoidLayer.hpp>
+#include <engine/compute/LinearLayer.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -254,14 +257,22 @@ void TestNN()
 		->eval();
 
 	// prints output
-	matA.SyncTensorToMatrix();
 	en::Log::Info(matA.ToString());
-
-	matB.SyncTensorToMatrix();
 	en::Log::Info(matB.ToString());
-
-	matC.SyncTensorToMatrix();
 	en::Log::Info(matC.ToString());
+
+	// NeuralNetwork test
+	std::vector<en::Layer*> layers = {
+		new en::LinearLayer(mgr, 784, 30), 
+		new en::SigmoidLayer(mgr, 30), 
+		new en::LinearLayer(mgr, 30, 10), 
+		new en::SigmoidLayer(mgr, 10)};
+	
+	en::NeuralNetwork nn(layers);
+
+	en::Matrix input(mgr, 784, 1, en::Matrix::FillType::All, 0.0f);
+	en::Matrix output = nn.Forward(mgr, input);
+	en::Log::Info(output.ToString());
 }
 
 int main()
