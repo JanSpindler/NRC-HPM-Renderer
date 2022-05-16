@@ -106,6 +106,7 @@ namespace en
 			if (row < m_RowCount - 1)
 				str += ",\n";
 		}
+		str += "]";
 
 		return str;
 	}

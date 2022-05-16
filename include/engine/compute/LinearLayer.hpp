@@ -11,6 +11,10 @@ namespace en
 	public:
 		LinearLayer(kp::Manager& manager, uint32_t inSize, uint32_t outSize);
 
+		virtual std::shared_ptr<kp::Sequence> RecordSyncDevice(
+			kp::Manager& manager,
+			std::shared_ptr<kp::Sequence> sequence) const override;
+
 		virtual std::shared_ptr<kp::Sequence> RecordForward(
 			kp::Manager& manager,
 			std::shared_ptr<kp::Sequence> sequence,

@@ -17,11 +17,19 @@ namespace en
 
 	Matrix NeuralNetwork::Forward(kp::Manager& manager, const Matrix& input) const
 	{
-		Matrix currentInput = input;
+		//
+		std::shared_ptr<kp::Sequence> sequence = manager.sequence();
 
-		std::shared_ptr<kp::Sequence> sequence = 
-			manager.sequence()
-			->record<kp::OpTensorSyncDevice>(std::vector<std::shared_ptr<kp::Tensor>>{input.GetTensor()});
+		// Sync tensors to device
+		sequence = sequence->record<kp::OpTensorSyncDevice>(std::vector<std::shared_ptr<kp::Tensor>>{input.GetTensor()});
+
+		for (uint32_t i = 0; i < m_Layers.size(); i++)
+		{
+			sequence = m_Layers[i]->RecordSyncDevice(manager, sequence);
+		}
+
+		// Forward
+		Matrix currentInput = input;
 
 		for (uint32_t i = 0; i < m_Layers.size(); i++)
 		{
@@ -30,10 +38,12 @@ namespace en
 			currentInput = layer->GetOutput();
 		}
 		
+		// Sync output tensor to host and eval
 		sequence
 			->record<kp::OpTensorSyncLocal>({ currentInput.GetTensor() })
 			->eval();
 
+		//
 		return currentInput;
 	}
 

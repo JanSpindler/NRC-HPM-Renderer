@@ -225,53 +225,19 @@ void TestNN()
 	en::Log::Info("Number of test labels = " + std::to_string(dataset.test_labels.size()));
 
 	// Kompute
-	kp::Manager mgr;
-
-	en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::AllRandom);
-	en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::AllRandom);
-	en::Matrix matC(mgr, 8, 1);
-
-//	en::Matrix matA(mgr, 8, 10, en::Matrix::FillType::Diagonal, 1.0f);
-//	en::Matrix matB(mgr, 10, 1, en::Matrix::FillType::All, 1.0f);
-//	en::Matrix matC(mgr, 8, 1);
-
-//	en::Matrix matA(mgr, { { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.5f, 0.5f } });
-//	en::Matrix matB(mgr, { { 1.0f }, { 0.5f } });
-//	en::Matrix matC(mgr, 3, 1);
-
-	en::MatmulOp::Config matmulConfig = en::MatmulOp::GetConfig(matA, matB);
-
-	std::vector<std::shared_ptr<kp::Tensor>> params = { matA.GetTensor(), matB.GetTensor(), matC.GetTensor()};
-
-	std::shared_ptr<kp::Algorithm> algo = mgr.algorithm<float, en::MatmulOp::Config>(
-		params,
-		en::MatmulOp::GetShaderSpirV(),
-		en::MatmulOp::GetWorkgroup(matmulConfig),
-		{},
-		{ { 0, 0, 0, 0 } });
-
-	mgr.sequence()
-		->record<kp::OpTensorSyncDevice>(params)
-		->record<kp::OpAlgoDispatch>(algo, std::vector<en::MatmulOp::Config>{ matmulConfig })
-		->record<kp::OpTensorSyncLocal>(params)
-		->eval();
-
-	// prints output
-	en::Log::Info(matA.ToString());
-	en::Log::Info(matB.ToString());
-	en::Log::Info(matC.ToString());
+	kp::Manager manager;
 
 	// NeuralNetwork test
 	std::vector<en::Layer*> layers = {
-		new en::LinearLayer(mgr, 784, 30), 
-		new en::SigmoidLayer(mgr, 30), 
-		new en::LinearLayer(mgr, 30, 10), 
-		new en::SigmoidLayer(mgr, 10)};
+		new en::LinearLayer(manager, 784, 30),
+		new en::SigmoidLayer(manager, 30),
+		new en::LinearLayer(manager, 30, 10),
+		new en::SigmoidLayer(manager, 10)};
 	
 	en::NeuralNetwork nn(layers);
 
-	en::Matrix input(mgr, 784, 1, en::Matrix::FillType::All, 0.0f);
-	en::Matrix output = nn.Forward(mgr, input);
+	en::Matrix input(manager, 784, 1, en::Matrix::FillType::AllRandom);
+	en::Matrix output = nn.Forward(manager, input);
 	en::Log::Info(output.ToString());
 }
 

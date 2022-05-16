@@ -10,6 +10,19 @@ namespace en
 	{
 	}
 
+	std::shared_ptr<kp::Sequence> LinearLayer::RecordSyncDevice(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence) const
+	{
+		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
+			m_Weights.GetTensor(),
+			m_Biases.GetTensor(),
+			m_Output.GetTensor(),
+			m_TotalJacobian.GetTensor() };
+
+		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
+	}
+
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordForward(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
@@ -20,7 +33,6 @@ namespace en
 			m_Weights.GetTensor(), 
 			m_Biases.GetTensor(), 
 			m_Output.GetTensor() };
-		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = { params.begin() + 1, params.end() };
 
 		LinearLayerForwardOp::Config algoConfig = LinearLayerForwardOp::GetConfig(input, m_Weights, m_Biases, m_Output);
 		
@@ -34,7 +46,15 @@ namespace en
 			{ algoConfig });
 
 		return sequence
-			->record<kp::OpTensorSyncDevice>(syncTensors)
 			->record<kp::OpAlgoDispatch>(algo, std::vector<LinearLayerForwardOp::Config>{ algoConfig });
+	}
+
+	std::shared_ptr<kp::Sequence> LinearLayer::RecordBackprop(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence,
+		const Matrix& preJacobian,
+		float learningRate) const
+	{
+		return sequence;
 	}
 }

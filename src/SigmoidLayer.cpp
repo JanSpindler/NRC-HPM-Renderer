@@ -8,13 +8,23 @@ namespace en
 	{
 	}
 
+	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordSyncDevice(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence) const
+	{
+		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
+			m_Output.GetTensor(),
+			m_TotalJacobian.GetTensor() };
+
+		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
+	}
+
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordForward(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
 		const Matrix& input) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> params = { input.GetTensor(), m_Output.GetTensor() };
-		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = { params.begin() + 1, params.end() };
 
 		kp::Workgroup workgroup = SigmoidForwardOp::GetWorkgroup(input, m_Output);
 
@@ -25,8 +35,15 @@ namespace en
 			{},
 			{});
 
-		return sequence
-			->record<kp::OpTensorSyncDevice>(syncTensors)
-			->record<kp::OpAlgoDispatch>(algo);
+		return sequence->record<kp::OpAlgoDispatch>(algo);
+	}
+
+	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordBackprop(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence,
+		const Matrix& preJacobian,
+		float learningRate) const
+	{
+		return sequence;
 	}
 }
