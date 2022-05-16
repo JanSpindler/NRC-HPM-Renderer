@@ -6,6 +6,7 @@ namespace en
 	LinearLayer::LinearLayer(kp::Manager& manager, uint32_t inSize, uint32_t outSize) :
 		Layer(manager, inSize, outSize),
 		m_Weights(manager, outSize, inSize, Matrix::FillType::AllRandom),
+		m_DeltaWeights(manager, outSize, inSize),
 		m_Biases(manager, outSize, 1, Matrix::FillType::AllRandom)
 	{
 	}
@@ -20,6 +21,14 @@ namespace en
 			m_Output.GetTensor() };
 
 		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
+	}
+
+	std::shared_ptr<kp::Sequence> LinearLayer::RecordResetError(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence) const
+	{
+		// TODO: reset weights
+		return sequence;
 	}
 
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordForward(

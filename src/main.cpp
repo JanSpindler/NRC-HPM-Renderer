@@ -243,8 +243,8 @@ void TestNN()
 
 int main()
 {
-	//RunNrcHpm();
-	TestNN();
+	RunNrcHpm();
+	//TestNN();
 
 	return 0;
 }

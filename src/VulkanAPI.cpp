@@ -386,7 +386,8 @@ namespace en
 		// Select wanted extensions
 		std::vector<const char*> extensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME };
+			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
+			VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME };
 
 		float priority = 1.0f;
 		VkDeviceQueueCreateInfo queueCreateInfo;
@@ -400,10 +401,27 @@ namespace en
 		// Features
 		VkPhysicalDeviceFeatures features{};
 
+		// Atomic float features
+		VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures;
+		atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+		atomicFloatFeatures.pNext = nullptr;
+		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
+		atomicFloatFeatures.shaderBufferFloat64Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderBufferFloat64AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat32AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat64Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat64AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderImageFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderImageFloat32AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.sparseImageFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.sparseImageFloat32AtomicAdd = VK_FALSE;
+
 		// Create
 		VkDeviceCreateInfo createInfo;
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pNext = nullptr;
+		createInfo.pNext = &atomicFloatFeatures;
 		createInfo.flags = 0;
 		createInfo.queueCreateInfoCount = 1;
 		createInfo.pQueueCreateInfos = &queueCreateInfo;

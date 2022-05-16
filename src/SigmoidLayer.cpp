@@ -19,6 +19,13 @@ namespace en
 		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
 	}
 
+	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordResetError(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence) const
+	{
+		return sequence;
+	};
+
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordForward(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
@@ -54,7 +61,7 @@ namespace en
 
 		std::shared_ptr<kp::Algorithm> algo = manager.algorithm(
 			params,
-			SigmoidForwardOp::GetShaderSpirV(),
+			SigmoidBackpropOp::GetShaderSpirV(),
 			workgroup,
 			{},
 			{});
