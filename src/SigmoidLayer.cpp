@@ -1,5 +1,6 @@
 #include <engine/compute/SigmoidLayer.hpp>
 #include <engine/compute/SigmoidForwardOp.hpp>
+#include <engine/compute/SigmoidBackpropOp.hpp>
 
 namespace en
 {
@@ -13,8 +14,7 @@ namespace en
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
-			m_Output.GetTensor(),
-			m_TotalJacobian.GetTensor() };
+			m_Output.GetTensor() };
 
 		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
 	}
@@ -41,9 +41,24 @@ namespace en
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordBackprop(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
-		const Matrix& preJacobian,
+		const Matrix& oldInput,
+		const Matrix& prevError,
 		float learningRate) const
 	{
-		return sequence;
+		std::vector<std::shared_ptr<kp::Tensor>> params = {
+			oldInput.GetTensor(),
+			prevError.GetTensor(),
+			m_LocalError.GetTensor() };
+
+		kp::Workgroup workgroup = SigmoidBackpropOp::GetWorkgroup(oldInput, prevError, m_LocalError);
+
+		std::shared_ptr<kp::Algorithm> algo = manager.algorithm(
+			params,
+			SigmoidForwardOp::GetShaderSpirV(),
+			workgroup,
+			{},
+			{});
+
+		return sequence->record<kp::OpAlgoDispatch>(algo);
 	}
 }

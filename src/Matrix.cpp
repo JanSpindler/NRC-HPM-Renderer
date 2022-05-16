@@ -111,6 +111,16 @@ namespace en
 		return str;
 	}
 
+	bool Matrix::IsRowVector() const
+	{
+		return m_RowCount == 1;
+	}
+
+	bool Matrix::IsColVector() const
+	{
+		return m_ColCount == 1;
+	}
+
 	uint32_t Matrix::GetLinearIndex(uint32_t row, uint32_t col) const
 	{
 		if (row >= m_RowCount || col >= m_ColCount)

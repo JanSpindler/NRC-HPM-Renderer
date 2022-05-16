@@ -17,8 +17,7 @@ namespace en
 		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
 			m_Weights.GetTensor(),
 			m_Biases.GetTensor(),
-			m_Output.GetTensor(),
-			m_TotalJacobian.GetTensor() };
+			m_Output.GetTensor() };
 
 		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
 	}
@@ -52,7 +51,8 @@ namespace en
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordBackprop(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
-		const Matrix& preJacobian,
+		const Matrix& oldInput,
+		const Matrix& prevError,
 		float learningRate) const
 	{
 		return sequence;

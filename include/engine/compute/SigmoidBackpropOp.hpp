@@ -7,13 +7,7 @@ namespace en
 	class SigmoidBackpropOp
 	{
 	public:
-		struct Config
-		{
-			uint32_t size;
-		};
-
-		static Config GetConfig(const Matrix& );
-		static kp::Workgroup GetWorkgroup(const Config& config);
+		static kp::Workgroup GetWorkgroup(const Matrix& oldInput, const Matrix& prevError, const Matrix& localError);
 		static const std::vector<uint32_t>& GetShaderSpirV();
 
 	private:

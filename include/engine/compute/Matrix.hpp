@@ -25,6 +25,9 @@ namespace en
 		std::vector<float> GetDataVector() const;
 		std::string ToString() const;
 
+		bool IsRowVector() const;
+		bool IsColVector() const;
+
 	private:
 		uint32_t m_RowCount;
 		uint32_t m_ColCount;

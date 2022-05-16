@@ -21,7 +21,8 @@ namespace en
 		virtual std::shared_ptr<kp::Sequence> RecordBackprop(
 			kp::Manager& manager,
 			std::shared_ptr<kp::Sequence> sequence,
-			const Matrix& preJacobian,
+			const Matrix& oldInput,
+			const Matrix& prevError,
 			float learningRate) const override;
 
 	private:

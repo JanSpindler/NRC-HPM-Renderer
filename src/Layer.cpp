@@ -4,7 +4,7 @@ namespace en
 {
 	Layer::Layer(kp::Manager& manager, uint32_t inSize, uint32_t outSize) :
 		m_Output(manager, outSize, 1),
-		m_TotalJacobian(manager, inSize, outSize)
+		m_LocalError(manager, outSize, 1)
 	{
 	}
 
@@ -13,8 +13,8 @@ namespace en
 		return m_Output;
 	}
 
-	const Matrix& Layer::GetTotalJacobian() const
+	const Matrix& Layer::GetLocalError() const
 	{
-		return m_TotalJacobian;
+		return m_LocalError;
 	}
 }
