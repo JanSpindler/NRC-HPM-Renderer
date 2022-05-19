@@ -256,7 +256,7 @@ void TestNN()
 	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> dataset =
 		mnist::read_dataset<std::vector, std::vector, uint8_t>("data/mnist");
 
-	dataset.resize_training(20000);
+	dataset.resize_training(60000);
 	dataset.resize_test(5000);
 
 	en::Log::Info("Number of training images = " + std::to_string(dataset.training_images.size()));
@@ -265,6 +265,15 @@ void TestNN()
 	en::Log::Info("Number of test labels = " + std::to_string(dataset.test_labels.size()));
 
 	// Kompute
+//	en::Window::Init(10, 10, false, "");
+//	en::VulkanAPI::Init("Kompute Test");
+//
+//	std::shared_ptr<vk::Instance> instancePtr(new vk::Instance(en::VulkanAPI::GetInstance()));
+//	std::shared_ptr<vk::PhysicalDevice> physicalDevicePtr(new vk::PhysicalDevice(en::VulkanAPI::GetPhysicalDevice()));
+//	std::shared_ptr<vk::Device> devicePtr(new vk::Device(en::VulkanAPI::GetDevice()));
+//
+//	kp::Manager manager(instancePtr, physicalDevicePtr, devicePtr);
+
 	kp::Manager manager;
 
 	// NeuralNetwork test
