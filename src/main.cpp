@@ -217,6 +217,11 @@ void TrainMnist(
 {
 	for (size_t i = 0; i < images.size(); i++)
 	{
+		if (0 == (i % (images.size() / 10)))
+		{
+			en::Log::Info("Train Image: " + std::to_string(i));
+		}
+
 		const std::vector<uint8_t>& image = images[i];
 		uint8_t label = labels[i];
 
