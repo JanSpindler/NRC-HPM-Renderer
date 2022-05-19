@@ -1,16 +1,36 @@
 
-		// The version to use 
-		#version 450
+        // The version to use 
+        #version 450
 
-		// The buffers are provided via the tensors
-		layout(binding = 0) readonly buffer MatIn { float matIn[]; };
-		layout(binding = 1) writeonly buffer MatOut { float matOut[]; };
-
-		void main()
+		// Push constants
+		layout(push_constant) uniform PushConstants
 		{
-			const uint index = gl_GlobalInvocationID.x;
-			float inVal = matIn[index];
-			float outVal = 1.0 / (1.0 + exp(-inVal));
-			matOut[index] = outVal;
-		}
-	
+			uint rowCount;
+			uint colCount;
+        } config;
+
+        // The buffers are provided via the tensors
+        layout(binding = 0) readonly buffer MatLeft { float matLeft[]; };
+        layout(binding = 1) readonly buffer MatRight { float matRight[]; };
+        layout(binding = 2) writeonly buffer MatResult { float matResult[]; };
+
+        void main()
+		{
+			// Get row / col / counts
+			const uint outRow = gl_GlobalInvocationID.x;
+			const uint outCol = gl_GlobalInvocationID.y;
+
+			const uint outRowCount = config.rowCount;
+			const uint outColCount = config.colCount;
+
+			// Check row and col
+			if (outRow >= outRowCount || outCol >= outColCount)
+			{
+			    return;
+			}
+
+			// Matrix addition
+			uint index = outRow * outColCount + outCol;
+			matResult[index] = matLeft[index] + matRight[index];
+        }
+      

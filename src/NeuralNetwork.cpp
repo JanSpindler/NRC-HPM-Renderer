@@ -47,7 +47,43 @@ namespace en
 		return currentInput;
 	}
 
-	void NeuralNetwork::Backprop(kp::Manager& manager, const Matrix& input, const Matrix& target) const
+	void NeuralNetwork::Backprop(kp::Manager& manager, const Matrix& input, const Matrix& target, float learningRate) const
 	{
+		//
+		Matrix output = Forward(manager, input);
+
+		//
+		std::shared_ptr<kp::Sequence> sequence = manager.sequence();
+
+		// Calculate error
+		std::vector<float> outputVec = output.GetDataVector();
+		std::vector<float> targetVec = target.GetDataVector();
+		std::vector<std::vector<float>> errorVec(outputVec.size());
+		
+		for (uint32_t i = 0; i < target.GetRowCount(); i++)
+		{
+			float absError = targetVec[i] - outputVec[i];
+			errorVec[i] = { absError * absError };
+		}
+
+		Matrix error(manager, errorVec);
+
+		// Sync tensors
+		sequence = sequence->record<kp::OpTensorSyncDevice>(
+			std::vector<std::shared_ptr<kp::Tensor>> { error.GetTensor(), target.GetTensor() });
+
+		// Backprop
+		for (size_t i = m_Layers.size() - 1; i > 0 ; i--)
+		{
+			Layer* layer = m_Layers[i];
+			Layer* nextLayer = m_Layers[i - 1];
+
+			const Matrix& prevError = i == m_Layers.size() - 1 ? error : m_Layers[i + 1]->GetLocalError();
+
+			sequence = layer->RecordResetError(manager, sequence);
+			sequence = layer->RecordBackprop(manager, sequence, nextLayer->GetOutput(), prevError, learningRate);
+		}
+
+		sequence = m_Layers[0]->RecordBackprop(manager, sequence, input, m_Layers[1]->GetLocalError(), learningRate)->eval();
 	}
 }

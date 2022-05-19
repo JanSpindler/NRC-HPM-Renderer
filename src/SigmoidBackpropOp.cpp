@@ -24,7 +24,7 @@ namespace en
 			float sigmoidDeriv = sigmoidVal * (1.0 - sigmoidVal);
 
 			float localError = sigmoidDeriv * prevError;
-			matLovalError[index] = localError;
+			matLocalError[index] = localError;
         }
 	)");
 

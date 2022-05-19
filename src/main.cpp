@@ -208,6 +208,41 @@ void RunNrcHpm()
 	en::Log::Info("Ending " + appName);
 }
 
+void TrainMnist(
+	kp::Manager& manager,
+	en::NeuralNetwork& nn,
+	const std::vector<std::vector<uint8_t>>& images,
+	const std::vector<uint8_t>& labels,
+	float learningRate)
+{
+	for (size_t i = 0; i < images.size(); i++)
+	{
+		const std::vector<uint8_t>& image = images[i];
+		uint8_t label = labels[i];
+
+		std::vector<std::vector<float>> input(784);
+		for (size_t pixel = 0; pixel < 784; pixel++)
+		{
+			input[pixel] = { static_cast<float>(image[pixel]) / 255.0f };
+		}
+		en::Matrix inputMat(manager, input);
+
+		std::vector<std::vector<float>> target(10);
+		for (size_t number = 0; number < 10; number++)
+		{
+			target[number] = { number == label ? 1.0f : 0.0f };
+		}
+		en::Matrix targetMat(manager, target);
+
+		nn.Backprop(manager, inputMat, targetMat, learningRate);
+	}
+}
+
+void TestMnist()
+{
+
+}
+
 void TestNN()
 {
 	en::Log::Info("Testing Neural Network");
@@ -236,9 +271,11 @@ void TestNN()
 	
 	en::NeuralNetwork nn(layers);
 
-	en::Matrix input(manager, 784, 1, en::Matrix::FillType::AllRandom);
-	en::Matrix output = nn.Forward(manager, input);
-	en::Log::Info(output.ToString());
+//	en::Matrix input(manager, 784, 1, en::Matrix::FillType::AllRandom);
+//	en::Matrix output = nn.Forward(manager, input);
+//	en::Log::Info(output.ToString());
+
+	TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.001f);
 }
 
 int main()

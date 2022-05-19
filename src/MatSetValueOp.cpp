@@ -16,7 +16,7 @@ namespace en
         } config;
 
         // The buffers are provided via the tensors
-        layout(binding = 0) readonly buffer Mat { float mat[]; };
+        layout(binding = 0) writeonly buffer Mat { float mat[]; };
 
         void main()
 		{

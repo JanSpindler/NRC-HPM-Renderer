@@ -12,7 +12,7 @@ namespace en
 		~NeuralNetwork();
 
 		Matrix Forward(kp::Manager& manager, const Matrix& input) const;
-		void Backprop(kp::Manager& manager, const Matrix& input, const Matrix& target) const;
+		void Backprop(kp::Manager& manager, const Matrix& input, const Matrix& target, float learningRate) const;
 
 	private:
 		std::vector<Layer*> m_Layers;

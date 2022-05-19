@@ -23,25 +23,25 @@ namespace en
 		layout(binding = 2) buffer MatLocalError { float matLocalError[]; };
 		layout(binding = 3) readonly buffer MatWeights { float matWeights[]; };
 		layout(binding = 4) buffer MatBiases { float matBiases[]; };
-		layout(binding = 5) writeonly MatDeltaWeights { float matDeltaWeights[]; };
+		layout(binding = 5) writeonly buffer MatDeltaWeights { float matDeltaWeights[]; };
 
 		void LearnWeights(uint outRow, uint outCol)
 		{
 			uint linearIndex = outRow * config.inputSize + outCol;
-			mateltaWeight[linearIndex] = matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
+			matDeltaWeights[linearIndex] = matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
 		}
 
 		void LearnBiases(uint outRow)
 		{
-			float oldBias = matBiases[oldRow];
-			float deltaBias = prevError[oldRow] * config.learningRate;
-			matBiases[oldRow] = oldBias - deltaBias;
+			float oldBias = matBiases[outRow];
+			float deltaBias = matPrevError[outRow] * config.learningRate;
+			matBiases[outRow] = oldBias - deltaBias;
 		}
 
 		void CalcLocalError(uint outRow, uint outCol)
 		{
 			uint linearIndex = outRow * config.inputSize + outCol;
-			float deltaError = matWeights[linearIndex] * prevError[outRow];
+			float deltaError = matWeights[linearIndex] * matPrevError[outRow];
 			atomicAdd(matLocalError[outCol], deltaError);
 		}
 
