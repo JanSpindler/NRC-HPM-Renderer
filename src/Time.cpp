@@ -23,4 +23,11 @@ namespace en
         double invDeltaTime = 1.0 / m_DeltaTime;
         return static_cast<uint32_t>(invDeltaTime);
     }
+
+    long Time::GetTimeStamp()
+    {
+        auto epoch = m_Last.time_since_epoch();
+        std::chrono::microseconds value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
+        return value.count();
+    }
 }

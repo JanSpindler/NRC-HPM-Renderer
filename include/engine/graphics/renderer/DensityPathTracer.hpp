@@ -5,6 +5,7 @@
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/Camera.hpp>
 #include <engine/graphics/Sun.hpp>
+#include <string>
 
 namespace en
 {
@@ -26,8 +27,11 @@ namespace en
 
 		void ResizeFrame(uint32_t width, uint32_t height);
 
+		void ExportImageToHost(VkQueue queue, const std::string& fileName);
+
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
+		size_t GetImageDataSize() const;
 
 	private:
 		static VkDescriptorSetLayout m_DescriptorSetLayout;

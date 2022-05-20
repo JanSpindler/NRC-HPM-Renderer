@@ -1,6 +1,8 @@
 #include <engine/graphics/renderer/DensityPathTracer.hpp>
 #include <engine/graphics/VulkanAPI.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 namespace en
 {
@@ -156,6 +158,81 @@ namespace en
 		RecordCommandBuffer();
 	}
 
+	void DensityPathTracer::ExportImageToHost(VkQueue queue, const std::string& fileName)
+	{
+		//
+		VkDeviceSize size = GetImageDataSize();
+		vk::Buffer buffer(
+			size,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		//
+		vk::CommandPool commandPool(0, VulkanAPI::GetGraphicsQFI());
+		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
+
+		// Begin
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		if (result != VK_SUCCESS)
+			Log::Error("Failed to begin VkCommandBuffer", true);
+
+		VkBufferImageCopy region;
+		region.bufferOffset = 0;
+		region.bufferRowLength = /*4 **/ m_FrameWidth;
+		region.bufferImageHeight = m_FrameHeight;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = { 0, 0, 0 };
+		region.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+
+		vkCmdCopyImageToBuffer(commandBuffer, m_LowPassImage, VK_IMAGE_LAYOUT_GENERAL, buffer.GetVulkanHandle(), 1, &region);
+
+		// End
+		result = vkEndCommandBuffer(commandBuffer);
+		if (result != VK_SUCCESS)
+			Log::Error("Failed to end VkCommandBuffer", true);
+
+		// Submit
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+
+		//
+		void* data = malloc(size);
+		buffer.GetData(size, data, 0, 0);
+
+		//
+		commandPool.Destroy();
+		buffer.Destroy();
+
+		//
+		stbi_write_bmp(fileName.c_str(), m_FrameWidth, m_FrameHeight, 4, data);
+		free(data);
+	}
+
 	VkImage DensityPathTracer::GetImage() const
 	{
 		return m_ColorImage;
@@ -164,6 +241,12 @@ namespace en
 	VkImageView DensityPathTracer::GetImageView() const
 	{
 		return m_ColorImageView;
+	}
+
+	size_t DensityPathTracer::GetImageDataSize() const
+	{
+		// Dependent on format
+		return m_FrameWidth * m_FrameHeight * 4;
 	}
 
 	void DensityPathTracer::CreateRenderPass(VkDevice device)
@@ -521,7 +604,7 @@ namespace en
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;

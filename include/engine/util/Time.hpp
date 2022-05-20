@@ -10,6 +10,7 @@ namespace en
         static void Update();
         static double GetDeltaTime();
         static uint32_t GetFps();
+        static long GetTimeStamp();
 
     private:
         static std::chrono::time_point<std::chrono::high_resolution_clock> m_Last;
