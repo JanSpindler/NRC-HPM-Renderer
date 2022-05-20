@@ -13,6 +13,10 @@ namespace en
 			kp::Manager& manager,
 			std::shared_ptr<kp::Sequence> sequence) const override;
 
+		virtual std::shared_ptr<kp::Sequence> RecordSyncHost(
+			kp::Manager& manager,
+			std::shared_ptr<kp::Sequence> sequence) const override;
+
 		virtual std::shared_ptr<kp::Sequence> RecordResetError(
 			kp::Manager& manager,
 			std::shared_ptr<kp::Sequence> sequence) const override;

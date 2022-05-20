@@ -19,6 +19,16 @@ namespace en
 		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
 	}
 
+	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordSyncHost(
+		kp::Manager& manager,
+		std::shared_ptr<kp::Sequence> sequence) const
+	{
+		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
+			m_Output.GetTensor() };
+
+		return sequence->record<kp::OpTensorSyncLocal>(syncTensors);
+	}
+
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordResetError(
 		kp::Manager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const

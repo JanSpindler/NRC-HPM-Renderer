@@ -38,7 +38,12 @@ namespace en
 			currentInput = layer->GetOutput();
 		}
 		
-		// Sync output tensor to host and eval
+		// Sync tensors to host and eval
+		for (uint32_t i = 0; i < m_Layers.size(); i++)
+		{
+			sequence = m_Layers[i]->RecordSyncHost(manager, sequence);
+		}
+
 		sequence
 			->record<kp::OpTensorSyncLocal>({ currentInput.GetTensor() })
 			->eval();
@@ -85,5 +90,10 @@ namespace en
 		}
 
 		sequence = m_Layers[0]->RecordBackprop(manager, sequence, input, m_Layers[1]->GetLocalError(), learningRate)->eval();
+
+		for (uint32_t i = 0; i < m_Layers.size(); i++)
+		{
+			sequence = m_Layers[i]->RecordSyncHost(manager, sequence);
+		}
 	}
 }

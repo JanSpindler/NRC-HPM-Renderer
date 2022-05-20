@@ -18,7 +18,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "include")
 
 # Dependencies
 
-add_definitions(-DKOMPUTE_LOG_LEVEL=4)
+add_definitions(-DKOMPUTE_LOG_LEVEL=3)
 
 # It is necessary to pass the DEBUG or RELEASE flag accordingly to Kompute
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=1 ${KOMPUTE_EXTRA_CXX_FLAGS}")

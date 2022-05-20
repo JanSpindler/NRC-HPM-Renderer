@@ -217,7 +217,7 @@ void TrainMnist(
 {
 	for (size_t i = 0; i < images.size(); i++)
 	{
-		if (0 == (i % (images.size() / 10)))
+		if (0 == (i % (images.size() / 100)))
 		{
 			en::Log::Info("Train Image: " + std::to_string(i));
 		}
@@ -243,9 +243,60 @@ void TrainMnist(
 	}
 }
 
-void TestMnist()
+float TestMnist(
+	kp::Manager& manager,
+	en::NeuralNetwork& nn,
+	const std::vector<std::vector<uint8_t>>& images,
+	const std::vector<uint8_t>& labels)
 {
+	size_t correct = 0;
 
+	for (size_t i = 0; i < images.size(); i++)
+	{
+		if (0 == (i % (images.size() / 10)))
+		{
+			en::Log::Info("Test Image: " + std::to_string(i));
+		}
+
+		const std::vector<uint8_t>& image = images[i];
+		uint8_t label = labels[i];
+
+		std::vector<std::vector<float>> input(784);
+		for (size_t pixel = 0; pixel < 784; pixel++)
+		{
+			input[pixel] = { static_cast<float>(image[pixel]) / 255.0f };
+		}
+		en::Matrix inputMat(manager, input);
+
+//		std::vector<std::vector<float>> target(10);
+//		for (size_t number = 0; number < 10; number++)
+//		{
+//			target[number] = { number == label ? 1.0f : 0.0f };
+//		}
+//		en::Matrix targetMat(manager, target);
+
+		en::Matrix output = nn.Forward(manager, inputMat);
+		std::vector<float> outputVec = output.GetDataVector();
+
+		float likelyhood = outputVec[0];
+		uint8_t prediction = 0;
+		for (uint8_t number = 1; number < 10; number++)
+		{
+			float newLikelyhood = outputVec[number];
+			if (newLikelyhood > likelyhood)
+			{
+				likelyhood = newLikelyhood;
+				prediction = number;
+			}
+		}
+
+		if (prediction == label)
+		{
+			correct++;
+		}
+	}
+
+	return static_cast<float>(correct) / static_cast<float>(images.size());
 }
 
 void TestNN()
@@ -256,7 +307,7 @@ void TestNN()
 	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> dataset =
 		mnist::read_dataset<std::vector, std::vector, uint8_t>("data/mnist");
 
-	dataset.resize_training(60000);
+	dataset.resize_training(20000);
 	dataset.resize_test(5000);
 
 	en::Log::Info("Number of training images = " + std::to_string(dataset.training_images.size()));
@@ -289,7 +340,13 @@ void TestNN()
 //	en::Matrix output = nn.Forward(manager, input);
 //	en::Log::Info(output.ToString());
 
-	TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.001f);
+	for (size_t epoch = 0; epoch < 16; epoch++)
+	{
+		en::Log::Info("Epoch " + std::to_string(epoch));
+		TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.1f);
+		float accuracy = TestMnist(manager, nn, dataset.test_images, dataset.test_labels);
+		en::Log::Info(std::to_string(accuracy));
+	}
 }
 
 int main()
