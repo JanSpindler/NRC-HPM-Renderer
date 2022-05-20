@@ -306,7 +306,7 @@ namespace en
 			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_Surface, &presentModeCount, nullptr);
 			std::vector<VkPresentModeKHR> presentModes(presentModeCount);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_Surface, &presentModeCount, presentModes.data());
-
+			
 			bool formatAvailable = false;
 			VkSurfaceFormatKHR bestFormat;
 			for (const VkSurfaceFormatKHR& surfaceFormat : surfaceFormats)

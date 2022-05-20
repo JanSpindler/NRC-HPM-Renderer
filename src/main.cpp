@@ -186,8 +186,7 @@ void RunNrcHpm()
 
 		if (0 == (counter % 100))
 		{
-			std::string exportFileName = "data/output/path_tracer_" + std::to_string(en::Time::GetTimeStamp()) + ".bmp";
-			pathTracer->ExportImageToHost(graphicsQueue, exportFileName);
+			pathTracer->ExportImageToHost(graphicsQueue, en::Time::GetTimeStamp());
 		}
 
 		counter++;

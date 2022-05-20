@@ -24,10 +24,10 @@ namespace en
         return static_cast<uint32_t>(invDeltaTime);
     }
 
-    long Time::GetTimeStamp()
+    uint64_t Time::GetTimeStamp()
     {
         auto epoch = m_Last.time_since_epoch();
         std::chrono::microseconds value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
-        return value.count();
+        return static_cast<uint64_t>(value.count());
     }
 }

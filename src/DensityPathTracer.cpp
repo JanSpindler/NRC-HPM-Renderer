@@ -78,6 +78,8 @@ namespace en
 		CreatePipelineLayout(device);
 		CreatePipeline(device);
 		CreateColorImage(device);
+		CreatePosImage(device);
+		CreateDirImage(device);
 		CreateLowPassResources(device);
 		CreateLowPassImage(device);
 		CreateFramebuffer(device);
@@ -112,6 +114,14 @@ namespace en
 		m_CommandPool.Destroy();
 		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
 
+		vkDestroyImageView(device, m_DirImageView, nullptr);
+		vkFreeMemory(device, m_DirImageMemory, nullptr);
+		vkDestroyImage(device, m_DirImage, nullptr);
+
+		vkDestroyImageView(device, m_PosImageView, nullptr);
+		vkFreeMemory(device, m_PosImageMemory, nullptr);
+		vkDestroyImage(device, m_PosImage, nullptr);
+
 		vkDestroySampler(device, m_LowPassSampler, nullptr);
 		vkDestroyImageView(device, m_LowPassImageView, nullptr);
 		vkFreeMemory(device, m_LowPassImageMemory, nullptr);
@@ -139,6 +149,14 @@ namespace en
 		m_CommandPool.FreeBuffers();
 		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
 		
+		vkDestroyImageView(device, m_DirImageView, nullptr);
+		vkFreeMemory(device, m_DirImageMemory, nullptr);
+		vkDestroyImage(device, m_DirImage, nullptr);
+
+		vkDestroyImageView(device, m_PosImageView, nullptr);
+		vkFreeMemory(device, m_PosImageMemory, nullptr);
+		vkDestroyImage(device, m_PosImage, nullptr);
+
 		vkDestroyImageView(device, m_LowPassImageView, nullptr);
 		vkFreeMemory(device, m_LowPassImageMemory, nullptr);
 		vkDestroyImage(device, m_LowPassImage, nullptr);
@@ -149,6 +167,8 @@ namespace en
 
 		// Create
 		CreateColorImage(device);
+		CreatePosImage(device);
+		CreateDirImage(device);
 		CreateLowPassImage(device);
 		CreateFramebuffer(device);
 
@@ -158,7 +178,7 @@ namespace en
 		RecordCommandBuffer();
 	}
 
-	void DensityPathTracer::ExportImageToHost(VkQueue queue, const std::string& fileName)
+	void DensityPathTracer::ExportImageToHost(VkQueue queue, uint64_t index)
 	{
 		//
 		VkDeviceSize size = GetImageDataSize();
@@ -186,7 +206,7 @@ namespace en
 
 		VkBufferImageCopy region;
 		region.bufferOffset = 0;
-		region.bufferRowLength = /*4 **/ m_FrameWidth;
+		region.bufferRowLength = m_FrameWidth;
 		region.bufferImageHeight = m_FrameHeight;
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		region.imageSubresource.mipLevel = 0;
@@ -195,7 +215,7 @@ namespace en
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
 
-		vkCmdCopyImageToBuffer(commandBuffer, m_LowPassImage, VK_IMAGE_LAYOUT_GENERAL, buffer.GetVulkanHandle(), 1, &region);
+		vkCmdCopyImageToBuffer(commandBuffer, m_ColorImage, VK_IMAGE_LAYOUT_GENERAL, buffer.GetVulkanHandle(), 1, &region);
 
 		// End
 		result = vkEndCommandBuffer(commandBuffer);
@@ -229,7 +249,13 @@ namespace en
 		buffer.Destroy();
 
 		//
-		stbi_write_bmp(fileName.c_str(), m_FrameWidth, m_FrameHeight, 4, data);
+		std::string path = "data/output/";
+		std::string endStr = std::to_string(index) + ".bmp";
+		std::string colorStr = path + "color/" + endStr;
+		std::string posStr = path + "pos/" + endStr;
+		std::string dirStr = path + "dir/" + endStr;
+		
+		stbi_write_bmp(colorStr.c_str(), m_FrameWidth, m_FrameHeight, 4, data);
 		free(data);
 	}
 
@@ -552,6 +578,132 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
+	void DensityPathTracer::CreatePosImage(VkDevice device)
+	{
+		// Create Image
+		VkImageCreateInfo imageCI;
+		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCI.pNext = nullptr;
+		imageCI.flags = 0;
+		imageCI.imageType = VK_IMAGE_TYPE_2D;
+		imageCI.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
+		imageCI.mipLevels = 1;
+		imageCI.arrayLayers = 1;
+		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCI.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCI.queueFamilyIndexCount = 0;
+		imageCI.pQueueFamilyIndices = nullptr;
+		imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_PosImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_PosImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_PosImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_PosImage, m_PosImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create image view
+		VkImageViewCreateInfo imageViewCI;
+		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCI.pNext = nullptr;
+		imageViewCI.flags = 0;
+		imageViewCI.image = m_PosImage;
+		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCI.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCI.subresourceRange.baseMipLevel = 0;
+		imageViewCI.subresourceRange.levelCount = 1;
+		imageViewCI.subresourceRange.baseArrayLayer = 0;
+		imageViewCI.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_PosImageView);
+		ASSERT_VULKAN(result);
+	}
+
+	void DensityPathTracer::CreateDirImage(VkDevice device)
+	{
+		// Create Image
+		VkImageCreateInfo imageCI;
+		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCI.pNext = nullptr;
+		imageCI.flags = 0;
+		imageCI.imageType = VK_IMAGE_TYPE_2D;
+		imageCI.format = VK_FORMAT_R32G32_SFLOAT;
+		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
+		imageCI.mipLevels = 1;
+		imageCI.arrayLayers = 1;
+		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCI.queueFamilyIndexCount = 0;
+		imageCI.pQueueFamilyIndices = nullptr;
+		imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_DirImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_DirImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_DirImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_DirImage, m_DirImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create image view
+		VkImageViewCreateInfo imageViewCI;
+		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCI.pNext = nullptr;
+		imageViewCI.flags = 0;
+		imageViewCI.image = m_DirImage;
+		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCI.format = VK_FORMAT_R32G32_SFLOAT;
+		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCI.subresourceRange.baseMipLevel = 0;
+		imageViewCI.subresourceRange.levelCount = 1;
+		imageViewCI.subresourceRange.baseArrayLayer = 0;
+		imageViewCI.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_DirImageView);
+		ASSERT_VULKAN(result);
+	}
+
 	void DensityPathTracer::CreateLowPassResources(VkDevice device)
 	{
 		// Create sampler
@@ -604,7 +756,7 @@ namespace en
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;

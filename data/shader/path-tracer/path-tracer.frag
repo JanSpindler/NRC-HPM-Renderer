@@ -35,6 +35,8 @@ layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec3 outPos;
+layout(location = 2) out vec3 outDir;
 
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
@@ -535,13 +537,16 @@ void main()
 	vec3 ro = camera.pos;
 	const vec3 rd = normalize(pixelWorldPos - ro);
 
+	outPos = ro;
+	outDir = rd;
+
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		outColor = vec4(0.0);
+		outColor = vec4(vec3(0.0), 1.0);
 		return;
 	}
 
