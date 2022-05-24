@@ -277,28 +277,63 @@ namespace en
 
 	void DensityPathTracer::CreateRenderPass(VkDevice device)
 	{
-		VkAttachmentDescription colorAttachment;
-		colorAttachment.flags = 0;
-		colorAttachment.format = VulkanAPI::GetSurfaceFormat().format;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+		// Color attachment
+		VkAttachmentDescription colorAtt;
+		colorAtt.flags = 0;
+		colorAtt.format = VulkanAPI::GetSurfaceFormat().format;
+		colorAtt.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAtt.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-		VkAttachmentReference colorAttachmentReference;
-		colorAttachmentReference.attachment = 0;
-		colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference colorAttRef;
+		colorAttRef.attachment = 0;
+		colorAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Pos attachment
+		VkAttachmentDescription posAtt;
+		posAtt.flags = 0;
+		posAtt.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		posAtt.samples = VK_SAMPLE_COUNT_1_BIT;
+		posAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		posAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		posAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		posAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		posAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		posAtt.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkAttachmentReference posAttRef;
+		posAttRef.attachment = 1;
+		posAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Dir attachment
+		VkAttachmentDescription dirAtt;
+		dirAtt.flags = 0;
+		dirAtt.format = VK_FORMAT_R32G32_SFLOAT;
+		dirAtt.samples = VK_SAMPLE_COUNT_1_BIT;
+		dirAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		dirAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		dirAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		dirAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		dirAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		dirAtt.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkAttachmentReference dirAttRef;
+		dirAttRef.attachment = 1;
+		dirAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		std::vector<VkAttachmentReference> colorAttRefs = { colorAttRef, posAttRef, dirAttRef };
 
 		VkSubpassDescription subpass;
 		subpass.flags = 0;
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.inputAttachmentCount = 0;
 		subpass.pInputAttachments = nullptr;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentReference;
+		subpass.colorAttachmentCount = colorAttRefs.size();
+		subpass.pColorAttachments = colorAttRefs.data();
 		subpass.pResolveAttachments = nullptr;
 		subpass.pDepthStencilAttachment = nullptr;
 		subpass.preserveAttachmentCount = 0;
@@ -313,12 +348,14 @@ namespace en
 		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		subpassDependency.dependencyFlags = 0;
 
+		std::vector<VkAttachmentDescription> attachments = { colorAtt, posAtt, dirAtt };
+
 		VkRenderPassCreateInfo createInfo;
 		createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.attachmentCount = 1;
-		createInfo.pAttachments = &colorAttachment;
+		createInfo.attachmentCount = attachments.size();
+		createInfo.pAttachments = attachments.data();
 		createInfo.subpassCount = 1;
 		createInfo.pSubpasses = &subpass;
 		createInfo.dependencyCount = 1;
@@ -466,14 +503,38 @@ namespace en
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
+		// Color blending
+		VkPipelineColorBlendAttachmentState posBlendAttachment;
+		posBlendAttachment.blendEnable = VK_FALSE;
+		posBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		posBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		posBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		posBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		posBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		posBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		posBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		// Color blending
+		VkPipelineColorBlendAttachmentState dirBlendAttachment;
+		dirBlendAttachment.blendEnable = VK_FALSE;
+		dirBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		dirBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		dirBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		dirBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		dirBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		dirBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		dirBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttStates = { colorBlendAttachment, posBlendAttachment, dirBlendAttachment };
+
 		VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo;
 		colorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlendCreateInfo.pNext = nullptr;
 		colorBlendCreateInfo.flags = 0;
 		colorBlendCreateInfo.logicOpEnable = VK_FALSE;
 		colorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
-		colorBlendCreateInfo.attachmentCount = 1;
-		colorBlendCreateInfo.pAttachments = &colorBlendAttachment;
+		colorBlendCreateInfo.attachmentCount = colorBlendAttStates.size();
+		colorBlendCreateInfo.pAttachments = colorBlendAttStates.data();
 		colorBlendCreateInfo.blendConstants[0] = 0.0f;
 		colorBlendCreateInfo.blendConstants[1] = 0.0f;
 		colorBlendCreateInfo.blendConstants[2] = 0.0f;
@@ -875,13 +936,15 @@ namespace en
 
 	void DensityPathTracer::CreateFramebuffer(VkDevice device)
 	{
+		std::vector<VkImageView> attachments = { m_ColorImageView, m_PosImageView, m_DirImageView };
+
 		VkFramebufferCreateInfo createInfo;
 		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
 		createInfo.renderPass = m_RenderPass;
-		createInfo.attachmentCount = 1;
-		createInfo.pAttachments = &m_ColorImageView;
+		createInfo.attachmentCount = attachments.size();
+		createInfo.pAttachments = attachments.data();
 		createInfo.width = m_FrameWidth;
 		createInfo.height = m_FrameHeight;
 		createInfo.layers = 1;
@@ -902,7 +965,11 @@ namespace en
 		if (result != VK_SUCCESS)
 			Log::Error("Failed to begin VkCommandBuffer", true);
 
-		VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+		std::vector<VkClearValue> clearValues = {
+			{ 0.0f, 0.0f, 0.0f, 1.0f },
+			{ 0.0f, 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 0.0f, 0.0f, 0.0f } };
+
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassBeginInfo.pNext = nullptr;
@@ -910,8 +977,8 @@ namespace en
 		renderPassBeginInfo.framebuffer = m_Framebuffer;
 		renderPassBeginInfo.renderArea.offset = { 0, 0 };
 		renderPassBeginInfo.renderArea.extent = { m_FrameWidth, m_FrameHeight };
-		renderPassBeginInfo.clearValueCount = 1;
-		renderPassBeginInfo.pClearValues = &clearValue;
+		renderPassBeginInfo.clearValueCount = clearValues.size();
+		renderPassBeginInfo.pClearValues = clearValues.data();
 		vkCmdBeginRenderPass(m_CommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
