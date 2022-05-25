@@ -36,7 +36,7 @@ layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outPos;
-layout(location = 2) out vec2 outDir;
+layout(location = 2) out vec4 outDir; // TODO: vec2
 
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
@@ -537,7 +537,7 @@ void main()
 	const vec3 rd = normalize(pixelWorldPos - ro);
 
 	outPos = vec4(ro, 1.0);
-	outDir = rd.xy;
+	outDir = vec4(rd.xy, 0.0, 1.0);
 
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
 	const vec3 entry = entry_exit[0];

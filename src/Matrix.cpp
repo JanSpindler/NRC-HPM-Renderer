@@ -8,7 +8,7 @@ std::normal_distribution<> normalDistribution{ 0, 1 };
 
 namespace en
 {
-	Matrix::Matrix(kp::Manager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType, float value) :
+	Matrix::Matrix(KomputeManager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType, float value) :
 		m_RowCount(rowCount),
 		m_ColCount(colCount),
 		m_ElementCount(rowCount * colCount),
@@ -35,11 +35,13 @@ namespace en
 		}
 		else if (fillType == FillType::AllRandom)
 		{
+			float normalizer = static_cast<float>(m_ElementCount);
+
 			for (uint32_t row = 0; row < m_RowCount; row++)
 			{
 				for (uint32_t col = 0; col < m_ColCount; col++)
 				{
-					data[GetLinearIndex(row, col)] = normalDistribution(gen);
+					data[GetLinearIndex(row, col)] = normalDistribution(gen) * normalizer;
 				}
 			}
 		}
@@ -47,7 +49,7 @@ namespace en
 		m_Tensor = manager.tensor(data);
 	}
 
-	Matrix::Matrix(kp::Manager& manager, const std::vector<std::vector<float>> values) :
+	Matrix::Matrix(KomputeManager& manager, const std::vector<std::vector<float>> values) :
 		m_RowCount(values.size()),
 		m_ColCount(values[0].size()),
 		m_ElementCount(m_RowCount * m_ColCount),

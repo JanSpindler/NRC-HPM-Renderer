@@ -6,7 +6,7 @@
 
 namespace en
 {
-	LinearLayer::LinearLayer(kp::Manager& manager, uint32_t inSize, uint32_t outSize) :
+	LinearLayer::LinearLayer(KomputeManager& manager, uint32_t inSize, uint32_t outSize) :
 		Layer(manager, inSize, outSize),
 		m_Weights(manager, outSize, inSize, Matrix::FillType::AllRandom),
 		m_DeltaWeights(manager, outSize, inSize),
@@ -15,7 +15,7 @@ namespace en
 	}
 
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordSyncDevice(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
@@ -29,7 +29,7 @@ namespace en
 	}
 
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordSyncHost(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
@@ -41,9 +41,9 @@ namespace en
 
 		return sequence->record<kp::OpTensorSyncLocal>(syncTensors);
 	}
-
+	  
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordResetError(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> params = { m_LocalError.GetTensor() };
@@ -60,7 +60,7 @@ namespace en
 	}
 
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordForward(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
 		const Matrix& input) const
 	{
@@ -81,12 +81,11 @@ namespace en
 			{},
 			{ algoConfig });
 
-		return sequence
-			->record<kp::OpAlgoDispatch>(algo, std::vector<LinearLayerForwardOp::Config>{ algoConfig });
+		return sequence->record<kp::OpAlgoDispatch>(algo, std::vector<LinearLayerForwardOp::Config>{ algoConfig });
 	}
 
 	std::shared_ptr<kp::Sequence> LinearLayer::RecordBackprop(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
 		const Matrix& oldInput,
 		const Matrix& prevError,

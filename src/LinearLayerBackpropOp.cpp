@@ -28,7 +28,7 @@ namespace en
 		void LearnWeights(uint outRow, uint outCol)
 		{
 			uint linearIndex = outRow * config.inputSize + outCol;
-			matDeltaWeights[linearIndex] = matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
+			matDeltaWeights[linearIndex] = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
 		}
 
 		void LearnBiases(uint outRow)
@@ -91,7 +91,7 @@ namespace en
 		config.learningRate = learningRate;
 
 		//
-		return {};
+		return config;
 	}
 	
 	kp::Workgroup LinearLayerBackpropOp::GetWorkgroup(const LinearLayerBackpropOp::Config& config)

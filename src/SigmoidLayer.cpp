@@ -4,13 +4,13 @@
 
 namespace en
 {
-	SigmoidLayer::SigmoidLayer(kp::Manager& manager, uint32_t size) :
+	SigmoidLayer::SigmoidLayer(KomputeManager& manager, uint32_t size) :
 		Layer(manager, size, size)
 	{
 	}
 
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordSyncDevice(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
@@ -20,7 +20,7 @@ namespace en
 	}
 
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordSyncHost(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		std::vector<std::shared_ptr<kp::Tensor>> syncTensors = {
@@ -30,14 +30,14 @@ namespace en
 	}
 
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordResetError(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence) const
 	{
 		return sequence;
 	};
 
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordForward(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
 		const Matrix& input) const
 	{
@@ -56,7 +56,7 @@ namespace en
 	}
 
 	std::shared_ptr<kp::Sequence> SigmoidLayer::RecordBackprop(
-		kp::Manager& manager,
+		KomputeManager& manager,
 		std::shared_ptr<kp::Sequence> sequence,
 		const Matrix& oldInput,
 		const Matrix& prevError,

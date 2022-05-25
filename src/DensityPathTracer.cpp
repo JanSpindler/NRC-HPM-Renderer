@@ -3,6 +3,7 @@
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#include <engine/util/openexr_helper.hpp>
 
 namespace en
 {
@@ -181,9 +182,21 @@ namespace en
 	void DensityPathTracer::ExportImageToHost(VkQueue queue, uint64_t index)
 	{
 		//
-		VkDeviceSize size = GetImageDataSize();
-		vk::Buffer buffer(
-			size,
+		VkDeviceSize colorSize = GetImageDataSize();
+		vk::Buffer colorBuffer(
+			colorSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		VkDeviceSize posSize = colorSize * 4; // sizeof(float) = 4
+		vk::Buffer posBuffer(posSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		VkDeviceSize dirSize = colorSize * 4; // TODO: / 2
+		vk::Buffer dirBuffer(dirSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
@@ -204,18 +217,65 @@ namespace en
 		if (result != VK_SUCCESS)
 			Log::Error("Failed to begin VkCommandBuffer", true);
 
-		VkBufferImageCopy region;
-		region.bufferOffset = 0;
-		region.bufferRowLength = m_FrameWidth;
-		region.bufferImageHeight = m_FrameHeight;
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+		// Copy color
+		VkBufferImageCopy colorRegion;
+		colorRegion.bufferOffset = 0;
+		colorRegion.bufferRowLength = m_FrameWidth;
+		colorRegion.bufferImageHeight = m_FrameHeight;
+		colorRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		colorRegion.imageSubresource.mipLevel = 0;
+		colorRegion.imageSubresource.baseArrayLayer = 0;
+		colorRegion.imageSubresource.layerCount = 1;
+		colorRegion.imageOffset = { 0, 0, 0 };
+		colorRegion.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
 
-		vkCmdCopyImageToBuffer(commandBuffer, m_ColorImage, VK_IMAGE_LAYOUT_GENERAL, buffer.GetVulkanHandle(), 1, &region);
+		vkCmdCopyImageToBuffer(
+			commandBuffer, 
+			m_ColorImage, 
+			VK_IMAGE_LAYOUT_GENERAL, 
+			colorBuffer.GetVulkanHandle(), 
+			1, 
+			&colorRegion);
+
+		// Pos color
+		VkBufferImageCopy posRegion;
+		posRegion.bufferOffset = 0;
+		posRegion.bufferRowLength = m_FrameWidth;
+		posRegion.bufferImageHeight = m_FrameHeight;
+		posRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		posRegion.imageSubresource.mipLevel = 0;
+		posRegion.imageSubresource.baseArrayLayer = 0;
+		posRegion.imageSubresource.layerCount = 1;
+		posRegion.imageOffset = { 0, 0, 0 };
+		posRegion.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+
+		vkCmdCopyImageToBuffer(
+			commandBuffer,
+			m_PosImage,
+			VK_IMAGE_LAYOUT_GENERAL,
+			posBuffer.GetVulkanHandle(),
+			1,
+			&posRegion);
+
+		// Dir color
+		VkBufferImageCopy dirRegion;
+		dirRegion.bufferOffset = 0;
+		dirRegion.bufferRowLength = m_FrameWidth;
+		dirRegion.bufferImageHeight = m_FrameHeight;
+		dirRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		dirRegion.imageSubresource.mipLevel = 0;
+		dirRegion.imageSubresource.baseArrayLayer = 0;
+		dirRegion.imageSubresource.layerCount = 1;
+		dirRegion.imageOffset = { 0, 0, 0 };
+		dirRegion.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+
+		vkCmdCopyImageToBuffer(
+			commandBuffer,
+			m_DirImage,
+			VK_IMAGE_LAYOUT_GENERAL,
+			dirBuffer.GetVulkanHandle(),
+			1,
+			&dirRegion);
 
 		// End
 		result = vkEndCommandBuffer(commandBuffer);
@@ -241,22 +301,37 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		//
-		void* data = malloc(size);
-		buffer.GetData(size, data, 0, 0);
+		void* colorData = malloc(colorSize);
+		colorBuffer.GetData(colorSize, colorData, 0, 0);
+
+		void* posData = malloc(posSize);
+		posBuffer.GetData(posSize, posData, 0, 0);
+
+		void* dirData = malloc(dirSize);
+		dirBuffer.GetData(dirSize, dirData, 0, 0);
 
 		//
 		commandPool.Destroy();
-		buffer.Destroy();
+		colorBuffer.Destroy();
+		posBuffer.Destroy();
+		dirBuffer.Destroy();
 
 		//
 		std::string path = "data/output/";
-		std::string endStr = std::to_string(index) + ".bmp";
-		std::string colorStr = path + "color/" + endStr;
-		std::string posStr = path + "pos/" + endStr;
-		std::string dirStr = path + "dir/" + endStr;
+		std::string endStr = std::to_string(index);
+		//std::string colorStr = path + "color/" + endStr + ".exr";
+		std::string colorStr = path + "color/" + endStr + ".bmp";
+		std::string posStr = path + "pos/" + endStr + ".exr";
+		std::string dirStr = path + "dir/" + endStr + ".exr";
 		
-		stbi_write_bmp(colorStr.c_str(), m_FrameWidth, m_FrameHeight, 4, data);
-		free(data);
+		stbi_write_bmp(colorStr.c_str(), m_FrameWidth, m_FrameHeight, 4, colorData);
+		//WriteEXR(colorStr.c_str(), reinterpret_cast<float*>(colorData), m_FrameWidth, m_FrameHeight);
+		WriteEXR(posStr.c_str(), reinterpret_cast<float*>(posData), m_FrameWidth, m_FrameHeight);
+		WriteEXR(dirStr.c_str(), reinterpret_cast<float*>(dirData), m_FrameWidth, m_FrameHeight);
+		
+		free(colorData);
+		free(posData);
+		free(dirData);
 	}
 
 	VkImage DensityPathTracer::GetImage() const
@@ -312,7 +387,7 @@ namespace en
 		// Dir attachment
 		VkAttachmentDescription dirAtt;
 		dirAtt.flags = 0;
-		dirAtt.format = VK_FORMAT_R32G32_SFLOAT;
+		dirAtt.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		dirAtt.samples = VK_SAMPLE_COUNT_1_BIT;
 		dirAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		dirAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -710,7 +785,7 @@ namespace en
 		imageCI.pNext = nullptr;
 		imageCI.flags = 0;
 		imageCI.imageType = VK_IMAGE_TYPE_2D;
-		imageCI.format = VK_FORMAT_R32G32_SFLOAT;
+		imageCI.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
 		imageCI.mipLevels = 1;
 		imageCI.arrayLayers = 1;
@@ -750,7 +825,7 @@ namespace en
 		imageViewCI.flags = 0;
 		imageViewCI.image = m_DirImage;
 		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCI.format = VK_FORMAT_R32G32_SFLOAT;
+		imageViewCI.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;

@@ -21,6 +21,7 @@
 #include <engine/compute/NeuralNetwork.hpp>
 #include <engine/compute/SigmoidLayer.hpp>
 #include <engine/compute/LinearLayer.hpp>
+#include <engine/compute/KomputeManager.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -217,7 +218,7 @@ void RunNrcHpm()
 }
 
 void TrainMnist(
-	kp::Manager& manager,
+	en::KomputeManager& manager,
 	en::NeuralNetwork& nn,
 	const std::vector<std::vector<uint8_t>>& images,
 	const std::vector<uint8_t>& labels,
@@ -225,7 +226,7 @@ void TrainMnist(
 {
 	for (size_t i = 0; i < images.size(); i++)
 	{
-		if (0 == (i % (images.size() / 100)))
+		if (0 == (i % (images.size() / 10)))
 		{
 			en::Log::Info("Train Image: " + std::to_string(i));
 		}
@@ -252,7 +253,7 @@ void TrainMnist(
 }
 
 float TestMnist(
-	kp::Manager& manager,
+	en::KomputeManager& manager,
 	en::NeuralNetwork& nn,
 	const std::vector<std::vector<uint8_t>>& images,
 	const std::vector<uint8_t>& labels)
@@ -315,8 +316,8 @@ void TestNN()
 	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> dataset =
 		mnist::read_dataset<std::vector, std::vector, uint8_t>("data/mnist");
 
-	dataset.resize_training(20000);
-	dataset.resize_test(5000);
+//	dataset.resize_training(10000);
+//	dataset.resize_test(5000);
 
 	en::Log::Info("Number of training images = " + std::to_string(dataset.training_images.size()));
 	en::Log::Info("Number of training labels = " + std::to_string(dataset.training_labels.size()));
@@ -324,43 +325,39 @@ void TestNN()
 	en::Log::Info("Number of test labels = " + std::to_string(dataset.test_labels.size()));
 
 	// Kompute
-//	en::Window::Init(10, 10, false, "");
-//	en::VulkanAPI::Init("Kompute Test");
-//
-//	std::shared_ptr<vk::Instance> instancePtr(new vk::Instance(en::VulkanAPI::GetInstance()));
-//	std::shared_ptr<vk::PhysicalDevice> physicalDevicePtr(new vk::PhysicalDevice(en::VulkanAPI::GetPhysicalDevice()));
-//	std::shared_ptr<vk::Device> devicePtr(new vk::Device(en::VulkanAPI::GetDevice()));
-//
-//	kp::Manager manager(instancePtr, physicalDevicePtr, devicePtr);
+	en::Window::Init(10, 10, false, "");
+	en::VulkanAPI::Init("Kompute Test");
 
-	kp::Manager manager;
-
-	// NeuralNetwork test
-	std::vector<en::Layer*> layers = {
-		new en::LinearLayer(manager, 784, 30),
-		new en::SigmoidLayer(manager, 30),
-		new en::LinearLayer(manager, 30, 10),
-		new en::SigmoidLayer(manager, 10)};
-	
-	en::NeuralNetwork nn(layers);
-
-//	en::Matrix input(manager, 784, 1, en::Matrix::FillType::AllRandom);
-//	en::Matrix output = nn.Forward(manager, input);
-//	en::Log::Info(output.ToString());
-
-	for (size_t epoch = 0; epoch < 16; epoch++)
 	{
-		en::Log::Info("Epoch " + std::to_string(epoch));
-		TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.1f);
-		float accuracy = TestMnist(manager, nn, dataset.test_images, dataset.test_labels);
-		en::Log::Info(std::to_string(accuracy));
+		en::KomputeManager manager;
+		//kp::Manager manager;
+
+		// NeuralNetwork test
+		std::vector<en::Layer*> layers = {
+			new en::LinearLayer(manager, 784, 30),
+			new en::SigmoidLayer(manager, 30),
+			new en::LinearLayer(manager, 30, 10),
+			new en::SigmoidLayer(manager, 10) };
+
+		en::NeuralNetwork nn(layers);
+
+		for (size_t epoch = 0; epoch < 16; epoch++)
+		{
+			en::Log::Info("Epoch " + std::to_string(epoch));
+			TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.01f);
+			float accuracy = TestMnist(manager, nn, dataset.test_images, dataset.test_labels);
+			en::Log::Info(std::to_string(accuracy));
+		}
 	}
+
+	en::VulkanAPI::Shutdown();
+	en::Window::Shutdown();
 }
 
 int main()
 {
-	RunNrcHpm();
-	//TestNN();
+	//RunNrcHpm();
+	TestNN();
 
 	return 0;
 }

@@ -1,4 +1,5 @@
 #include <engine/compute/NeuralNetwork.hpp>
+#include <engine/util/Log.hpp>
 
 namespace en
 {
@@ -15,7 +16,7 @@ namespace en
 		}
 	}
 
-	Matrix NeuralNetwork::Forward(kp::Manager& manager, const Matrix& input) const
+	Matrix NeuralNetwork::Forward(KomputeManager& manager, const Matrix& input) const
 	{
 		//
 		std::shared_ptr<kp::Sequence> sequence = manager.sequence();
@@ -52,7 +53,7 @@ namespace en
 		return currentInput;
 	}
 
-	void NeuralNetwork::Backprop(kp::Manager& manager, const Matrix& input, const Matrix& target, float learningRate) const
+	void NeuralNetwork::Backprop(KomputeManager& manager, const Matrix& input, const Matrix& target, float learningRate) const
 	{
 		//
 		Matrix output = Forward(manager, input);
@@ -89,11 +90,13 @@ namespace en
 			sequence = layer->RecordBackprop(manager, sequence, nextLayer->GetOutput(), prevError, learningRate);
 		}
 
-		sequence = m_Layers[0]->RecordBackprop(manager, sequence, input, m_Layers[1]->GetLocalError(), learningRate)->eval();
+		sequence = m_Layers[0]->RecordBackprop(manager, sequence, input, m_Layers[1]->GetLocalError(), learningRate);
 
 		for (uint32_t i = 0; i < m_Layers.size(); i++)
 		{
 			sequence = m_Layers[i]->RecordSyncHost(manager, sequence);
 		}
+
+		sequence->eval();
 	}
 }
