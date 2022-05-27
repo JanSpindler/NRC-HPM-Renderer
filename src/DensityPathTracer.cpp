@@ -319,32 +319,26 @@ namespace en
 		//
 		std::string path = "data/output/";
 		std::string endStr = std::to_string(index);
-		//std::string colorStr = path + "color/" + endStr + ".exr";
-		std::string colorStr = path + "color/" + endStr + ".bmp";
-		std::string posStr = path + "pos/" + endStr + ".hdr";
+
+		std::string colorStr = path + "color/" + endStr + ".exr";
+		std::string posStr = path + "pos/" + endStr + ".exr";
 		std::string dirStr = path + "dir/" + endStr + ".exr";
-		
-		stbi_write_bmp(colorStr.c_str(), m_FrameWidth, m_FrameHeight, 4, colorData);
-		//WriteEXR(colorStr.c_str(), reinterpret_cast<float*>(colorData), m_FrameWidth, m_FrameHeight);
-		stbi_write_hdr(posStr.c_str(), m_FrameWidth, m_FrameHeight, 4, reinterpret_cast<float*>(posData));
-		//WriteEXR(posStr.c_str(), reinterpret_cast<float*>(posData), m_FrameWidth, m_FrameHeight);
-		//stbi_write_hdr(dirStr.c_str(), m_FrameWidth, m_FrameHeight, 4, reinterpret_cast<float*>(dirData));
-		WriteEXR(dirStr.c_str(), reinterpret_cast<float*>(dirData), m_FrameWidth, m_FrameHeight);
 
-		float* testData = (float*)malloc(m_FrameWidth * m_FrameHeight * 4 * 4);
-		int width, height;
-		bool hasalpha;
-		ReadEXR(dirStr.c_str(), testData, width, height, hasalpha);
-
+		// Convert color to f32
+		float* colorFData = reinterpret_cast<float*>(malloc(m_FrameWidth * m_FrameHeight * 4 * sizeof(float)));
 		for (size_t i = 0; i < m_FrameWidth * m_FrameHeight * 4; i++)
 		{
-			Log::Info(std::to_string(testData[i]));
+			colorFData[i] = static_cast<float>(reinterpret_cast<uint8_t*>(colorData)[i]) / 255.0f;
 		}
+
+		WriteEXR(colorStr.c_str(), colorFData, m_FrameWidth, m_FrameHeight);
+		WriteEXR(posStr.c_str(), reinterpret_cast<float*>(posData), m_FrameWidth, m_FrameHeight);
+		WriteEXR(dirStr.c_str(), reinterpret_cast<float*>(dirData), m_FrameWidth, m_FrameHeight);
 
 		free(colorData);
 		free(posData);
 		free(dirData);
-		free(testData);
+		free(colorFData);
 	}
 
 	VkImage DensityPathTracer::GetImage() const
@@ -410,7 +404,7 @@ namespace en
 		dirAtt.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		VkAttachmentReference dirAttRef;
-		dirAttRef.attachment = 1;
+		dirAttRef.attachment = 2;
 		dirAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		std::vector<VkAttachmentReference> colorAttRefs = { colorAttRef, posAttRef, dirAttRef };

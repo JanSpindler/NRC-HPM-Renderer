@@ -443,7 +443,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			const vec3 randomLight = TracePath2(samplePoint, randomDir) * randomPhase;
 
 			// Combine incomming light
-			const vec3 totalIncomingLight = randomLight + sunLight;
+			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
 			// Transmittance calculation
 			const vec3 s = sampleSigmaS * totalIncomingLight * density;// / prob;
@@ -503,7 +503,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
 
 			// Combine incomming light
-			const vec3 totalIncomingLight = randomLight + sunLight;
+			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
 			// Transmittance calculation
 			const vec3 s = sampleSigmaS * totalIncomingLight * density;// / prob;
