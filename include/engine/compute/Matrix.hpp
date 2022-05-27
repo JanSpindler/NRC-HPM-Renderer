@@ -17,6 +17,7 @@ namespace en
 			AllRandom = 3,
 		};
 
+		Matrix() = default; // TODO: remove?
 		Matrix(KomputeManager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType = FillType::None, float value = 0.0f);
 		Matrix(KomputeManager& manager, const std::vector<std::vector<float>> values);
 

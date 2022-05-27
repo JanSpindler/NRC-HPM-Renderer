@@ -334,9 +334,9 @@ void TestNN()
 
 		// NeuralNetwork test
 		std::vector<en::Layer*> layers = {
-			new en::LinearLayer(manager, 784, 30),
-			new en::SigmoidLayer(manager, 30),
-			new en::LinearLayer(manager, 30, 10),
+			new en::LinearLayer(manager, 784, 100),
+			new en::SigmoidLayer(manager, 100),
+			new en::LinearLayer(manager, 100, 10),
 			new en::SigmoidLayer(manager, 10) };
 
 		en::NeuralNetwork nn(layers);
@@ -344,7 +344,7 @@ void TestNN()
 		for (size_t epoch = 0; epoch < 16; epoch++)
 		{
 			en::Log::Info("Epoch " + std::to_string(epoch));
-			TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.01f);
+			TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.1f);
 			float accuracy = TestMnist(manager, nn, dataset.test_images, dataset.test_labels);
 			en::Log::Info(std::to_string(accuracy));
 		}
