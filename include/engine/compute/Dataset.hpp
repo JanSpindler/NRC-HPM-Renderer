@@ -12,6 +12,8 @@ namespace en
 
 		Dataset(const std::vector<Matrix>& inputs, const std::vector<Matrix>& targets);
 
+		void SyncToDevice(KomputeManager& manager);
+
 		size_t GetSize() const;
 
 		const Matrix& GetInput(size_t index) const;

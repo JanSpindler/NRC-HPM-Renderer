@@ -22,6 +22,8 @@
 #include <engine/compute/SigmoidLayer.hpp>
 #include <engine/compute/LinearLayer.hpp>
 #include <engine/compute/KomputeManager.hpp>
+#include <engine/compute/Dataset.hpp>
+#include <engine/compute/ReluLayer.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -259,6 +261,7 @@ float TestMnist(
 	const std::vector<uint8_t>& labels)
 {
 	size_t correct = 0;
+	float error = 0.0f;
 
 	for (size_t i = 0; i < images.size(); i++)
 	{
@@ -276,13 +279,6 @@ float TestMnist(
 			input[pixel] = { static_cast<float>(image[pixel]) / 255.0f };
 		}
 		en::Matrix inputMat(manager, input);
-
-//		std::vector<std::vector<float>> target(10);
-//		for (size_t number = 0; number < 10; number++)
-//		{
-//			target[number] = { number == label ? 1.0f : 0.0f };
-//		}
-//		en::Matrix targetMat(manager, target);
 
 		en::Matrix output = nn.Forward(manager, inputMat);
 		std::vector<float> outputVec = output.GetDataVector();
@@ -303,7 +299,17 @@ float TestMnist(
 		{
 			correct++;
 		}
+
+		for (uint8_t number = 0; number < 10; number++)
+		{
+			float target = number == label ? 1.0f : 0.0f;
+			float distance = target - outputVec[number];
+			error += distance * distance;
+		}
 	}
+
+	error /= (static_cast<float>(images.size()) * 10.0f);
+	en::Log::Info("Error: " + std::to_string(error));
 
 	return static_cast<float>(correct) / static_cast<float>(images.size());
 }
@@ -313,16 +319,16 @@ void TestNN()
 	en::Log::Info("Testing Neural Network");
 
 	// Mnist
-	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> dataset =
+	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> mnistData =
 		mnist::read_dataset<std::vector, std::vector, uint8_t>("data/mnist");
 
-//	dataset.resize_training(10000);
-//	dataset.resize_test(5000);
+	mnistData.resize_training(10000);
+	mnistData.resize_test(1000);
 
-	en::Log::Info("Number of training images = " + std::to_string(dataset.training_images.size()));
-	en::Log::Info("Number of training labels = " + std::to_string(dataset.training_labels.size()));
-	en::Log::Info("Number of test images = " + std::to_string(dataset.test_images.size()));
-	en::Log::Info("Number of test labels = " + std::to_string(dataset.test_labels.size()));
+	en::Log::Info("Number of training images = " + std::to_string(mnistData.training_images.size()));
+	en::Log::Info("Number of training labels = " + std::to_string(mnistData.training_labels.size()));
+	en::Log::Info("Number of test images = " + std::to_string(mnistData.test_images.size()));
+	en::Log::Info("Number of test labels = " + std::to_string(mnistData.test_labels.size()));
 
 	// Kompute
 	en::Window::Init(10, 10, false, "");
@@ -330,13 +336,12 @@ void TestNN()
 
 	{
 		en::KomputeManager manager;
-		//kp::Manager manager;
 
 		// NeuralNetwork test
 		std::vector<en::Layer*> layers = {
-			new en::LinearLayer(manager, 784, 100),
-			new en::SigmoidLayer(manager, 100),
-			new en::LinearLayer(manager, 100, 10),
+			new en::LinearLayer(manager, 784, 64),
+			new en::SigmoidLayer(manager, 64),
+			new en::LinearLayer(manager, 64, 10),
 			new en::SigmoidLayer(manager, 10) };
 
 		en::NeuralNetwork nn(layers);
@@ -344,8 +349,8 @@ void TestNN()
 		for (size_t epoch = 0; epoch < 16; epoch++)
 		{
 			en::Log::Info("Epoch " + std::to_string(epoch));
-			TrainMnist(manager, nn, dataset.training_images, dataset.training_labels, 0.1f);
-			float accuracy = TestMnist(manager, nn, dataset.test_images, dataset.test_labels);
+			TrainMnist(manager, nn, mnistData.training_images, mnistData.training_labels, 0.01f);
+			float accuracy = TestMnist(manager, nn, mnistData.test_images, mnistData.test_labels);
 			en::Log::Info(std::to_string(accuracy));
 		}
 	}
@@ -356,8 +361,8 @@ void TestNN()
 
 int main()
 {
-	//RunNrcHpm();
-	TestNN();
+	RunNrcHpm();
+	//TestNN();
 
 	return 0;
 }

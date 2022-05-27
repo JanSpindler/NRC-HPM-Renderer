@@ -537,7 +537,7 @@ void main()
 	const vec3 rd = normalize(pixelWorldPos - ro);
 
 	outPos = vec4(ro, 1.0);
-	outDir = vec4(rd.xy, 0.0, 1.0);
+	outDir = vec4(rd, 1.0);
 
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
 	const vec3 entry = entry_exit[0];

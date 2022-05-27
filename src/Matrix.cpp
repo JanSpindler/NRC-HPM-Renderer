@@ -2,10 +2,6 @@
 #include <engine/util/Log.hpp>
 #include <random>
 
-std::random_device randomDevice{};
-std::mt19937 gen{ randomDevice() };
-std::normal_distribution<> normalDistribution{ 0, 1 };
-
 namespace en
 {
 	Matrix::Matrix(KomputeManager& manager, uint32_t rowCount, uint32_t colCount, FillType fillType, float value) :
@@ -35,13 +31,15 @@ namespace en
 		}
 		else if (fillType == FillType::AllRandom)
 		{
-			float normalizer = static_cast<float>(m_ElementCount);
+			std::default_random_engine generator((std::random_device()()));
+			std::normal_distribution<float> distribution(0.0f, 1.0f);
+			float norm = static_cast<float>(m_ElementCount);
 
 			for (uint32_t row = 0; row < m_RowCount; row++)
 			{
 				for (uint32_t col = 0; col < m_ColCount; col++)
 				{
-					data[GetLinearIndex(row, col)] = normalDistribution(gen) * normalizer;
+					data[GetLinearIndex(row, col)] = distribution(generator) / norm;
 				}
 			}
 		}

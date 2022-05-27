@@ -59,6 +59,18 @@ namespace en
 		m_Targets = targets;
 	}
 
+	void Dataset::SyncToDevice(KomputeManager& manager)
+	{
+		std::vector<std::shared_ptr<kp::Tensor>> syncTensors;
+		for (size_t i = 0; i < m_Inputs.size(); i++)
+		{
+			syncTensors.push_back(m_Inputs[i].GetTensor());
+			syncTensors.push_back(m_Targets[i].GetTensor());
+		}
+
+		manager.sequence()->record<kp::OpTensorSyncDevice>(syncTensors)->eval();
+	}
+
 	size_t Dataset::GetSize() const
 	{
 		return m_Inputs.size();

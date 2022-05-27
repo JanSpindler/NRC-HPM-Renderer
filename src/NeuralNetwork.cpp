@@ -28,7 +28,7 @@ namespace en
 		{
 			sequence = m_Layers[i]->RecordSyncDevice(manager, sequence);
 		}
-
+		
 		// Forward
 		Matrix currentInput = input;
 
@@ -68,8 +68,8 @@ namespace en
 		
 		for (uint32_t i = 0; i < target.GetRowCount(); i++)
 		{
-			float absError = targetVec[i] - outputVec[i];
-			errorVec[i] = { absError * absError };
+			float localError = outputVec[i] - targetVec[i];
+			errorVec[i] = { 2.0f * localError };
 		}
 
 		Matrix error(manager, errorVec);
