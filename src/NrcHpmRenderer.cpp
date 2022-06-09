@@ -156,6 +156,8 @@ namespace en
 		m_TrainWidth = static_cast<uint32_t>(m_TrainScale * width);
 		m_TrainHeight = static_cast<uint32_t>(m_TrainScale * height);
 
+		Log::Info("Train pixels " + std::to_string(m_TrainWidth * m_TrainHeight));
+
 		VkDevice device = VulkanAPI::GetDevice();
 
 		// Destroy
@@ -752,7 +754,7 @@ namespace en
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;

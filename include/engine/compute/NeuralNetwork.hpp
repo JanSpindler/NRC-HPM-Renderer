@@ -15,6 +15,9 @@ namespace en
 		Matrix Forward(KomputeManager& manager, const Matrix& input) const;
 		void Backprop(KomputeManager& manager, const Matrix& input, const Matrix& target, float learningRate) const;
 
+		void SyncLayersToDevice(KomputeManager& manager);
+		void SyncLayersToHost(KomputeManager& manager);
+
 		std::string ToString() const;
 
 	private:

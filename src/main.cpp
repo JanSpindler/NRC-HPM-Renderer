@@ -569,12 +569,14 @@ void TestNNnrc()
 		en::NeuralNetwork nn(layers);
 
 		// Run
+		nn.SyncLayersToDevice(manager);
 		for (size_t epoch = 0; epoch < 1000; epoch++)
 		{
 			en::Log::Info("Start Epoch " + std::to_string(epoch));
 			TrainNrc(manager, nn, trainInputs, trainTargets, 0.1f, 10);
 			TestNrc(manager, nn, trainInputs, trainTargets, 10);
 		}
+		nn.SyncLayersToHost(manager);
 
 		// Paint an image
 	}
@@ -585,9 +587,9 @@ void TestNNnrc()
 
 int main()
 {
-	RunNrcHpm();
+	//RunNrcHpm();
 	//TestNNmnist();
-	//TestNNnrc();
+	TestNNnrc();
 
 	return 0;
 }

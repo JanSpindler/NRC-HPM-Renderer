@@ -32,7 +32,7 @@ namespace en
 			float oldDeltaWeight = matDeltaWeights[linearIndex];
 			float newDeltaWeight = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
 
-			float beta = 0.5;
+			float beta = 0.25;
 			matDeltaWeights[linearIndex] = (beta * oldDeltaWeight) + ((1.0 - beta) * newDeltaWeight);
 
 			//matDeltaWeights[linearIndex] = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;

@@ -26,10 +26,10 @@ namespace en
 		// Sync tensors to device
 		sequence = sequence->record<kp::OpTensorSyncDevice>(std::vector<std::shared_ptr<kp::Tensor>>{input.GetTensor()});
 
-		for (uint32_t i = 0; i < m_Layers.size(); i++)
-		{
-			sequence = m_Layers[i]->RecordSyncDevice(manager, sequence);
-		}
+//		for (uint32_t i = 0; i < m_Layers.size(); i++)
+//		{
+//			sequence = m_Layers[i]->RecordSyncDevice(manager, sequence);
+//		}
 		
 		// Forward
 		Matrix currentInput = input;
@@ -42,10 +42,10 @@ namespace en
 		}
 		
 		// Sync tensors to host and eval
-		for (uint32_t i = 0; i < m_Layers.size(); i++)
-		{
-			sequence = m_Layers[i]->RecordSyncHost(manager, sequence);
-		}
+//		for (uint32_t i = 0; i < m_Layers.size(); i++)
+//		{
+//			sequence = m_Layers[i]->RecordSyncHost(manager, sequence);
+//		}
 
 		sequence
 			->record<kp::OpTensorSyncLocal>({ currentInput.GetTensor() })
@@ -93,6 +93,30 @@ namespace en
 		}
 
 		sequence = m_Layers[0]->RecordBackprop(manager, sequence, input, m_Layers[1]->GetLocalError(), learningRate);
+
+//		for (uint32_t i = 0; i < m_Layers.size(); i++)
+//		{
+//			sequence = m_Layers[i]->RecordSyncHost(manager, sequence);
+//		}
+
+		sequence->eval();
+	}
+
+	void NeuralNetwork::SyncLayersToDevice(KomputeManager& manager)
+	{
+		std::shared_ptr<kp::Sequence> sequence = manager.sequence();
+
+		for (uint32_t i = 0; i < m_Layers.size(); i++)
+		{
+			sequence = m_Layers[i]->RecordSyncDevice(manager, sequence);
+		}
+
+		sequence->eval();
+	}
+
+	void NeuralNetwork::SyncLayersToHost(KomputeManager& manager)
+	{
+		std::shared_ptr<kp::Sequence> sequence = manager.sequence();
 
 		for (uint32_t i = 0; i < m_Layers.size(); i++)
 		{
