@@ -144,4 +144,9 @@ namespace en
 
 		return ss.str();
 	}
+
+	std::vector<Layer*>& NeuralNetwork::GetLayers()
+	{
+		return m_Layers;
+	}
 }

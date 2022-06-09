@@ -6,6 +6,8 @@
 #include <engine/graphics/Camera.hpp>
 #include <engine/graphics/Sun.hpp>
 #include <string>
+#include <engine/compute/NeuralNetwork.hpp>
+#include <array>
 
 namespace en
 {
@@ -18,7 +20,6 @@ namespace en
 		NrcHpmRenderer(
 			uint32_t width,
 			uint32_t height,
-			float trainPortion,
 			const Camera* camera,
 			const VolumeData* volumeData,
 			const Sun* sun);
@@ -28,69 +29,50 @@ namespace en
 
 		void ResizeFrame(uint32_t width, uint32_t height);
 
-		void ExportImageToHost(VkQueue queue, uint64_t index);
+		void UpdateNnData(KomputeManager& manager, NeuralNetwork& nn);
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 		size_t GetImageDataSize() const;
 
 	private:
-		static VkDescriptorSetLayout m_DescriptorSetLayout;
+		static VkDescriptorSetLayout m_NnDSL;
 		static VkDescriptorPool m_DescriptorPool;
 
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
-
-		float m_TrainScale;
-		uint32_t m_TrainWidth;
-		uint32_t m_TrainHeight;
 
 		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
 		const Sun* m_Sun;
 
 		VkRenderPass m_RenderPass;
-		vk::Shader m_VertShader;
-		vk::Shader m_FragShader;
-		VkPipelineLayout m_PipelineLayout;
-		VkPipeline m_Pipeline;
 
+		vk::Shader m_NrcForwardVertShader;
+		vk::Shader m_NrcForwardFragShader;
+		VkPipelineLayout m_NrcForwardPipelineLayout;
+		VkPipeline m_NrcForwardPipeline;
+		std::array<vk::Buffer*, 8> m_NrcForwardBuffers;
+		VkDescriptorSet m_NrcForwardDS;
+		
 		VkImage m_ColorImage;
 		VkDeviceMemory m_ColorImageMemory;
 		VkImageView m_ColorImageView;
-
-		VkImage m_TrainImage;
-		VkDeviceMemory m_TrainImageMemory;
-		VkImageView m_TrainImageView;
-
-		VkImage m_PosImage;
-		VkDeviceMemory m_PosImageMemory;
-		VkImageView m_PosImageView;
-
-		VkImage m_DirImage;
-		VkDeviceMemory m_DirImageMemory;
-		VkImageView m_DirImageView;
-
-		VkImage m_LowPassImage;
-		VkDeviceMemory m_LowPassImageMemory;
-		VkImageView m_LowPassImageView;
-		VkSampler m_LowPassSampler;
-		VkDescriptorSet m_DescriptorSet;
 
 		VkFramebuffer m_Framebuffer;
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
 
 		void CreateRenderPass(VkDevice device);
-		void CreatePipelineLayout(VkDevice device);
-		void CreatePipeline(VkDevice device);
+		
+		void CreateNrcForwardResources(VkDevice device);
+		void CreateNrcForwardPipelineLayout(VkDevice device);
+		void CreateNrcForwardPipeline(VkDevice device);
+
 		void CreateColorImage(VkDevice device);
-		void CreateTrainImage(VkDevice device);
-		void CreatePosImage(VkDevice device);
-		void CreateDirImage(VkDevice device);
-		void CreateLowPassResources(VkDevice device);
-		void CreateLowPassImage(VkDevice device);
+		
 		void CreateFramebuffer(VkDevice device);
+		
 		void RecordCommandBuffer();
 	};
 }

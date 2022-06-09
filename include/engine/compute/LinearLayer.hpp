@@ -37,6 +37,7 @@ namespace en
 			float learningRate) const override;
 
 		const Matrix& GetWeights() const;
+		const Matrix& GetBiases() const;
 
 	private:
 		Matrix m_Weights;

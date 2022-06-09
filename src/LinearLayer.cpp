@@ -24,7 +24,7 @@ namespace en
 			m_Output.GetTensor(),
 			m_LocalError.GetTensor(),
 			m_DeltaWeights.GetTensor() };
-
+		
 		return sequence->record<kp::OpTensorSyncDevice>(syncTensors);
 	}
 
@@ -136,5 +136,10 @@ namespace en
 	const Matrix& LinearLayer::GetWeights() const
 	{
 		return m_Weights;
+	}
+
+	const Matrix& LinearLayer::GetBiases() const
+	{
+		return m_Biases;
 	}
 }

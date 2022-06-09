@@ -1,9 +1,11 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
+// Inputs
 layout(location = 0) in vec3 pixelWorldPos;
 layout(location = 1) in vec2 fragUV;
 
+// Uniforms
 layout(set = 0, binding = 1) uniform camera_t
 {
 	vec3 pos;
@@ -32,12 +34,51 @@ layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 	float strength;
 } dir_light;
 
-layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
+// NN buffers
+layout(std140, set = 3, binding = 0) readonly buffer Weights0
+{
+	float matWeights0[]; // 5 x 64
+};
 
+layout(std140, set = 3, binding = 1) readonly buffer Weights1
+{
+	float matWeights1[]; // 64 x 64
+};
+
+layout(std140, set = 3, binding = 2) readonly buffer Weights2
+{
+	float matWeights2[]; // 64 x 64
+};
+
+layout(std140, set = 3, binding = 3) readonly buffer Weights3
+{
+	float matWeights3[]; // 64 x 4
+};
+
+layout(std140, set = 3, binding = 4) readonly buffer Biases0
+{
+	float matBiases0[];
+};
+
+layout(std140, set = 3, binding = 5) readonly buffer Biases1
+{
+	float matBiases1[];
+};
+
+layout(std140, set = 3, binding = 6) readonly buffer Biases2
+{
+	float matBiases2[];
+};
+
+layout(std140, set = 3, binding = 7) readonly buffer Biases3
+{
+	float matBiases3[];
+};
+
+// Output
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outPos;
-layout(location = 2) out vec4 outDir; // TODO: vec2
 
+// Constants
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
 
@@ -57,8 +98,7 @@ const vec3 skyPos = vec3(0.0);
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
 
-// --------------- Start: random ----------------
-
+// Random
 float preRand = volumeData.random.x * fragUV.x;
 float prePreRand = volumeData.random.y * fragUV.y;
 
@@ -75,68 +115,211 @@ float myRand()
 	return result;
 }
 
-/*const uint64_t PCG32_DEFAULT_STATE  = 0x853c49e6748fea9bUL;
-const uint64_t PCG32_DEFAULT_STREAM = 0xda3e39cb94b95bdbUL;
-const uint64_t PCG32_MULT           = 0x5851f42d4c957f2dUL;
-
-struct pcg32_t
-{
-	uint64_t state;
-	uint64_t inc;
-};
-
-pcg32_t pcg32;
-
-uint Pcg32NextUInt()
-{
-	uint64_t oldState = pcg32.state;
-	pcg32.state = PCG32_MULT + pcg32.inc;
-	uint xorShifted = uint(((oldState >> 18u) ^ oldState) >> 27u);
-	uint rot = uint(oldState >> 59u);
-	return (xorShifted >> rot) | (xorShifted << ((~rot + 1u) & 32));
-}
-
-uint Pcg32NextUInt(uint bound)
-{
-	uint threshold = (~bound + 1u) % bound;
-	while (true)
-	{
-		uint r = Pcg32NextUInt();
-		if (r >= threshold)
-			return r % bound;
-	}
-}
-
-float Pcg32NextFloat()
-{
-	uint u = (Pcg32NextUInt() >> 9) | 0x3f800000u;
-	vec2 f = unpackHalf2x16(u);
-	return rand(f);
-}
-
-void Pcg32Seed()
-{
-	uint64_t initstate = PCG32_DEFAULT_STATE;
-	uint64_t initseq = PCG32_DEFAULT_STREAM;
-
-	pcg32.state = packHalf2x16(vec2(myRand(), myRand()));
-	//pcg32.state = 0U;
-	pcg32.inc = (initseq << 1u) | 1u;
-	Pcg32NextUInt();
-	pcg32.state += initstate;
-	Pcg32NextUInt();
-}*/
-
 float RandFloat(float maxVal)
 {
 	float f = myRand();
 	return f * maxVal;
 }
 
-// --------------- End: random ----------------
+// NN helper
+float Sigmoid(float x)
+{
+	return 1.0 / (1.0 + exp(-x));
+}
 
-// --------------- Start: util -----------------
+float GetWeight0(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights0[linearIndex];
+}
 
+float GetWeight1(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights1[linearIndex];
+}
+
+float GetWeight2(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights2[linearIndex];
+}
+
+float GetWeight3(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights3[linearIndex];
+}
+
+void ApplyWeights0(in float[5] nr0, out float[64] nr1)
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 5; inCol++)
+		{
+			float inVal = nr0[inCol];
+			float weightVal = GetWeight0(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr1[outRow] = sum;
+	}
+}
+
+void ApplyWeights1(in float[64] nr1, out float[64] nr2)
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 5; inCol++)
+		{
+			float inVal = nr1[inCol];
+			float weightVal = GetWeight1(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr2[outRow] = sum;
+	}
+}
+
+void ApplyWeights2(in float[64] nr2, out float[64] nr3)
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 5; inCol++)
+		{
+			float inVal = nr2[inCol];
+			float weightVal = GetWeight2(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr3[outRow] = sum;
+	}
+}
+
+void ApplyWeights3(in float[64] nr3, out float[4] nr4)
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 5; inCol++)
+		{
+			float inVal = nr3[inCol];
+			float weightVal = GetWeight3(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr4[outRow] = sum;
+	}
+}
+
+void AddBiases0(inout float[64] nr1)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr1[i] += matBiases0[i];
+	}
+}
+
+void AddBiases1(inout float[64] nr2)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr2[i] += matBiases1[i];
+	}
+}
+
+void AddBiases2(inout float[64] nr3)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr3[i] += matBiases2[i];
+	}
+}
+
+void AddBiases3(inout float[4] nr4)
+{
+	for (uint i = 0; i < 4; i++)
+	{
+		nr4[i] += matBiases3[i];
+	}
+}
+
+void ActivateNr1(inout float[64] nr1)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr1[i] = Sigmoid(nr1[i]);
+	}
+}
+
+void ActivateNr2(inout float[64] nr2)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr2[i] = Sigmoid(nr2[i]);
+	}
+}
+
+void ActivateNr3(inout float[64] nr3)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr3[i] = Sigmoid(nr3[i]);
+	}
+}
+
+void ActivateNr4(inout float[4] nr4)
+{
+	for (uint i = 0; i < 4; i++)
+	{
+		nr4[i] = Sigmoid(nr4[i]);
+	}
+}
+
+vec4 Forward(const vec3 ro, const vec3 rd)
+{
+	const float theta = atan(rd.y, rd.x);
+	const float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
+
+	const float nr0[5] = float[]( ro.x, ro.y, ro.z, theta, phi );
+	float nr1[64];
+	float nr2[64];
+	float nr3[64];
+	float nr4[4];
+
+	ApplyWeights0(nr0, nr1);
+	AddBiases0(nr1);
+	ActivateNr1(nr1);
+	
+	ApplyWeights1(nr1, nr2);
+	AddBiases1(nr2);
+	ActivateNr2(nr2);
+	
+	ApplyWeights2(nr2, nr3);
+	AddBiases2(nr3);
+	ActivateNr3(nr3);
+	
+	ApplyWeights3(nr3, nr4);
+	AddBiases3(nr4);
+	ActivateNr4(nr4);
+
+	vec4 outputCol;
+	outputCol.r = nr4[0];
+	outputCol.g = nr4[1];
+	outputCol.b = nr4[2];
+	outputCol.a = nr4[3];
+
+	return outputCol;
+}
+
+// Path trace helper
 float sky_sdf(vec3 pos)
 {
 	vec3 d = abs(pos - skyPos) - skySize / 2;
@@ -205,10 +388,7 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
-// --------------- End: util -----------------
-
-// --------------- Start: single scatter -----------------
-
+// Path trace
 float get_self_shadowing(vec3 pos)
 {
 	// Exit if not used
@@ -244,54 +424,6 @@ float get_self_shadowing(vec3 pos)
 
 	return transmittance;
 }
-
-// x-z = scattered light | z = transmittance
-vec4 render_cloud(vec3 sample_points[SAMPLE_COUNT], vec3 out_dir, vec3 ro)
-{	
-	// out_dir should be normalized
-	// SAMPLE_COUNT should be > 0
-
-	vec3 scattered_light = vec3(0.0);
-	float transmittance = 1.0;
-
-	const float sigma_s = SIGMA_S;
-	const float sigma_e = SIGMA_E;
-	const float step_size = length(sample_points[1] - sample_points[0]);
-	const vec3 step_offset = RandFloat(step_size) * out_dir;
-
-	bool depth_stored = false;
-	for (int i = 0; i < SAMPLE_COUNT; i++)
-	{
-		const vec3 sample_point = sample_points[i] + step_offset;
-		const float density = getDensity(sample_point);
-
-		if (density > 0.0)
-		{
-			const float sample_sigma_s = density * sigma_s;
-			const float sample_sigma_e = density * sigma_e;
-
-			const float phase_result = hg_phase_func(dot(dir_light.dir, out_dir));
-			const float self_shadowing = get_self_shadowing(sample_point);
-
-			const vec3 s = vec3(self_shadowing * phase_result) * sample_sigma_s * dir_light.strength;
-			const float t_r = exp(-sample_sigma_e * step_size);
-			const vec3 s_int = (s - (s * t_r)) / sample_sigma_e;
-
-			scattered_light += transmittance * s_int;
-			transmittance *= t_r;
-			
-			// Early exit
-			if (transmittance < 0.01)
-				break;
-		}
-	}
-
-	return vec4(scattered_light, transmittance);
-}
-
-// --------------- End: util -----------------
-
-// --------------- Start: Path trace -----------------
 
 vec3 NewRayDir(vec3 oldRayDir)
 {
@@ -500,7 +632,8 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			vec3 randomDir = NewRayDir(rayDir);
 			const float prob = 1.0 / (4.0 * PI * PI);
 			const float randomPhase = hg_phase_func(dot(randomDir, -rayDir));
-			const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
+			//const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
+			const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
 
 			// Combine incomming light
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
@@ -527,21 +660,14 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
 }
 
-// --------------- End: path trace -----------------
-
-// --------------- Main -----------------
-
+// Main
 void main()
 {
+	// Setup
 	const vec3 ro = camera.pos;
 	const vec3 rd = normalize(pixelWorldPos - ro);
 
-	float theta = atan(rd.y, rd.x);
-	float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
-
-	outPos = vec4(ro, 1.0);
-	outDir = vec4(theta, phi, 0.0, 1.0);
-
+	// SDF
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
@@ -552,22 +678,7 @@ void main()
 		return;
 	}
 
-	vec3[SAMPLE_COUNT] samplePoints;
-	gen_sample_points(entry, exit, samplePoints);
-
-	if (volumeData.singleScatter > 0)
-	{
-		vec4 result = render_cloud(samplePoints, -rd, ro);
-		outColor = vec4(result.xyz, 1.0 - result.w);
-		return;
-	}
-	else
-	{
-		float lowPassIndex = float(volumeData.lowPassIndex);
-		float alpha = lowPassIndex / (lowPassIndex + 1.0);
-		vec4 oldColor = texture(lowPassTex, fragUV);
-		vec4 newColor = vec4(TracePath(ro, rd), 1.0);
-		outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
-		return;
-	}
+	// Render
+	//outColor = Forward(ro, rd);
+	outColor = vec4(TracePath(ro, rd), 1.0);
 }

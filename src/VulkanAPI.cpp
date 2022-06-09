@@ -42,7 +42,7 @@ namespace en
 		vk::Texture2D::Init();
 		VolumeData::Init(m_Device);
 		Sun::Init();
-		//DensityPathTracer::Init(m_Device);
+		DensityPathTracer::Init(m_Device);
 		NrcHpmRenderer::Init(m_Device);
 	}
 
@@ -50,7 +50,7 @@ namespace en
 	{
 		Log::Info("Shutting down VulkanAPI");
 
-		//DensityPathTracer::Shutdown(m_Device);
+		DensityPathTracer::Shutdown(m_Device);
 		NrcHpmRenderer::Shutdown(m_Device);
 		Sun::Shutdown();
 		VolumeData::Shutdown(m_Device);
@@ -191,6 +191,7 @@ namespace en
 
 		// Select wanted extensions
 		std::vector<const char*> extensions = Window::GetVulkanExtensions();
+		extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
 		// Create
 		VkApplicationInfo appInfo;
@@ -390,16 +391,17 @@ namespace en
 		std::vector<const char*> extensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
-			VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME };
+			VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
+			VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME };
 
-		float priority = 1.0f;
+		float priorities[] = { 1.0f, 1.0f };
 		VkDeviceQueueCreateInfo queueCreateInfo;
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.pNext = nullptr;
 		queueCreateInfo.flags = 0;
 		queueCreateInfo.queueFamilyIndex = m_GraphicsQFI;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &priority;
+		queueCreateInfo.queueCount = 2;
+		queueCreateInfo.pQueuePriorities = priorities;
 
 		// Features
 		VkPhysicalDeviceFeatures features{};
@@ -440,6 +442,7 @@ namespace en
 		VkQueue queue;
 		vkGetDeviceQueue(m_Device, m_GraphicsQFI, 0, &m_GraphicsQueue);
 		m_PresentQueue = m_GraphicsQueue;
-		m_ComputeQueue = m_GraphicsQueue;
+		//m_ComputeQueue = m_GraphicsQueue;
+		vkGetDeviceQueue(m_Device, m_GraphicsQFI, 1, &m_ComputeQueue);
 	}
 }

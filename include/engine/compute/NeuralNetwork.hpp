@@ -20,6 +20,8 @@ namespace en
 
 		std::string ToString() const;
 
+		std::vector<Layer*>& GetLayers();
+
 	private:
 		std::vector<Layer*> m_Layers;
 	};
