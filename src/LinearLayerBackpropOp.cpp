@@ -23,12 +23,19 @@ namespace en
 		layout(binding = 2) buffer MatLocalError { float matLocalError[]; };
 		layout(binding = 3) readonly buffer MatWeights { float matWeights[]; };
 		layout(binding = 4) buffer MatBiases { float matBiases[]; };
-		layout(binding = 5) writeonly buffer MatDeltaWeights { float matDeltaWeights[]; };
+		layout(binding = 5) buffer MatDeltaWeights { float matDeltaWeights[]; };
 
 		void LearnWeights(uint outRow, uint outCol)
 		{
 			uint linearIndex = outRow * config.inputSize + outCol;
-			matDeltaWeights[linearIndex] = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
+			
+			float oldDeltaWeight = matDeltaWeights[linearIndex];
+			float newDeltaWeight = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
+
+			float beta = 0.5;
+			matDeltaWeights[linearIndex] = (beta * oldDeltaWeight) + ((1.0 - beta) * newDeltaWeight);
+
+			//matDeltaWeights[linearIndex] = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
 		}
 
 		void LearnBiases(uint outRow)

@@ -15,6 +15,8 @@ namespace en
 		Matrix Forward(KomputeManager& manager, const Matrix& input) const;
 		void Backprop(KomputeManager& manager, const Matrix& input, const Matrix& target, float learningRate) const;
 
+		std::string ToString() const;
+
 	private:
 		std::vector<Layer*> m_Layers;
 	};

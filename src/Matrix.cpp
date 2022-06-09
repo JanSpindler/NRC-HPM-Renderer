@@ -32,14 +32,14 @@ namespace en
 		else if (fillType == FillType::AllRandom)
 		{
 			std::default_random_engine generator((std::random_device()()));
-			std::normal_distribution<float> distribution(0.0f, 1.0f);
-			float norm = static_cast<float>(m_ElementCount);
+			std::normal_distribution<float> distribution(0.0f, std::pow(static_cast<float>(m_RowCount), -0.5f));
+			float norm = static_cast<float>(m_ColCount);
 
 			for (uint32_t row = 0; row < m_RowCount; row++)
 			{
 				for (uint32_t col = 0; col < m_ColCount; col++)
 				{
-					data[GetLinearIndex(row, col)] = distribution(generator) / norm;
+					data[GetLinearIndex(row, col)] = distribution(generator);// / norm;
 				}
 			}
 		}
@@ -83,7 +83,9 @@ namespace en
 
 	std::vector<float> Matrix::GetDataVector() const
 	{
-		return m_Tensor->vector<float>();
+		if (m_Tensor->isInit())
+			return m_Tensor->vector<float>();
+		return {};
 	}
 
 	std::string Matrix::ToString() const

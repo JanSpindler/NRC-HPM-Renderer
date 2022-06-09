@@ -13,7 +13,6 @@
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
 #include <engine/graphics/Sun.hpp>
-#include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/compute/Matrix.hpp>
 #include <mnist/mnist_reader.hpp>
 #include <kompute/Kompute.hpp>
@@ -24,6 +23,9 @@
 #include <engine/compute/KomputeManager.hpp>
 #include <engine/compute/Dataset.hpp>
 #include <engine/compute/ReluLayer.hpp>
+#include <filesystem>
+#include <set>
+#include <engine/util/openexr_helper.hpp>
 
 en::DensityPathTracer* pathTracer = nullptr;
 
@@ -108,7 +110,7 @@ void SwapchainResizeCallback()
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 600;
+	uint32_t width = 200;
 	uint32_t height = width;
 
 	// Start engine
@@ -143,8 +145,6 @@ void RunNrcHpm()
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
 
 	swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
-
-	en::NeuralRadianceCache nrc;
 
 	// Main loop
 	VkDevice device = en::VulkanAPI::GetDevice();
@@ -228,7 +228,7 @@ void TrainMnist(
 {
 	for (size_t i = 0; i < images.size(); i++)
 	{
-		if (0 == (i % (images.size() / 10)))
+		if (images.size() >= 10 && 0 == (i % (images.size() / 10)))
 		{
 			en::Log::Info("Train Image: " + std::to_string(i));
 		}
@@ -265,7 +265,7 @@ float TestMnist(
 
 	for (size_t i = 0; i < images.size(); i++)
 	{
-		if (0 == (i % (images.size() / 10)))
+		if (images.size() >= 10 && 0 == (i % (images.size() / 10)))
 		{
 			en::Log::Info("Test Image: " + std::to_string(i));
 		}
@@ -314,7 +314,7 @@ float TestMnist(
 	return static_cast<float>(correct) / static_cast<float>(images.size());
 }
 
-void TestNN()
+void TestNNmnist()
 {
 	en::Log::Info("Testing Neural Network");
 
@@ -322,13 +322,13 @@ void TestNN()
 	mnist::MNIST_dataset<std::vector, std::vector<uint8_t>, uint8_t> mnistData =
 		mnist::read_dataset<std::vector, std::vector, uint8_t>("data/mnist");
 
-	mnistData.resize_training(10000);
-	mnistData.resize_test(1000);
+	//mnistData.resize_training(1000);
+	//mnistData.resize_test(1000);
 
 	en::Log::Info("Number of training images = " + std::to_string(mnistData.training_images.size()));
 	en::Log::Info("Number of training labels = " + std::to_string(mnistData.training_labels.size()));
 	en::Log::Info("Number of test images = " + std::to_string(mnistData.test_images.size()));
-	en::Log::Info("Number of test labels = " + std::to_string(mnistData.test_labels.size()));
+	en::Log::Info("Number of test labels = " + std::to_string(mnistData.test_images.size()));
 
 	// Kompute
 	en::Window::Init(10, 10, false, "");
@@ -341,18 +341,239 @@ void TestNN()
 		std::vector<en::Layer*> layers = {
 			new en::LinearLayer(manager, 784, 64),
 			new en::SigmoidLayer(manager, 64),
+			new en::LinearLayer(manager, 64, 64),
+			new en::ReluLayer(manager, 64),
+			new en::LinearLayer(manager, 64, 64),
+			new en::ReluLayer(manager, 64),
 			new en::LinearLayer(manager, 64, 10),
 			new en::SigmoidLayer(manager, 10) };
 
 		en::NeuralNetwork nn(layers);
 
-		for (size_t epoch = 0; epoch < 16; epoch++)
+		for (size_t epoch = 0; epoch < 1000; epoch++)
 		{
 			en::Log::Info("Epoch " + std::to_string(epoch));
 			TrainMnist(manager, nn, mnistData.training_images, mnistData.training_labels, 0.01f);
 			float accuracy = TestMnist(manager, nn, mnistData.test_images, mnistData.test_labels);
 			en::Log::Info(std::to_string(accuracy));
+
+			//en::Log::Info(nn.ToString());
 		}
+	}
+
+	en::VulkanAPI::Shutdown();
+	en::Window::Shutdown();
+}
+
+struct NrcInput
+{
+	float x;
+	float y;
+	float z;
+	float theta;
+	float phi;
+};
+
+struct NrcTarget
+{
+	float r;
+	float g;
+	float b;
+	float a;
+};
+
+void TrainNrc(
+	en::KomputeManager& manager,
+	en::NeuralNetwork& nn,
+	const std::vector<NrcInput>& inputs,
+	const std::vector<NrcTarget>& targets,
+	float learningRate,
+	size_t count)
+{
+	size_t realCount = std::min(count, inputs.size());
+
+	for (size_t i = 0; i < realCount; i++)
+	{
+		if (realCount >= 10 && 0 == (i % (realCount / 10)))
+		{
+			en::Log::Info("Train Image: " + std::to_string(i));
+		}
+
+		en::Matrix inputMat(manager, { { inputs[i].x }, { inputs[i].y }, { inputs[i].z }, { inputs[i].theta }, { inputs[i].phi } });
+		en::Matrix targetMat(manager, { { targets[i].r }, { targets[i].g }, { targets[i].b }, { targets[i].a } });
+
+		nn.Backprop(manager, inputMat, targetMat, learningRate);
+	}
+}
+
+void TestNrc(
+	en::KomputeManager& manager,
+	en::NeuralNetwork& nn,
+	const std::vector<NrcInput>& inputs,
+	const std::vector<NrcTarget>& targets,
+	size_t count)
+{
+	const size_t realCount = std::min(count, inputs.size());
+
+	float error = 0.0f;
+
+	for (size_t i = 0; i < realCount; i++)
+	{
+		if (realCount >= 10 && 0 == (i % (realCount / 10)))
+		{
+			en::Log::Info("Test Image: " + std::to_string(i));
+		}
+
+		en::Matrix inputMat(manager, { { inputs[i].x }, { inputs[i].y }, { inputs[i].z }, { inputs[i].theta }, { inputs[i].phi } });
+		std::vector<float> targetVec = { targets[i].r, targets[i].g, targets[i].b, targets[i].a };
+
+		en::Matrix output = nn.Forward(manager, inputMat);
+		std::vector<float> outputVec = output.GetDataVector();
+
+		for (uint8_t channel = 0; channel < 4; channel++)
+		{
+			float distance = targetVec[channel] - outputVec[channel];
+			error += distance * distance;
+		}
+	}
+
+	error /= (static_cast<float>(realCount) * 4.0f);
+	en::Log::Info("Error: " + std::to_string(error));
+}
+
+void TestNNnrc()
+{
+	en::Window::Init(10, 10, false, "");
+	en::VulkanAPI::Init("Kompute Test");
+
+	{
+		// Load data
+		std::set<std::filesystem::path> colorFiles;
+		std::set<std::filesystem::path> posFiles;
+		std::set<std::filesystem::path> dirFiles;
+
+		for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator("data/output/color"))
+		{
+			colorFiles.insert(entry.path().filename());
+		}
+
+		for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator("data/output/pos"))
+		{
+			posFiles.insert(entry.path().filename());
+		}
+
+		for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator("data/output/dir"))
+		{
+			dirFiles.insert(entry.path().filename());
+		}
+
+		std::vector<std::vector<float>> colorDatas;
+		std::vector<std::vector<float>> posDatas;
+		std::vector<std::vector<float>> dirDatas;
+
+		for (const auto& colorFile : colorFiles)
+		{
+			const auto& posFile = posFiles.find(colorFile);
+			const auto& dirFile = dirFiles.find(colorFile);
+
+			if (posFile != posFiles.end() &&
+				dirFile != dirFiles.end())
+			{
+				float* data;
+				int width;
+				int height;
+				bool hasAlpha;
+
+				// Read color data
+				std::string colorStr = std::string("data/output/color/" + colorFile.filename().string());
+				en::ReadEXR(colorStr.c_str(), data, width, height, hasAlpha);
+				std::vector<float> colorData(width * height * 4);
+				memcpy(colorData.data(), data, width * height * 4 * sizeof(float));
+				delete data;
+				colorDatas.push_back(colorData);
+
+				// Read pos data
+				std::string posStr = std::string("data/output/pos/" + (*posFile).filename().string());
+				en::ReadEXR(posStr.c_str(), data, width, height, hasAlpha);
+				std::vector<float> posData(width * height * 4);
+				memcpy(posData.data(), data, width * height * 4 * sizeof(float));
+				delete data;
+				posDatas.push_back(posData);
+
+				// Read dir data
+				std::string dirStr = std::string("data/output/dir/" + (*dirFile).filename().string());
+				en::ReadEXR(dirStr.c_str(), data, width, height, hasAlpha);
+				std::vector<float> dirData(width * height * 4);
+				memcpy(dirData.data(), data, width * height * 4 * sizeof(float));
+				delete data;
+				dirDatas.push_back(dirData);
+			}
+		}
+
+		// Convert data into input format
+		std::vector<NrcInput> trainInputs;
+		std::vector<NrcTarget> trainTargets;
+
+		for (size_t frame = 0; frame < colorDatas.size(); frame++)
+		{
+			for (size_t pixel = 0; pixel < colorDatas[frame].size(); pixel++)
+			{
+				float color[4];
+				memcpy(color, &colorDatas[frame][pixel], 4 * sizeof(float));
+
+				float pos[4];
+				memcpy(pos, &colorDatas[frame][pixel], 4 * sizeof(float));
+
+				float dir[4];
+				memcpy(dir, &colorDatas[frame][pixel], 4 * sizeof(float));
+
+				NrcTarget target;
+				target.r = color[0];
+				target.g = color[1];
+				target.b = color[2];
+				target.a = color[3];
+				trainTargets.push_back(target);
+
+				NrcInput input;
+				input.x = pos[0];
+				input.y = pos[1];
+				input.z = pos[2];
+				input.theta = dir[0];
+				input.phi = dir[1];
+				trainInputs.push_back(input);
+			}
+		}
+
+		colorDatas.clear();
+		posDatas.clear();
+		dirDatas.clear();
+
+		en::Log::Info("Training data has been loaded");
+
+		// Kompute
+		en::KomputeManager manager;
+
+		std::vector<en::Layer*> layers = {
+			new en::LinearLayer(manager, 5, 64),
+			new en::SigmoidLayer(manager, 64),
+			new en::LinearLayer(manager, 64, 64),
+			new en::SigmoidLayer(manager, 64),
+			new en::LinearLayer(manager, 64, 64),
+			new en::SigmoidLayer(manager, 64),
+			new en::LinearLayer(manager, 64, 4),
+			new en::SigmoidLayer(manager, 4) };
+
+		en::NeuralNetwork nn(layers);
+
+		// Run
+		for (size_t epoch = 0; epoch < 1000; epoch++)
+		{
+			en::Log::Info("Start Epoch " + std::to_string(epoch));
+			TrainNrc(manager, nn, trainInputs, trainTargets, 0.1f, 10);
+			TestNrc(manager, nn, trainInputs, trainTargets, 10);
+		}
+
+		// Paint an image
 	}
 
 	en::VulkanAPI::Shutdown();
@@ -361,8 +582,9 @@ void TestNN()
 
 int main()
 {
-	RunNrcHpm();
-	//TestNN();
+	//RunNrcHpm();
+	//TestNNmnist();
+	TestNNnrc();
 
 	return 0;
 }

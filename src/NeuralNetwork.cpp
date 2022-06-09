@@ -1,5 +1,7 @@
 #include <engine/compute/NeuralNetwork.hpp>
 #include <engine/util/Log.hpp>
+#include <engine/compute/LinearLayer.hpp>
+#include <sstream>
 
 namespace en
 {
@@ -98,5 +100,24 @@ namespace en
 		}
 
 		sequence->eval();
+	}
+
+	std::string NeuralNetwork::ToString() const
+	{
+		std::ostringstream ss;
+
+		ss << "NN:" << std::endl;
+
+		for (size_t i = 0; i < m_Layers.size(); i++)
+		{
+			const LinearLayer* linearLayer = dynamic_cast<LinearLayer*>(m_Layers[i]);
+			if (linearLayer != nullptr)
+			{
+				ss << "Layer " << std::to_string(i) << " weights" << std::endl;
+				ss << linearLayer->GetWeights().ToString();
+			}
+		}
+
+		return ss.str();
 	}
 }

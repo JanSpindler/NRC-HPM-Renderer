@@ -9,7 +9,7 @@ namespace en
 	LinearLayer::LinearLayer(KomputeManager& manager, uint32_t inSize, uint32_t outSize) :
 		Layer(manager, inSize, outSize),
 		m_Weights(manager, outSize, inSize, Matrix::FillType::AllRandom),
-		m_DeltaWeights(manager, outSize, inSize),
+		m_DeltaWeights(manager, outSize, inSize, Matrix::FillType::All, 0.0f),
 		m_Biases(manager, outSize, 1, Matrix::FillType::AllRandom)
 	{
 	}
@@ -131,5 +131,10 @@ namespace en
 			{ mataddConfig });
 
 		return sequence->record<kp::OpAlgoDispatch>(algo, std::vector<MataddOp::Config>{ mataddConfig });
+	}
+
+	const Matrix& LinearLayer::GetWeights() const
+	{
+		return m_Weights;
 	}
 }

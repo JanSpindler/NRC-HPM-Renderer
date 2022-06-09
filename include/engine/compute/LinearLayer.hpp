@@ -36,6 +36,8 @@ namespace en
 			const Matrix& prevError,
 			float learningRate) const override;
 
+		const Matrix& GetWeights() const;
+
 	private:
 		Matrix m_Weights;
 		Matrix m_DeltaWeights;
