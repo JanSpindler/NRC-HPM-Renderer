@@ -28,9 +28,22 @@
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/compute/NrcDataset.hpp>
 #include <random>
+#include <thread>
 
 std::random_device rd;
 std::mt19937 gen(rd());
+std::uniform_int_distribution<> distr;
+
+en::DensityPathTracer* pathTracer = nullptr;
+en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
+
+en::KomputeManager* manager;
+en::NeuralNetwork* nn;
+
+std::vector<en::NrcInput> trainInputs;
+std::vector<en::NrcTarget> trainTargets;
+
+static bool doneTraining;
 
 void LoadTrainData(std::vector<en::NrcInput>& trainInputs, std::vector<en::NrcTarget>& trainTargets)
 {
@@ -136,6 +149,8 @@ void LoadTrainData(std::vector<en::NrcInput>& trainInputs, std::vector<en::NrcTa
 	dirDatas.clear();
 
 	en::Log::Info("Training data has been loaded");
+
+	distr = std::uniform_int_distribution<>(0, trainInputs.size() - 1);
 }
 
 void TrainNrc(
@@ -201,9 +216,6 @@ void TestNrc(
 	error /= (static_cast<float>(realCount) * 4.0f);
 	en::Log::Info("Error: " + std::to_string(error));
 }
-
-en::DensityPathTracer* pathTracer = nullptr;
-en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -282,6 +294,15 @@ void SwapchainResizeCallback()
 	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
 }
 
+void RunNrcHpmTrainer()
+{
+	nn->SyncLayersToDevice(*manager);
+	TrainNrc(*manager, *nn, distr, trainInputs, trainTargets, 0.1f, 1000);
+	nn->SyncLayersToHost(*manager);
+
+	doneTraining = true;
+}
+
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
@@ -315,7 +336,7 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		pathTracer = new en::DensityPathTracer(10, 10, &camera, &volumeData, &sun);
+		pathTracer = new en::DensityPathTracer(10, 10, &volumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
@@ -324,25 +345,24 @@ void RunNrcHpm()
 		swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
 
 		// NN
-		std::vector<en::NrcInput> trainInputs;
-		std::vector<en::NrcTarget> trainTargets;
 		LoadTrainData(trainInputs, trainTargets);
 
-		std::uniform_int_distribution<> distr(0, trainInputs.size() - 1);
-
-		en::KomputeManager manager;
+		manager = new en::KomputeManager();
 
 		std::vector<en::Layer*> layers = {
-			new en::LinearLayer(manager, 5, 64),
-			new en::SigmoidLayer(manager, 64),
-			new en::LinearLayer(manager, 64, 64),
-			new en::SigmoidLayer(manager, 64),
-			new en::LinearLayer(manager, 64, 64),
-			new en::SigmoidLayer(manager, 64),
-			new en::LinearLayer(manager, 64, 4),
-			new en::SigmoidLayer(manager, 4) };
+			new en::LinearLayer(*manager, 5, 64),
+			new en::SigmoidLayer(*manager, 64),
+			new en::LinearLayer(*manager, 64, 64),
+			new en::SigmoidLayer(*manager, 64),
+			new en::LinearLayer(*manager, 64, 64),
+			new en::SigmoidLayer(*manager, 64),
+			new en::LinearLayer(*manager, 64, 4),
+			new en::SigmoidLayer(*manager, 4) };
 
-		en::NeuralNetwork nn(layers);
+		nn = new en::NeuralNetwork(layers);
+
+		doneTraining = false;
+		std::thread* trainerThread = new std::thread(RunNrcHpmTrainer);
 
 		// Main loop
 		VkDevice device = en::VulkanAPI::GetDevice();
@@ -354,6 +374,17 @@ void RunNrcHpm()
 			//nn.SyncLayersToDevice(manager);
 			//TrainNrc(manager, nn, distr, trainInputs, trainTargets, 0.1f, 16);
 			//nn.SyncLayersToHost(manager);
+
+			if (doneTraining)
+			{
+				doneTraining = false;
+				trainerThread->join();
+				delete trainerThread;
+				
+				nrcHpmRenderer->UpdateNnData(*manager, *nn);
+				
+				trainerThread = new std::thread(RunNrcHpmTrainer);
+			}
 
 			// Update
 			en::Window::Update();
@@ -373,6 +404,10 @@ void RunNrcHpm()
 			camera.UpdateUniformBuffer();
 
 			// Render
+			pathTracer->Render(graphicsQueue);
+			result = vkQueueWaitIdle(graphicsQueue);
+			ASSERT_VULKAN(result);
+
 			nrcHpmRenderer->Render(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
 			ASSERT_VULKAN(result);
@@ -395,10 +430,15 @@ void RunNrcHpm()
 			//		}
 
 			counter++;
-			nrcHpmRenderer->UpdateNnData(manager, nn);
 		}
 		result = vkDeviceWaitIdle(device);
 		ASSERT_VULKAN(result);
+
+		trainerThread->join();
+		delete trainerThread;
+
+		delete nn;
+		delete manager;
 
 		// End
 		density3DTex.Destroy();

@@ -679,6 +679,6 @@ void main()
 	}
 
 	// Render
-	//outColor = Forward(ro, rd);
-	outColor = vec4(TracePath(ro, rd), 1.0);
+	outColor = Forward(ro, rd);
+	//outColor = vec4(TracePath(ro, rd), 1.0);
 }

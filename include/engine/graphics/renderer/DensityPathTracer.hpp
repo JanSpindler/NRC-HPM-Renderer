@@ -17,8 +17,7 @@ namespace en
 
 		DensityPathTracer(
 			uint32_t width, 
-			uint32_t height, 
-			const Camera* camera, 
+			uint32_t height,
 			const VolumeData* volumeData,
 			const Sun* sun);
 
@@ -40,7 +39,6 @@ namespace en
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
 
-		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
 		const Sun* m_Sun;
 

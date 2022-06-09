@@ -1,17 +1,11 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 pixelWorldPos;
-layout(location = 1) in vec2 fragUV;
+layout(location = 0) in vec2 fragUV;
 
-layout(set = 0, binding = 1) uniform camera_t
-{
-	vec3 pos;
-} camera;
+layout(set = 0, binding = 0) uniform sampler3D densityTex;
 
-layout(set = 1, binding = 0) uniform sampler3D densityTex;
-
-layout(set = 1, binding = 1) uniform volumeData_t
+layout(set = 0, binding = 1) uniform volumeData_t
 {
 	vec4 random;
 	uint singleScatter;
@@ -23,7 +17,7 @@ layout(set = 1, binding = 1) uniform volumeData_t
 	uint lowPassIndex;
 } volumeData;
 
-layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
+layout(set = 1, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 {
 	vec3 color;
 	float zenith;
@@ -32,7 +26,7 @@ layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 	float strength;
 } dir_light;
 
-layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
+layout(set = 2, binding = 0) uniform sampler2D lowPassTex;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outPos;
@@ -533,8 +527,8 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 void main()
 {
-	const vec3 ro = camera.pos;
-	const vec3 rd = normalize(pixelWorldPos - ro);
+	const vec3 ro = vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5);
+	const vec3 rd = NewRayDir(vec3(0.0, 0.0, 1.0)); // TODO: new method when NewRayDir employs importance sampling
 
 	float theta = atan(rd.y, rd.x);
 	float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
@@ -555,19 +549,10 @@ void main()
 	vec3[SAMPLE_COUNT] samplePoints;
 	gen_sample_points(entry, exit, samplePoints);
 
-	if (volumeData.singleScatter > 0)
-	{
-		vec4 result = render_cloud(samplePoints, -rd, ro);
-		outColor = vec4(result.xyz, 1.0 - result.w);
-		return;
-	}
-	else
-	{
-		float lowPassIndex = float(volumeData.lowPassIndex);
-		float alpha = lowPassIndex / (lowPassIndex + 1.0);
-		vec4 oldColor = texture(lowPassTex, fragUV);
-		vec4 newColor = vec4(TracePath(ro, rd), 1.0);
-		outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
-		return;
-	}
+	//float lowPassIndex = float(volumeData.lowPassIndex);
+	//float alpha = lowPassIndex / (lowPassIndex + 1.0);
+	//vec4 oldColor = texture(lowPassTex, fragUV);
+	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
+	//outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
+	outColor = newColor;
 }

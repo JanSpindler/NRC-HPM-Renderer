@@ -59,8 +59,7 @@ namespace en
 
 	DensityPathTracer::DensityPathTracer(
 		uint32_t width, 
-		uint32_t height, 
-		const Camera* camera, 
+		uint32_t height,
 		const VolumeData* volumeData,
 		const Sun* sun)
 		:
@@ -69,7 +68,6 @@ namespace en
 		m_VertShader("path-tracer/path-tracer.vert", false),
 		m_FragShader("path-tracer/path-tracer.frag", false),
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
-		m_Camera(camera),
 		m_VolumeData(volumeData),
 		m_Sun(sun)
 	{
@@ -450,7 +448,6 @@ namespace en
 	void DensityPathTracer::CreatePipelineLayout(VkDevice device)
 	{
 		std::vector<VkDescriptorSetLayout> layouts = {
-			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
 			Sun::GetDescriptorSetLayout(),
 			m_DescriptorSetLayout };
@@ -1084,8 +1081,7 @@ namespace en
 		vkCmdSetScissor(m_CommandBuffer, 0, 1, &scissor);
 
 		// Bind descriptor sets
-		std::vector<VkDescriptorSet> descSets = { 
-			m_Camera->GetDescriptorSet(), 
+		std::vector<VkDescriptorSet> descSets = {
 			m_VolumeData->GetDescriptorSet(),
 			m_Sun->GetDescriptorSet(),
 			m_DescriptorSet};
