@@ -536,18 +536,15 @@ void main()
 	outPos = vec4(ro, 1.0);
 	outDir = vec4(theta, phi, 0.0, 1.0);
 
-	const vec3[2] entry_exit = find_entry_exit(ro, rd);
-	const vec3 entry = entry_exit[0];
-	const vec3 exit = entry_exit[1];
-
-	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
-	{
-		outColor = vec4(vec3(0.0), 1.0);
-		return;
-	}
-
-	vec3[SAMPLE_COUNT] samplePoints;
-	gen_sample_points(entry, exit, samplePoints);
+//	const vec3[2] entry_exit = find_entry_exit(ro, rd);
+//	const vec3 entry = entry_exit[0];
+//	const vec3 exit = entry_exit[1];
+//
+//	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
+//	{
+//		outColor = vec4(vec3(0.0), 1.0);
+//		return;
+//	}
 
 	//float lowPassIndex = float(volumeData.lowPassIndex);
 	//float alpha = lowPassIndex / (lowPassIndex + 1.0);
@@ -555,4 +552,6 @@ void main()
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
 	//outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
 	outColor = newColor;
+
+	outColor = vec4(1.0);
 }

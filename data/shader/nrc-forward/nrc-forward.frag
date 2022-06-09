@@ -677,8 +677,10 @@ void main()
 		outColor = vec4(vec3(0.0), 1.0);
 		return;
 	}
-
 	// Render
-	outColor = Forward(ro, rd);
-	//outColor = vec4(TracePath(ro, rd), 1.0);
+//	outColor = Forward(ro, rd);
+//	outColor = Forward(
+//		vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5),
+//		NewRayDir(vec3(0.0, 0.0, 1.0)));
+	outColor = vec4(TracePath(ro, rd), 1.0);
 }

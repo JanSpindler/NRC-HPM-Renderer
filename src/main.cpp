@@ -27,12 +27,7 @@
 #include <engine/util/openexr_helper.hpp>
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/compute/NrcDataset.hpp>
-#include <random>
 #include <thread>
-
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_int_distribution<> distr;
 
 en::DensityPathTracer* pathTracer = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
@@ -149,32 +144,20 @@ void LoadTrainData(std::vector<en::NrcInput>& trainInputs, std::vector<en::NrcTa
 	dirDatas.clear();
 
 	en::Log::Info("Training data has been loaded");
-
-	distr = std::uniform_int_distribution<>(0, trainInputs.size() - 1);
 }
 
 void TrainNrc(
 	en::KomputeManager& manager,
 	en::NeuralNetwork& nn,
-	std::uniform_int_distribution<>& distr,
 	const std::vector<en::NrcInput>& inputs,
 	const std::vector<en::NrcTarget>& targets,
 	float learningRate,
 	size_t count)
 {
-	//std::uniform_int_distribution<> distr(0, inputs.size() - 1);
-
 	size_t realCount = std::min(count, inputs.size());
 
-	for (size_t sample = 0; sample < realCount; sample++)
+	for (size_t i = 0; i < realCount; i++)
 	{
-		//		if (realCount >= 10 && 0 == (sample % (realCount / 10)))
-		//		{
-		//			en::Log::Info("Train Image: " + std::to_string(sample));
-		//		}
-
-		size_t i = distr(gen);
-
 		en::Matrix inputMat(manager, { { inputs[i].x }, { inputs[i].y }, { inputs[i].z }, { inputs[i].theta }, { inputs[i].phi } });
 		en::Matrix targetMat(manager, { { targets[i].r }, { targets[i].g }, { targets[i].b }, { targets[i].a } });
 
@@ -296,10 +279,22 @@ void SwapchainResizeCallback()
 
 void RunNrcHpmTrainer()
 {
+	VkQueue queue = en::VulkanAPI::GetComputeQueue();
+
+	// Render
+	pathTracer->Render(queue);
+	VkResult result = vkQueueWaitIdle(queue);
+	ASSERT_VULKAN(result);
+
+	// Get train data
+	pathTracer->ExportForTraining(queue, trainInputs, trainTargets);
+
+	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, distr, trainInputs, trainTargets, 0.1f, 1000);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.1f, 100);
 	nn->SyncLayersToHost(*manager);
 
+	// Sync exit
 	doneTraining = true;
 }
 
@@ -345,7 +340,7 @@ void RunNrcHpm()
 		swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
 
 		// NN
-		LoadTrainData(trainInputs, trainTargets);
+		//LoadTrainData(trainInputs, trainTargets);
 
 		manager = new en::KomputeManager();
 
@@ -404,10 +399,6 @@ void RunNrcHpm()
 			camera.UpdateUniformBuffer();
 
 			// Render
-			pathTracer->Render(graphicsQueue);
-			result = vkQueueWaitIdle(graphicsQueue);
-			ASSERT_VULKAN(result);
-
 			nrcHpmRenderer->Render(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
 			ASSERT_VULKAN(result);

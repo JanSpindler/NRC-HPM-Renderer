@@ -6,6 +6,7 @@
 #include <engine/graphics/Camera.hpp>
 #include <engine/graphics/Sun.hpp>
 #include <string>
+#include <engine/compute/NrcDataset.hpp>
 
 namespace en
 {
@@ -25,6 +26,8 @@ namespace en
 		void Destroy();
 
 		void ResizeFrame(uint32_t width, uint32_t height);
+
+		void ExportForTraining(VkQueue queue, std::vector<en::NrcInput>& inputs, std::vector<en::NrcTarget>& targets);
 
 		void ExportImageToHost(VkQueue queue, uint64_t index);
 

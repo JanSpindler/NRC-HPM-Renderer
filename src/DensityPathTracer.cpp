@@ -177,6 +177,194 @@ namespace en
 		RecordCommandBuffer();
 	}
 
+	void DensityPathTracer::ExportForTraining(VkQueue queue, std::vector<en::NrcInput>& inputs, std::vector<en::NrcTarget>& targets)
+	{
+		//
+		VkDeviceSize colorSize = GetImageDataSize();
+		vk::Buffer colorBuffer(
+			colorSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		VkDeviceSize posSize = colorSize * 4; // sizeof(float) = 4
+		vk::Buffer posBuffer(posSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		VkDeviceSize dirSize = colorSize * 4; // TODO: / 2
+		vk::Buffer dirBuffer(dirSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		//
+		vk::CommandPool commandPool(0, VulkanAPI::GetGraphicsQFI());
+		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
+
+		// Begin
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		if (result != VK_SUCCESS)
+			Log::Error("Failed to begin VkCommandBuffer", true);
+
+		// Copy color
+		VkBufferImageCopy colorRegion;
+		colorRegion.bufferOffset = 0;
+		colorRegion.bufferRowLength = m_FrameWidth;
+		colorRegion.bufferImageHeight = m_FrameHeight;
+		colorRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		colorRegion.imageSubresource.mipLevel = 0;
+		colorRegion.imageSubresource.baseArrayLayer = 0;
+		colorRegion.imageSubresource.layerCount = 1;
+		colorRegion.imageOffset = { 0, 0, 0 };
+		colorRegion.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+
+		vkCmdCopyImageToBuffer(
+			commandBuffer,
+			m_ColorImage,
+			VK_IMAGE_LAYOUT_GENERAL,
+			colorBuffer.GetVulkanHandle(),
+			1,
+			&colorRegion);
+
+		// Pos color
+		VkBufferImageCopy posRegion;
+		posRegion.bufferOffset = 0;
+		posRegion.bufferRowLength = m_FrameWidth;
+		posRegion.bufferImageHeight = m_FrameHeight;
+		posRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		posRegion.imageSubresource.mipLevel = 0;
+		posRegion.imageSubresource.baseArrayLayer = 0;
+		posRegion.imageSubresource.layerCount = 1;
+		posRegion.imageOffset = { 0, 0, 0 };
+		posRegion.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+
+		vkCmdCopyImageToBuffer(
+			commandBuffer,
+			m_PosImage,
+			VK_IMAGE_LAYOUT_GENERAL,
+			posBuffer.GetVulkanHandle(),
+			1,
+			&posRegion);
+
+		// Dir color
+		VkBufferImageCopy dirRegion;
+		dirRegion.bufferOffset = 0;
+		dirRegion.bufferRowLength = m_FrameWidth;
+		dirRegion.bufferImageHeight = m_FrameHeight;
+		dirRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		dirRegion.imageSubresource.mipLevel = 0;
+		dirRegion.imageSubresource.baseArrayLayer = 0;
+		dirRegion.imageSubresource.layerCount = 1;
+		dirRegion.imageOffset = { 0, 0, 0 };
+		dirRegion.imageExtent = { m_FrameWidth, m_FrameHeight, 1 };
+
+		vkCmdCopyImageToBuffer(
+			commandBuffer,
+			m_DirImage,
+			VK_IMAGE_LAYOUT_GENERAL,
+			dirBuffer.GetVulkanHandle(),
+			1,
+			&dirRegion);
+
+		// End
+		result = vkEndCommandBuffer(commandBuffer);
+		if (result != VK_SUCCESS)
+			Log::Error("Failed to end VkCommandBuffer", true);
+
+		// Submit
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+
+		//
+		void* colorData = malloc(colorSize);
+		colorBuffer.GetData(colorSize, colorData, 0, 0);
+
+		void* posData = malloc(posSize);
+		posBuffer.GetData(posSize, posData, 0, 0);
+
+		void* dirData = malloc(dirSize);
+		dirBuffer.GetData(dirSize, dirData, 0, 0);
+
+		//
+		commandPool.Destroy();
+		colorBuffer.Destroy();
+		posBuffer.Destroy();
+		dirBuffer.Destroy();
+
+		// Check size
+		const size_t rgbaSize = sizeof(float) * 4;
+
+		if (colorSize * 4 != posSize ||
+			posSize != dirSize ||
+			(colorSize % rgbaSize) != 0)
+		{
+			Log::Error("ExportForTraining -> Sizes are wrong", true);
+		}
+
+		// Convert to float array
+		float* colorFData = reinterpret_cast<float*>(malloc(m_FrameWidth * m_FrameHeight * 4 * sizeof(float)));
+		for (size_t i = 0; i < m_FrameWidth * m_FrameHeight * 4; i++)
+		{
+			uint8_t colorInt = reinterpret_cast<uint8_t*>(colorData)[i];
+			Log::Info(std::to_string(colorInt));
+			colorFData[i] = static_cast<float>(colorInt) / 255.0f;
+		}
+		free(colorData);
+
+		float* posFData = reinterpret_cast<float*>(posData);
+		float* dirFData = reinterpret_cast<float*>(dirData);
+
+		// Convert to NrcDataset
+		const size_t count = posSize / rgbaSize;
+		inputs.clear();
+		targets.clear();
+
+		for (size_t i = 0; i < count; i++)
+		{
+			NrcTarget target;
+			target.r = colorFData[i * 4 + 0];
+			target.g = colorFData[i * 4 + 1];
+			target.b = colorFData[i * 4 + 2];
+			target.a = colorFData[i * 4 + 3];
+			targets.push_back(target);
+
+			NrcInput input;
+			input.x = posFData[i * 4 + 0];
+			input.y = posFData[i * 4 + 1];
+			input.z = posFData[i * 4 + 2];
+			input.theta = dirFData[i * 4 + 0];
+			input.phi = dirFData[i * 4 + 1];
+			inputs.push_back(input);
+		}
+
+		// Free
+		free(posData);
+		free(dirData);
+	}
+
 	void DensityPathTracer::ExportImageToHost(VkQueue queue, uint64_t index)
 	{
 		//
