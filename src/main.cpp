@@ -26,8 +26,10 @@
 #include <filesystem>
 #include <set>
 #include <engine/util/openexr_helper.hpp>
+#include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 
-en::DensityPathTracer* pathTracer = nullptr;
+//en::DensityPathTracer* pathTracer = nullptr;
+en::NrcHpmRenderer* pathTracer = nullptr;
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -139,7 +141,8 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	pathTracer = new en::DensityPathTracer(width, height, &camera, &volumeData, &sun);
+	//pathTracer = new en::DensityPathTracer(width, height, &camera, &volumeData, &sun);
+	pathTracer = new en::NrcHpmRenderer(width, height, 0.01f, &camera, &volumeData, &sun);
 
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(pathTracer->GetImageView());
@@ -187,10 +190,10 @@ void RunNrcHpm()
 
 		swapchain.DrawAndPresent();
 
-		if (0 == (counter % 100))
-		{
-			pathTracer->ExportImageToHost(graphicsQueue, en::Time::GetTimeStamp());
-		}
+//		if (0 == (counter % 100))
+//		{
+//			pathTracer->ExportImageToHost(graphicsQueue, en::Time::GetTimeStamp());
+//		}
 
 		counter++;
 	}
@@ -582,9 +585,9 @@ void TestNNnrc()
 
 int main()
 {
-	//RunNrcHpm();
+	RunNrcHpm();
 	//TestNNmnist();
-	TestNNnrc();
+	//TestNNnrc();
 
 	return 0;
 }

@@ -8,6 +8,7 @@
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/Sun.hpp>
 #include <engine/graphics/renderer/DensityPathTracer.hpp>
+#include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 
 namespace en
 {
@@ -41,14 +42,16 @@ namespace en
 		vk::Texture2D::Init();
 		VolumeData::Init(m_Device);
 		Sun::Init();
-		DensityPathTracer::Init(m_Device);
+		//DensityPathTracer::Init(m_Device);
+		NrcHpmRenderer::Init(m_Device);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
-		DensityPathTracer::Shutdown(m_Device);
+		//DensityPathTracer::Shutdown(m_Device);
+		NrcHpmRenderer::Shutdown(m_Device);
 		Sun::Shutdown();
 		VolumeData::Shutdown(m_Device);
 		vk::Texture2D::Shutdown();
