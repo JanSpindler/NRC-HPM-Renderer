@@ -355,9 +355,9 @@ void RunNrcHpm()
 			new en::LinearLayer(*manager, 5, 64),
 			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64),
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64),
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 4),
 			new en::SigmoidLayer(*manager, 4) };
 

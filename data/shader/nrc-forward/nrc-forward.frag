@@ -132,6 +132,26 @@ float Sigmoid(float x)
 	return 1.0 / (1.0 + exp(-x));
 }
 
+float Relu(float x)
+{
+	float result;
+
+	if (x > 20.0)
+	{
+		result = x;
+	}
+	else if (x < 20.0)
+	{
+		result = 0.0;
+	}
+	else
+	{
+		result = log(1.0 + exp(x));
+	}
+
+	return result;
+}
+
 float GetWeight0(uint row, uint col)
 {
 	uint linearIndex = row * 64 + col;
@@ -261,6 +281,7 @@ void ActivateNr1(inout float[64] nr1)
 	for (uint i = 0; i < 64; i++)
 	{
 		nr1[i] = Sigmoid(nr1[i]);
+		//nr1[i] = Relu(nr1[i]);
 	}
 }
 
@@ -268,7 +289,8 @@ void ActivateNr2(inout float[64] nr2)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr2[i] = Sigmoid(nr2[i]);
+		//nr2[i] = Sigmoid(nr2[i]);
+		nr2[i] = Relu(nr2[i]);
 	}
 }
 
@@ -276,7 +298,8 @@ void ActivateNr3(inout float[64] nr3)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr3[i] = Sigmoid(nr3[i]);
+		//nr3[i] = Sigmoid(nr3[i]);
+		nr3[i] = Relu(nr3[i]);
 	}
 }
 
@@ -285,6 +308,7 @@ void ActivateNr4(inout float[4] nr4)
 	for (uint i = 0; i < 4; i++)
 	{
 		nr4[i] = Sigmoid(nr4[i]);
+		//nr4[i] = Relu(nr4[i]);
 	}
 }
 
@@ -638,7 +662,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const float prob = 1.0 / (4.0 * PI * PI);
 			const float randomPhase = hg_phase_func(dot(randomDir, -rayDir));
 			//const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
-			const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
+			const vec3 randomLight = Forward(samplePoint, randomDir).wzy * randomPhase;
 
 			// Combine incomming light
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
