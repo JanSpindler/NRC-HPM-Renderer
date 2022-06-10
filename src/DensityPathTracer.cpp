@@ -1190,7 +1190,7 @@ namespace en
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
-		VkQueue queue = VulkanAPI::GetGraphicsQueue();
+		VkQueue queue = VulkanAPI::GetComputeQueue();//VulkanAPI::GetGraphicsQueue();
 		
 		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);

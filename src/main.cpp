@@ -269,7 +269,7 @@ void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 void SwapchainResizeCallback()
 {
 	en::Window::WaitForUsableSize();
-	vkDeviceWaitIdle(en::VulkanAPI::GetDevice());
+	vkDeviceWaitIdle(en::VulkanAPI::GetDevice()); // TODO: causes error with multithreaded rendering
 
 	uint32_t width = en::Window::GetWidth();
 	uint32_t height = en::Window::GetHeight();
@@ -295,7 +295,7 @@ void RunNrcHpmTrainer()
 
 	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.1f, SIZE_MAX);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.01f, SIZE_MAX);
 	nn->SyncLayersToHost(*manager);
 
 	// Sync exit
@@ -307,7 +307,7 @@ void RunNrcHpmTrainer()
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 200;
+	uint32_t width = 600;
 	uint32_t height = width;
 
 	// Start engine
@@ -338,7 +338,7 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		pathTracer = new en::DensityPathTracer(10, 10, trainVolumeData, &sun);
+		pathTracer = new en::DensityPathTracer(25, 25, trainVolumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);

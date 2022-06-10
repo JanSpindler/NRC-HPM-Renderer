@@ -35,45 +35,47 @@ layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 	float strength;
 } dir_light;
 
+layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
+
 // NN buffers
-layout(std140, set = 3, binding = 0) readonly buffer Weights0
+layout(std140, set = 4, binding = 0) readonly buffer Weights0
 {
-	float matWeights0[]; // 5 x 64
+	float matWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 3, binding = 1) readonly buffer Weights1
+layout(std140, set = 4, binding = 1) readonly buffer Weights1
 {
-	float matWeights1[]; // 64 x 64
+	float matWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 3, binding = 2) readonly buffer Weights2
+layout(std140, set = 4, binding = 2) readonly buffer Weights2
 {
-	float matWeights2[]; // 64 x 64
+	float matWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 3, binding = 3) readonly buffer Weights3
+layout(std140, set = 4, binding = 3) readonly buffer Weights3
 {
-	float matWeights3[]; // 64 x 4
+	float matWeights3[256]; // 64 x 4
 };
 
-layout(std140, set = 3, binding = 4) readonly buffer Biases0
+layout(std140, set = 4, binding = 4) readonly buffer Biases0
 {
-	float matBiases0[];
+	float matBiases0[64];
 };
 
-layout(std140, set = 3, binding = 5) readonly buffer Biases1
+layout(std140, set = 4, binding = 5) readonly buffer Biases1
 {
-	float matBiases1[];
+	float matBiases1[64];
 };
 
-layout(std140, set = 3, binding = 6) readonly buffer Biases2
+layout(std140, set = 4, binding = 6) readonly buffer Biases2
 {
-	float matBiases2[];
+	float matBiases2[64];
 };
 
-layout(std140, set = 3, binding = 7) readonly buffer Biases3
+layout(std140, set = 4, binding = 7) readonly buffer Biases3
 {
-	float matBiases3[];
+	float matBiases3[4];
 };
 
 // Output
@@ -92,8 +94,8 @@ const vec3 skyPos = vec3(0.0);
 #define SECONDARY_SAMPLE_COUNT 12
 
 #define SAMPLE_COUNT0 16
-#define SAMPLE_COUNT1 8
-#define SAMPLE_COUNT2 4
+#define SAMPLE_COUNT1 18
+#define SAMPLE_COUNT2 8
 #define SAMPLE_COUNT3 4
 
 #define SIGMA_S volumeData.sigmaS
@@ -453,7 +455,7 @@ vec3 NewRayDir(vec3 oldRayDir)
 	return normalize(newRayDir);
 }
 
-/*vec3 TracePath3(vec3 rayOrigin)
+vec3 TracePath3(vec3 rayOrigin)
 {
 	const vec3 rayDir = normalize(-dir_light.dir);
 	
@@ -575,7 +577,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			vec3 randomDir = NewRayDir(rayDir);
 			const float prob = 1.0 / (4.0 * PI * PI);
 			const float randomPhase = hg_phase_func(dot(randomDir, -rayDir));
-			const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
+			const vec3 randomLight = TracePath2(samplePoint, randomDir) * randomPhase;
 
 			// Combine incomming light
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
@@ -595,7 +597,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 	}
 
 	return scatteredLight;
-}*/
+}
 
 vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 {
@@ -680,10 +682,12 @@ void main()
 		outColor = vec4(vec3(0.0), 1.0);
 		return;
 	}
+
 	// Render
-//	outColor = Forward(ro, rd);
-//	outColor = Forward(
-//		vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5),
-//		NewRayDir(vec3(0.0, 0.0, 1.0)));
-	outColor = vec4(TracePath(ro, rd), 1.0);
+	float lowPassIndex = float(volumeData.lowPassIndex);
+	float alpha = lowPassIndex / (lowPassIndex + 1.0);
+	vec4 oldColor = texture(lowPassTex, fragUV);
+	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
+	//alpha = 0.5; // Exponential decay might be useful if nn is still learning
+	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
 }

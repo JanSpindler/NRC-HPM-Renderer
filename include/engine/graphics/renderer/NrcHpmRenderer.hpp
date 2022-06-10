@@ -36,6 +36,7 @@ namespace en
 		size_t GetImageDataSize() const;
 
 	private:
+		static VkDescriptorSetLayout m_DescriptorSetLayout;
 		static VkDescriptorSetLayout m_NnDSL;
 		static VkDescriptorPool m_DescriptorPool;
 
@@ -59,6 +60,12 @@ namespace en
 		VkDeviceMemory m_ColorImageMemory;
 		VkImageView m_ColorImageView;
 
+		VkImage m_LowPassImage;
+		VkDeviceMemory m_LowPassImageMemory;
+		VkImageView m_LowPassImageView;
+		VkSampler m_LowPassSampler;
+		VkDescriptorSet m_DescriptorSet;
+
 		VkFramebuffer m_Framebuffer;
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
@@ -71,6 +78,9 @@ namespace en
 
 		void CreateColorImage(VkDevice device);
 		
+		void CreateLowPassResources(VkDevice device);
+		void CreateLowPassImage(VkDevice device);
+
 		void CreateFramebuffer(VkDevice device);
 		
 		void RecordCommandBuffer();
