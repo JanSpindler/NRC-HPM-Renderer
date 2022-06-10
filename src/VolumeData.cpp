@@ -53,7 +53,7 @@ namespace en
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolCI.pNext = nullptr;
 		poolCI.flags = 0;
-		poolCI.maxSets = 1;
+		poolCI.maxSets = 2;
 		poolCI.poolSizeCount = poolSizes.size();
 		poolCI.pPoolSizes = poolSizes.data();
 

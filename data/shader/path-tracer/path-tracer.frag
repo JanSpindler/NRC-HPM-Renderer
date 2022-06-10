@@ -1,5 +1,6 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_debug_printf : enable
 
 layout(location = 0) in vec2 fragUV;
 
@@ -524,11 +525,23 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 // --------------- End: path trace -----------------
 
 // --------------- Main -----------------
+vec3 GenRandomDir()
+{
+	vec3 dir = vec3(0.0);
+	while (length(dir) == 0.0)
+	{
+		dir.x = RandFloat(1.0);
+		dir.y = RandFloat(1.0);
+		dir.z = RandFloat(1.0);
+	}
+	return normalize(dir);
+}
 
 void main()
 {
 	const vec3 ro = vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5);
-	const vec3 rd = NewRayDir(vec3(0.0, 0.0, 1.0)); // TODO: new method when NewRayDir employs importance sampling
+	//const vec3 rd = normalize(vec3(1.0, preRand, prePreRand));
+	const vec3 rd = GenRandomDir();
 
 	float theta = atan(rd.y, rd.x);
 	float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
@@ -552,6 +565,4 @@ void main()
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
 	//outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
 	outColor = newColor;
-
-	outColor = vec4(1.0);
 }

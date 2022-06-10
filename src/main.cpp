@@ -29,6 +29,7 @@
 #include <engine/compute/NrcDataset.hpp>
 #include <thread>
 
+en::VolumeData* trainVolumeData = nullptr;
 en::DensityPathTracer* pathTracer = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 
@@ -281,6 +282,9 @@ void RunNrcHpmTrainer()
 {
 	VkQueue queue = en::VulkanAPI::GetComputeQueue();
 
+	// Update
+	trainVolumeData->Update(true);
+
 	// Render
 	pathTracer->Render(queue);
 	VkResult result = vkQueueWaitIdle(queue);
@@ -291,11 +295,13 @@ void RunNrcHpmTrainer()
 
 	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.1f, 100);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.1f, SIZE_MAX);
 	nn->SyncLayersToHost(*manager);
 
 	// Sync exit
 	doneTraining = true;
+
+	en::Log::Info("Nn update");
 }
 
 void RunNrcHpm()
@@ -316,6 +322,7 @@ void RunNrcHpm()
 		auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
 		en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
 		en::VolumeData volumeData(&density3DTex);
+		trainVolumeData = new en::VolumeData(&density3DTex);
 
 		// Setup rendering
 		en::Camera camera(
@@ -331,7 +338,7 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		pathTracer = new en::DensityPathTracer(10, 10, &volumeData, &sun);
+		pathTracer = new en::DensityPathTracer(10, 10, trainVolumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
@@ -370,17 +377,6 @@ void RunNrcHpm()
 			//TrainNrc(manager, nn, distr, trainInputs, trainTargets, 0.1f, 16);
 			//nn.SyncLayersToHost(manager);
 
-			if (doneTraining)
-			{
-				doneTraining = false;
-				trainerThread->join();
-				delete trainerThread;
-				
-				nrcHpmRenderer->UpdateNnData(*manager, *nn);
-				
-				trainerThread = new std::thread(RunNrcHpmTrainer);
-			}
-
 			// Update
 			en::Window::Update();
 			en::Input::Update();
@@ -399,6 +395,17 @@ void RunNrcHpm()
 			camera.UpdateUniformBuffer();
 
 			// Render
+			if (doneTraining)
+			{
+				doneTraining = false;
+				trainerThread->join();
+				delete trainerThread;
+
+				nrcHpmRenderer->UpdateNnData(*manager, *nn);
+				
+				trainerThread = new std::thread(RunNrcHpmTrainer);
+			}
+
 			nrcHpmRenderer->Render(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
 			ASSERT_VULKAN(result);
@@ -434,6 +441,8 @@ void RunNrcHpm()
 		// End
 		density3DTex.Destroy();
 
+		trainVolumeData->Destroy();
+		delete trainVolumeData;
 		volumeData.Destroy();
 
 		en::ImGuiRenderer::Shutdown();

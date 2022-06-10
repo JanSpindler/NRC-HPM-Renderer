@@ -1,5 +1,6 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_debug_printf : enable
 
 // Inputs
 layout(location = 0) in vec3 pixelWorldPos;
@@ -91,12 +92,14 @@ const vec3 skyPos = vec3(0.0);
 #define SECONDARY_SAMPLE_COUNT 12
 
 #define SAMPLE_COUNT0 16
-#define SAMPLE_COUNT1 16
-#define SAMPLE_COUNT2 8
-#define SAMPLE_COUNT3 8
+#define SAMPLE_COUNT1 8
+#define SAMPLE_COUNT2 4
+#define SAMPLE_COUNT3 4
 
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
+
+#define NRC_PROB 0.5
 
 // Random
 float preRand = volumeData.random.x * fragUV.x;
@@ -450,7 +453,7 @@ vec3 NewRayDir(vec3 oldRayDir)
 	return normalize(newRayDir);
 }
 
-vec3 TracePath3(vec3 rayOrigin)
+/*vec3 TracePath3(vec3 rayOrigin)
 {
 	const vec3 rayDir = normalize(-dir_light.dir);
 	
@@ -572,7 +575,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			vec3 randomDir = NewRayDir(rayDir);
 			const float prob = 1.0 / (4.0 * PI * PI);
 			const float randomPhase = hg_phase_func(dot(randomDir, -rayDir));
-			const vec3 randomLight = TracePath2(samplePoint, randomDir) * randomPhase;
+			const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
 
 			// Combine incomming light
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
@@ -592,7 +595,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 	}
 
 	return scatteredLight;
-}
+}*/
 
 vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 {

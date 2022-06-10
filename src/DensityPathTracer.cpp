@@ -319,7 +319,7 @@ namespace en
 
 		if (colorSize * 4 != posSize ||
 			posSize != dirSize ||
-			(colorSize % rgbaSize) != 0)
+			(posSize % rgbaSize) != 0)
 		{
 			Log::Error("ExportForTraining -> Sizes are wrong", true);
 		}
@@ -329,7 +329,7 @@ namespace en
 		for (size_t i = 0; i < m_FrameWidth * m_FrameHeight * 4; i++)
 		{
 			uint8_t colorInt = reinterpret_cast<uint8_t*>(colorData)[i];
-			Log::Info(std::to_string(colorInt));
+			//Log::Info(std::to_string(colorInt));
 			colorFData[i] = static_cast<float>(colorInt) / 255.0f;
 		}
 		free(colorData);

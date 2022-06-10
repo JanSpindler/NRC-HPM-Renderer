@@ -1,5 +1,6 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_debug_printf : enable
 
 vec2 pos[4] = vec2[](
 	vec2(-1.0, -1.0),
@@ -22,6 +23,5 @@ void main()
 {
 	int index = indices[gl_VertexIndex];
 	gl_Position = vec4(pos[index], 0.0, 1.0);
-	gl_Position.y *= -1.0;
 	fragUV = uv[index];
 }
