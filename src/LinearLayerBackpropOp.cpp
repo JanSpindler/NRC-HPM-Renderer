@@ -60,10 +60,10 @@ namespace en
 
 			LearnWeights(outRow, outCol);
 			
-			if (outCol == 0)
-			{
-				LearnBiases(outRow);
-			}
+			//if (outCol == 0)
+			//{
+			//	LearnBiases(outRow);
+			//}
 
 			CalcLocalError(outRow, outCol);
 		}

@@ -64,7 +64,7 @@ namespace en
 		{
 			const uint index = gl_GlobalInvocationID.x;
 			MatmulWeights(index);
-			AddBiases(index);
+			//AddBiases(index);
         }
 	)");
 

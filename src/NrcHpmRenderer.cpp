@@ -64,44 +64,77 @@ namespace en
 		weights3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		weights3Binding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding weights4Binding;
+		weights4Binding.binding = 4;
+		weights4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		weights4Binding.descriptorCount = 1;
+		weights4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights4Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding weights5Binding;
+		weights5Binding.binding = 5;
+		weights5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		weights5Binding.descriptorCount = 1;
+		weights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights5Binding.pImmutableSamplers = nullptr;
+
 		// Biases
 		VkDescriptorSetLayoutBinding biases0Binding;
-		biases0Binding.binding = 4;
+		biases0Binding.binding = 6;
 		biases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases0Binding.descriptorCount = 1;
 		biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		biases0Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases1Binding;
-		biases1Binding.binding = 5;
+		biases1Binding.binding = 7;
 		biases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases1Binding.descriptorCount = 1;
 		biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		biases1Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases2Binding;
-		biases2Binding.binding = 6;
+		biases2Binding.binding = 8;
 		biases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases2Binding.descriptorCount = 1;
 		biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		biases2Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases3Binding;
-		biases3Binding.binding = 7;
+		biases3Binding.binding = 9;
 		biases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases3Binding.descriptorCount = 1;
 		biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		biases3Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases4Binding;
+		biases4Binding.binding = 10;
+		biases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases4Binding.descriptorCount = 1;
+		biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases4Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases5Binding;
+		biases5Binding.binding = 11;
+		biases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases5Binding.descriptorCount = 1;
+		biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases5Binding.pImmutableSamplers = nullptr;
 
 		bindings = {
 			weights0Binding,
 			weights1Binding,
 			weights2Binding,
 			weights3Binding,
+			weights4Binding,
+			weights5Binding,
+
 			biases0Binding,
 			biases1Binding,
 			biases2Binding,
-			biases3Binding};
+			biases3Binding,
+			biases4Binding,
+			biases5Binding };
 
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutCI.pNext = nullptr;
@@ -119,7 +152,7 @@ namespace en
 
 		VkDescriptorPoolSize bufferPoolSize;
 		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bufferPoolSize.descriptorCount = 8;
+		bufferPoolSize.descriptorCount = 12;
 
 		std::vector<VkDescriptorPoolSize> poolSizes = { lowPassImagePoolSize, bufferPoolSize };
 
@@ -262,7 +295,7 @@ namespace en
 		std::vector<Layer*> layers = nn.GetLayers();
 
 		size_t linearLayerIndex = 0;
-		for (size_t i = 0; i < layers.size() && linearLayerIndex < 4; i++)
+		for (size_t i = 0; i < layers.size() && linearLayerIndex < 6; i++)
 		{
 			LinearLayer* linearLayer = dynamic_cast<LinearLayer*>(layers[i]);
 			if (linearLayer != nullptr)
@@ -271,7 +304,7 @@ namespace en
 				std::vector<float> biases = linearLayer->GetBiases().GetDataVector();
 				
 				m_NrcForwardBuffers[linearLayerIndex]->SetData(weights.size(), weights.data(), 0, 0);
-				m_NrcForwardBuffers[linearLayerIndex + 4]->SetData(biases.size(), biases.data(), 0, 0);
+				m_NrcForwardBuffers[linearLayerIndex + 6]->SetData(biases.size(), biases.data(), 0, 0);
 
 				linearLayerIndex++;
 			}
@@ -367,13 +400,18 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Set buffer sizes
-		std::array<VkDeviceSize, 8> bufferSizes = {
+		std::array<VkDeviceSize, 12> bufferSizes = {
 			// Weights
 			sizeof(float) * 5 * 64,
 			sizeof(float) * 64 * 64,
 			sizeof(float) * 64 * 64,
+			sizeof(float) * 64 * 64,
+			sizeof(float) * 64 * 64,
 			sizeof(float) * 64 * 4,
+
 			// Biases
+			sizeof(float) * 64,
+			sizeof(float) * 64,
 			sizeof(float) * 64,
 			sizeof(float) * 64,
 			sizeof(float) * 64,
@@ -390,7 +428,7 @@ namespace en
 		}
 
 		// Set buffer infos
-		std::array<VkDescriptorBufferInfo, 8> bufferInfos;
+		std::array<VkDescriptorBufferInfo, 12> bufferInfos;
 		for (size_t i = 0; i < bufferInfos.size(); i++)
 		{
 			bufferInfos[i].buffer = m_NrcForwardBuffers[i]->GetVulkanHandle();
@@ -399,7 +437,7 @@ namespace en
 		}
 
 		// Set writes
-		std::array<VkWriteDescriptorSet, 8> writes;
+		std::array<VkWriteDescriptorSet, 12> writes;
 		for (size_t i = 0; i < writes.size(); i++)
 		{
 			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

@@ -53,7 +53,7 @@ namespace en
 		vk::Shader m_NrcForwardFragShader;
 		VkPipelineLayout m_NrcForwardPipelineLayout;
 		VkPipeline m_NrcForwardPipeline;
-		std::array<vk::Buffer*, 8> m_NrcForwardBuffers;
+		std::array<vk::Buffer*, 12> m_NrcForwardBuffers;
 		VkDescriptorSet m_NrcForwardDS;
 		
 		VkImage m_ColorImage;

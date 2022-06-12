@@ -295,7 +295,7 @@ void RunNrcHpmTrainer()
 
 	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.01f, SIZE_MAX);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.001f, SIZE_MAX);
 	nn->SyncLayersToHost(*manager);
 
 	// Sync exit
@@ -307,7 +307,7 @@ void RunNrcHpmTrainer()
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 600;
+	uint32_t width = 512;
 	uint32_t height = width;
 
 	// Start engine
@@ -338,7 +338,7 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		pathTracer = new en::DensityPathTracer(25, 25, trainVolumeData, &sun);
+		pathTracer = new en::DensityPathTracer(16, 8, trainVolumeData, &sun); // To generate 128 batches
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
@@ -352,13 +352,17 @@ void RunNrcHpm()
 		manager = new en::KomputeManager();
 
 		std::vector<en::Layer*> layers = {
-			new en::LinearLayer(*manager, 5, 64),
+			new en::LinearLayer(*manager, 5, 64), // 0
 			new en::SigmoidLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 64),
+			new en::LinearLayer(*manager, 64, 64), // 1
 			new en::ReluLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 64),
+			new en::LinearLayer(*manager, 64, 64), // 2
 			new en::ReluLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 4),
+			new en::LinearLayer(*manager, 64, 64), // 3
+			new en::ReluLayer(*manager, 64),
+			new en::LinearLayer(*manager, 64, 64), // 4
+			new en::ReluLayer(*manager, 64),
+			new en::LinearLayer(*manager, 64, 4), // 5
 			new en::SigmoidLayer(*manager, 4) };
 
 		nn = new en::NeuralNetwork(layers);

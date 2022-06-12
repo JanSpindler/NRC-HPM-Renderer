@@ -55,27 +55,47 @@ layout(std140, set = 4, binding = 2) readonly buffer Weights2
 
 layout(std140, set = 4, binding = 3) readonly buffer Weights3
 {
-	float matWeights3[256]; // 64 x 4
+	float matWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 4) readonly buffer Biases0
+layout(std140, set = 4, binding = 4) readonly buffer Weights4
+{
+	float matWeights4[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 5) readonly buffer Weights5
+{
+	float matWeights5[256]; // 64 x 4
+};
+
+layout(std140, set = 4, binding = 6) readonly buffer Biases0
 {
 	float matBiases0[64];
 };
 
-layout(std140, set = 4, binding = 5) readonly buffer Biases1
+layout(std140, set = 4, binding = 7) readonly buffer Biases1
 {
 	float matBiases1[64];
 };
 
-layout(std140, set = 4, binding = 6) readonly buffer Biases2
+layout(std140, set = 4, binding = 8) readonly buffer Biases2
 {
 	float matBiases2[64];
 };
 
-layout(std140, set = 4, binding = 7) readonly buffer Biases3
+layout(std140, set = 4, binding = 9) readonly buffer Biases3
 {
-	float matBiases3[4];
+	float matBiases3[64];
+};
+
+layout(std140, set = 4, binding = 10) readonly buffer Biases4
+{
+	float matBiases4[64];
+};
+
+layout(std140, set = 4, binding = 11) readonly buffer Biases5
+{
+	float matBiases5[64];
 };
 
 // Output
@@ -154,7 +174,7 @@ float Relu(float x)
 
 float GetWeight0(uint row, uint col)
 {
-	uint linearIndex = row * 64 + col;
+	uint linearIndex = row * 5 + col;
 	return matWeights0[linearIndex];
 }
 
@@ -174,6 +194,18 @@ float GetWeight3(uint row, uint col)
 {
 	uint linearIndex = row * 64 + col;
 	return matWeights3[linearIndex];
+}
+
+float GetWeight4(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights4[linearIndex];
+}
+
+float GetWeight5(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights5[linearIndex];
 }
 
 void ApplyWeights0(in float[5] nr0, out float[64] nr1)
@@ -199,7 +231,7 @@ void ApplyWeights1(in float[64] nr1, out float[64] nr2)
 	{
 		float sum = 0;
 		
-		for (uint inCol = 0; inCol < 5; inCol++)
+		for (uint inCol = 0; inCol < 64; inCol++)
 		{
 			float inVal = nr1[inCol];
 			float weightVal = GetWeight1(outRow, inCol);
@@ -216,7 +248,7 @@ void ApplyWeights2(in float[64] nr2, out float[64] nr3)
 	{
 		float sum = 0;
 		
-		for (uint inCol = 0; inCol < 5; inCol++)
+		for (uint inCol = 0; inCol < 64; inCol++)
 		{
 			float inVal = nr2[inCol];
 			float weightVal = GetWeight2(outRow, inCol);
@@ -227,13 +259,13 @@ void ApplyWeights2(in float[64] nr2, out float[64] nr3)
 	}
 }
 
-void ApplyWeights3(in float[64] nr3, out float[4] nr4)
+void ApplyWeights3(in float[64] nr3, out float[64] nr4)
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
 		float sum = 0;
 		
-		for (uint inCol = 0; inCol < 5; inCol++)
+		for (uint inCol = 0; inCol < 64; inCol++)
 		{
 			float inVal = nr3[inCol];
 			float weightVal = GetWeight3(outRow, inCol);
@@ -241,6 +273,40 @@ void ApplyWeights3(in float[64] nr3, out float[4] nr4)
 		}
 
 		nr4[outRow] = sum;
+	}
+}
+
+void ApplyWeights4(in float[64] nr4, out float[64] nr5)
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr4[inCol];
+			float weightVal = GetWeight4(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr5[outRow] = sum;
+	}
+}
+
+void ApplyWeights5(in float[64] nr5, out float[4] nr6)
+{
+	for (uint outRow = 0; outRow < 4; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr5[inCol];
+			float weightVal = GetWeight5(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr6[outRow] = sum;
 	}
 }
 
@@ -268,11 +334,27 @@ void AddBiases2(inout float[64] nr3)
 	}
 }
 
-void AddBiases3(inout float[4] nr4)
+void AddBiases3(inout float[64] nr4)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr4[i] += matBiases3[i];
+	}
+}
+
+void AddBiases4(inout float[64] nr5)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr5[i] += matBiases4[i];
+	}
+}
+
+void AddBiases5(inout float[4] nr6)
 {
 	for (uint i = 0; i < 4; i++)
 	{
-		nr4[i] += matBiases3[i];
+		nr6[i] += matBiases5[i];
 	}
 }
 
@@ -303,12 +385,30 @@ void ActivateNr3(inout float[64] nr3)
 	}
 }
 
-void ActivateNr4(inout float[4] nr4)
+void ActivateNr4(inout float[64] nr4)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		//nr4[i] = Sigmoid(nr4[i]);
+		nr4[i] = Relu(nr4[i]);
+	}
+}
+
+void ActivateNr5(inout float[64] nr5)
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		//nr1[i] = Sigmoid(nr1[i]);
+		nr5[i] = Relu(nr5[i]);
+	}
+}
+
+void ActivateNr6(inout float[4] nr6)
 {
 	for (uint i = 0; i < 4; i++)
 	{
-		nr4[i] = Sigmoid(nr4[i]);
-		//nr4[i] = Relu(nr4[i]);
+		nr6[i] = Sigmoid(nr6[i]);
+		//nr6[i] = Relu(nr6[i]);
 	}
 }
 
@@ -321,29 +421,39 @@ vec4 Forward(const vec3 ro, const vec3 rd)
 	float nr1[64];
 	float nr2[64];
 	float nr3[64];
-	float nr4[4];
+	float nr4[64];
+	float nr5[64];
+	float nr6[4];
 
 	ApplyWeights0(nr0, nr1);
-	AddBiases0(nr1);
+	//AddBiases0(nr1);
 	ActivateNr1(nr1);
 	
 	ApplyWeights1(nr1, nr2);
-	AddBiases1(nr2);
+	//AddBiases1(nr2);
 	ActivateNr2(nr2);
 	
 	ApplyWeights2(nr2, nr3);
-	AddBiases2(nr3);
+	//AddBiases2(nr3);
 	ActivateNr3(nr3);
 	
 	ApplyWeights3(nr3, nr4);
-	AddBiases3(nr4);
+	//AddBiases3(nr4);
 	ActivateNr4(nr4);
 
+	ApplyWeights4(nr4, nr5);
+	//AddBiases4(nr5);
+	ActivateNr5(nr5);
+	
+	ApplyWeights5(nr5, nr6);
+	//AddBiases5(nr6);
+	ActivateNr6(nr6);
+
 	vec4 outputCol;
-	outputCol.r = nr4[0];
-	outputCol.g = nr4[1];
-	outputCol.b = nr4[2];
-	outputCol.a = nr4[3];
+	outputCol.r = nr6[0];
+	outputCol.g = nr6[1];
+	outputCol.b = nr6[2];
+	outputCol.a = nr6[3];
 
 	return outputCol;
 }
@@ -662,8 +772,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const float prob = 1.0 / (4.0 * PI * PI);
 			const float randomPhase = hg_phase_func(dot(randomDir, -rayDir));
 			//const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
-			const vec3 randomLight = Forward(samplePoint, randomDir).wzy * randomPhase;
-
+			const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
 			// Combine incomming light
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
@@ -674,7 +783,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 
 			scatteredLight += transmittance * s_int;
 			transmittance *= t_r;
-			
+
 			// Low transmittance early exit
 			if (transmittance < 0.01)
 				break;
@@ -714,4 +823,6 @@ void main()
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
 	//alpha = 0.5; // Exponential decay might be useful if nn is still learning
 	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
+
+	//outColor = vec4(Forward(ro, rd).xyz, 1.0);
 }
