@@ -539,14 +539,15 @@ vec3 GenRandomDir()
 
 void main()
 {
-	const vec3 ro = vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5);
+	vec3 ro = vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5);
+	
 	//const vec3 rd = normalize(vec3(1.0, preRand, prePreRand));
 	const vec3 rd = GenRandomDir();
 	// uniform sample cosangle
 	float theta = atan(rd.y, rd.x);
 	float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
 
-	outPos = vec4(ro, 1.0);
+	outPos = vec4(ro / skySize.y, 1.0);
 	outDir = vec4(theta, phi, 0.0, 1.0);
 
 //	const vec3[2] entry_exit = find_entry_exit(ro, rd);

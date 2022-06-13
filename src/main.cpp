@@ -354,15 +354,15 @@ void RunNrcHpm()
 
 		std::vector<en::Layer*> layers = {
 			new en::LinearLayer(*manager, 5, 64), // 0
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 1
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 2
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 3
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 4
-			new en::SigmoidLayer(*manager, 64),
+			new en::ReluLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 4), // 5
 			new en::ReluLayer(*manager, 4) };
 

@@ -114,9 +114,9 @@ const vec3 skyPos = vec3(0.0);
 #define SECONDARY_SAMPLE_COUNT 12
 
 #define SAMPLE_COUNT0 16
-#define SAMPLE_COUNT1 18
+#define SAMPLE_COUNT1 16
 #define SAMPLE_COUNT2 8
-#define SAMPLE_COUNT3 4
+#define SAMPLE_COUNT3 8
 
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
@@ -347,8 +347,8 @@ void ActivateNr1(inout float[64] nr1)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr1[i] = Sigmoid(nr1[i]);
-		//nr1[i] = Relu(nr1[i]);
+		//nr1[i] = Sigmoid(nr1[i]);
+		nr1[i] = Relu(nr1[i]);
 	}
 }
 
@@ -356,8 +356,8 @@ void ActivateNr2(inout float[64] nr2)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr2[i] = Sigmoid(nr2[i]);
-		//nr2[i] = Relu(nr2[i]);
+		//nr2[i] = Sigmoid(nr2[i]);
+		nr2[i] = Relu(nr2[i]);
 	}
 }
 
@@ -365,8 +365,8 @@ void ActivateNr3(inout float[64] nr3)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr3[i] = Sigmoid(nr3[i]);
-		//nr3[i] = Relu(nr3[i]);
+		//nr3[i] = Sigmoid(nr3[i]);
+		nr3[i] = Relu(nr3[i]);
 	}
 }
 
@@ -374,8 +374,8 @@ void ActivateNr4(inout float[64] nr4)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr4[i] = Sigmoid(nr4[i]);
-		//nr4[i] = Relu(nr4[i]);
+		//nr4[i] = Sigmoid(nr4[i]);
+		nr4[i] = Relu(nr4[i]);
 	}
 }
 
@@ -383,8 +383,8 @@ void ActivateNr5(inout float[64] nr5)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr5[i] = Sigmoid(nr5[i]);
-		//nr5[i] = Relu(nr5[i]);
+		//nr5[i] = Sigmoid(nr5[i]);
+		nr5[i] = Relu(nr5[i]);
 	}
 }
 
@@ -397,8 +397,10 @@ void ActivateNr6(inout float[4] nr6)
 	}
 }
 
-vec4 Forward(const vec3 ro, const vec3 rd)
+vec4 Forward(vec3 ro, const vec3 rd)
 {
+	ro /= skySize.y;
+
 	const float theta = atan(rd.y, rd.x);
 	const float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
 
@@ -639,10 +641,10 @@ vec3 TracePath2(vec3 rayOrigin, vec3 rayDir)
 			const float sampleSigmaE = density * SIGMA_E;
 
 			const float phase = hg_phase_func(dot(dir_light.dir, -rayDir));
-			const vec3 incommingLight = vec3(get_self_shadowing(samplePoint));
-			//const vec3 incommingLight = TracePath3(samplePoint);
+			//const vec3 incommingLight = vec3(get_self_shadowing(samplePoint));
+			const vec3 incommingLight = TracePath3(samplePoint) * phase;
 
-			const vec3 s = incommingLight * phase * density * sampleSigmaS;
+			const vec3 s = incommingLight * sampleSigmaS;
 			const float t_r = exp(-sampleSigmaE * stepSize);
 			const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
 
@@ -702,7 +704,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * totalIncomingLight * density;// / prob;
+			const vec3 s = sampleSigmaS * totalIncomingLight;
 			const float t_r = exp(-sampleSigmaE * stepSize);
 			const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
 
@@ -762,7 +764,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * totalIncomingLight * density;// / prob;
+			const vec3 s = sampleSigmaS * totalIncomingLight;
 			const float t_r = exp(-sampleSigmaE * stepSize);
 			const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
 
@@ -778,8 +780,87 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 	return scatteredLight;
 }
 
+float GetTransmittance(const vec3 start, const vec3 end, const uint count)
+{
+	const vec3 dir = end - start;
+	const float stepSize = length(dir) / float(count);
+
+	float transmittance = 1.0;
+	for (uint i = 0; i < count; i++)
+	{
+		const float factor = float(i) / float(count);
+		const vec3 samplePoint = start + (factor * dir);
+		const float density = getDensity(samplePoint);
+
+		const float sampleSigmaE = density * SIGMA_E;
+		const float t_r = exp(-sampleSigmaE * stepSize);
+		transmittance *= t_r;
+	}
+
+	return transmittance;
+}
+
+#define TRUE_TRACE_SAMPLE_COUNT 16
+vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
+{
+	// Gen positions / directions in volume
+	vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
+	
+	vec3 positions[TRUE_TRACE_SAMPLE_COUNT];
+	positions[0] = entry;
+	vec3 directions[TRUE_TRACE_SAMPLE_COUNT];
+	directions[0] = rayDir;
+
+	for (uint i = 1; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	{
+		const vec3 randomDir = NewRayDir(directions[i - 1]);
+		positions[i] = positions[i - 1] + (RandFloat(1.0) * randomDir);
+		directions[i] = randomDir;
+	}
+
+	// Calc incomming light for every position
+	vec3 incomingLights[TRUE_TRACE_SAMPLE_COUNT];
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	{
+		const float sunPhase = hg_phase_func(dot(dir_light.dir, -directions[i]));
+		incomingLights[i] = vec3(get_self_shadowing(positions[i])) * sunPhase;
+	}
+
+	// Calc scattered light
+	vec3 scatteredLight = vec3(0.0);
+	float transmittance = 1.0;
+
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT - 1; i++)
+	{
+		const float density = getDensity(positions[i]);
+		const float sampleSigmaS = density * SIGMA_S;
+		const float sampleSigmaE = density * SIGMA_E;
+
+		const float t_r = GetTransmittance(positions[i], positions[i + 1], 16);
+		
+		const vec3 s = sampleSigmaS * incomingLights[i];
+		const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
+
+		scatteredLight += transmittance * s_int;
+		
+		transmittance *= t_r;
+
+		if (transmittance < 0.01)
+		{
+			break;
+		}
+	}
+
+	return scatteredLight;
+}
+
 vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
+	if (volumeData.singleScatter != 1)
+	{
+		//return TrueTracePath(rayOrigin, rayDir);
+	}
+
 	return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
 }
 
