@@ -13,6 +13,9 @@ namespace en
         layout(binding = 1) readonly buffer MatPrevError { float matPrevError[]; };
         layout(binding = 2) writeonly buffer MatLocalError { float matLocalError[]; };
 
+		#define isNaN(x) ( (x) != (x)    )
+		#define isInf(x) ( (x) == (x)+1. )
+
         void main()
 		{
 			const uint index = gl_GlobalInvocationID.x;
@@ -20,7 +23,13 @@ namespace en
 			float oldInput = matOldInput[index];
 			float prevError = matPrevError[index];
 
-			float reluDeriv = 1.0 / (1.0 + exp(-oldInput));
+			float reluDeriv = oldInput > 0.0 ? 1.0 : 0.01;
+			//float reluDeriv = 0.0;
+			//if (!isNaN(oldInput) && !isInf(oldInput))
+			//{
+			//	reluDeriv = oldInput > 0.0 ? 1.0 : 0.0;
+			//	reluDeriv += oldInput * 0.0005;
+			//}
 
 			float localError = reluDeriv * prevError;
 			matLocalError[index] = localError;

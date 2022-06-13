@@ -154,22 +154,7 @@ float Sigmoid(float x)
 
 float Relu(float x)
 {
-	float result;
-
-	if (x > 20.0)
-	{
-		result = x;
-	}
-	else if (x < 20.0)
-	{
-		result = 0.0;
-	}
-	else
-	{
-		result = log(1.0 + exp(x));
-	}
-
-	return result;
+	return x > 0.0 ? x : x * 0.01;
 }
 
 float GetWeight0(uint row, uint col)
@@ -371,8 +356,8 @@ void ActivateNr2(inout float[64] nr2)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr2[i] = Sigmoid(nr2[i]);
-		nr2[i] = Relu(nr2[i]);
+		nr2[i] = Sigmoid(nr2[i]);
+		//nr2[i] = Relu(nr2[i]);
 	}
 }
 
@@ -380,8 +365,8 @@ void ActivateNr3(inout float[64] nr3)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr3[i] = Sigmoid(nr3[i]);
-		nr3[i] = Relu(nr3[i]);
+		nr3[i] = Sigmoid(nr3[i]);
+		//nr3[i] = Relu(nr3[i]);
 	}
 }
 
@@ -389,8 +374,8 @@ void ActivateNr4(inout float[64] nr4)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr4[i] = Sigmoid(nr4[i]);
-		nr4[i] = Relu(nr4[i]);
+		nr4[i] = Sigmoid(nr4[i]);
+		//nr4[i] = Relu(nr4[i]);
 	}
 }
 
@@ -398,8 +383,8 @@ void ActivateNr5(inout float[64] nr5)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr1[i] = Sigmoid(nr1[i]);
-		nr5[i] = Relu(nr5[i]);
+		nr5[i] = Sigmoid(nr5[i]);
+		//nr5[i] = Relu(nr5[i]);
 	}
 }
 
@@ -407,8 +392,8 @@ void ActivateNr6(inout float[4] nr6)
 {
 	for (uint i = 0; i < 4; i++)
 	{
-		nr6[i] = Sigmoid(nr6[i]);
-		//nr6[i] = Relu(nr6[i]);
+		//nr6[i] = Sigmoid(nr6[i]);
+		nr6[i] = Relu(nr6[i]);
 	}
 }
 
@@ -450,10 +435,10 @@ vec4 Forward(const vec3 ro, const vec3 rd)
 	ActivateNr6(nr6);
 
 	vec4 outputCol;
-	outputCol.r = nr6[0];
-	outputCol.g = nr6[1];
-	outputCol.b = nr6[2];
-	outputCol.a = nr6[3];
+	outputCol.x = nr6[0];
+	outputCol.y = nr6[1];
+	outputCol.z = nr6[2];
+	outputCol.w = nr6[3];
 
 	return outputCol;
 }
@@ -821,7 +806,6 @@ void main()
 	float alpha = lowPassIndex / (lowPassIndex + 1.0);
 	vec4 oldColor = texture(lowPassTex, fragUV);
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
-	//alpha = 0.5; // Exponential decay might be useful if nn is still learning
 	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
 
 	//outColor = vec4(Forward(ro, rd).xyz, 1.0);

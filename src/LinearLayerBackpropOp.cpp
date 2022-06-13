@@ -21,9 +21,17 @@ namespace en
 		layout(binding = 0) readonly buffer MatOldInput { float matOldInput[]; };
 		layout(binding = 1) readonly buffer MatPrevError { float matPrevError[]; };
 		layout(binding = 2) buffer MatLocalError { float matLocalError[]; };
-		layout(binding = 3) readonly buffer MatWeights { float matWeights[]; };
+		layout(binding = 3) buffer MatWeights { float matWeights[]; };
 		layout(binding = 4) buffer MatBiases { float matBiases[]; };
 		layout(binding = 5) buffer MatDeltaWeights { float matDeltaWeights[]; };
+
+		#define isNaN(x) ( (x) != (x)    )
+		#define isInf(x) ( (x) == (x)+1. )
+
+		float rand(vec2 co)
+		{
+			return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+		}
 
 		void LearnWeights(uint outRow, uint outCol)
 		{
@@ -32,10 +40,16 @@ namespace en
 			float oldDeltaWeight = matDeltaWeights[linearIndex];
 			float newDeltaWeight = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
 
-			float beta = 0.8;
+			float beta = 0.0;
 			matDeltaWeights[linearIndex] = (beta * oldDeltaWeight) + ((1.0 - beta) * newDeltaWeight);
 
-			//matDeltaWeights[linearIndex] = -matOldInput[outCol] * matPrevError[outRow] * config.learningRate;
+			// Correct nans / infs
+			//float weight = matWeights[linearIndex];			
+			//if (isNaN(weight) || isInf(weight))
+			//{
+			//	matWeights[linearIndex] = rand(vec2(float(outRow), float(outCol)));
+			//	matDeltaWeights[linearIndex] = 0.0;
+			//}
 		}
 
 		void LearnBiases(uint outRow)

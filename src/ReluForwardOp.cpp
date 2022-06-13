@@ -17,20 +17,7 @@ namespace en
 			const uint index = gl_GlobalInvocationID.x;
 			float inVal = matIn[index];
 			
-			float outVal = 0.0;
-
-			if (inVal > 20.0)
-			{
-				outVal = inVal;
-			}
-			else if (inVal < 20.0)
-			{
-				outVal = 0.0;
-			}
-			else
-			{
-				outVal = log(1.0 + exp(inVal));
-			}
+			float outVal = inVal > 0.0 ? inVal : inVal * 0.01;
 
 			matOut[index] = outVal;
 		}

@@ -14,9 +14,10 @@
 			float oldInput = matOldInput[index];
 			float prevError = matPrevError[index];
 
-			float reluDeriv = 1.0 / (1.0 + exp(-oldInput));
+			float sigmoidVal = 1.0 / (1.0 + exp(-oldInput));
+			float sigmoidDeriv = sigmoidVal * (1.0 - sigmoidVal);
 
-			float localError = reluDeriv * prevError;
+			float localError = sigmoidDeriv * prevError;
 			matLocalError[index] = localError;
         }
 	

@@ -295,13 +295,14 @@ void RunNrcHpmTrainer()
 
 	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.001f, SIZE_MAX);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.01f, SIZE_MAX);
 	nn->SyncLayersToHost(*manager);
 
 	// Sync exit
 	doneTraining = true;
 
 	en::Log::Info("Nn update");
+	en::Log::Info(nn->ToString());
 }
 
 void RunNrcHpm()
@@ -338,7 +339,7 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		pathTracer = new en::DensityPathTracer(16, 8, trainVolumeData, &sun); // To generate 128 batches
+		pathTracer = new en::DensityPathTracer(64, 8, trainVolumeData, &sun); // To generate 128 batches
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
@@ -355,15 +356,15 @@ void RunNrcHpm()
 			new en::LinearLayer(*manager, 5, 64), // 0
 			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 1
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 2
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 3
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 4
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 4), // 5
-			new en::SigmoidLayer(*manager, 4) };
+			new en::ReluLayer(*manager, 4) };
 
 		nn = new en::NeuralNetwork(layers);
 
