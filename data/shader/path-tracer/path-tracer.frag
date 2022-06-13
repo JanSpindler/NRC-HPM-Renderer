@@ -378,10 +378,10 @@ vec3 TracePath2(vec3 rayOrigin, vec3 rayDir)
 			const float sampleSigmaE = density * SIGMA_E;
 
 			const float phase = hg_phase_func(dot(dir_light.dir, -rayDir));
-			const vec3 incommingLight = vec3(get_self_shadowing(samplePoint));
+			const vec3 incommingLight = vec3(get_self_shadowing(samplePoint)) * phase;
 			//const vec3 incommingLight = TracePath3(samplePoint);
 
-			const vec3 s = incommingLight * phase * density * sampleSigmaS;
+			const vec3 s = incommingLight * sampleSigmaS;
 			const float t_r = exp(-sampleSigmaE * stepSize);
 			const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
 
@@ -441,7 +441,7 @@ vec3 TracePath1(vec3 rayOrigin, vec3 rayDir)
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * totalIncomingLight * density;// / prob;
+			const vec3 s = sampleSigmaS * totalIncomingLight;
 			const float t_r = exp(-sampleSigmaE * stepSize);
 			const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
 
@@ -501,7 +501,7 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * totalIncomingLight * density;// / prob;
+			const vec3 s = sampleSigmaS * totalIncomingLight;
 			const float t_r = exp(-sampleSigmaE * stepSize);
 			const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
 
