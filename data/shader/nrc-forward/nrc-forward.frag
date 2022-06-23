@@ -564,7 +564,19 @@ vec3 NewRayDir(vec3 oldRayDir)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-	float angle = RandFloat(PI);
+	float g = volumeData.g;
+	float cosTheta;
+	if (abs(g) < 0.001)
+    {
+		cosTheta = 1 - 2 * RandFloat(1.0);
+	}
+	else
+	{
+		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
+		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+	}
+	float angle = acos(cosTheta);
+	//float angle = RandFloat(PI);
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
@@ -828,7 +840,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
 			return scatteredLight;
 		}
-		totalTermProb *= 1.0;
+		totalTermProb *= 0.9999;
 
 		const float density = getDensity(currentPoint);
 
