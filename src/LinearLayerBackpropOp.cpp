@@ -44,12 +44,12 @@ namespace en
 			matDeltaWeights[linearIndex] = (beta * oldDeltaWeight) + ((1.0 - beta) * newDeltaWeight);
 
 			// Correct nans / infs
-			//float weight = matWeights[linearIndex];			
-			//if (isNaN(weight) || isInf(weight))
-			//{
-			//	matWeights[linearIndex] = rand(vec2(float(outRow), float(outCol)));
-			//	matDeltaWeights[linearIndex] = 0.0;
-			//}
+			float weight = matWeights[linearIndex];			
+			if (isNaN(weight) || isInf(weight))
+			{
+				matWeights[linearIndex] = 0.0;//rand(vec2(float(outRow), float(outCol)));
+				matDeltaWeights[linearIndex] = 0.0;
+			}
 		}
 
 		void LearnBiases(uint outRow)

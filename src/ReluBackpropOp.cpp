@@ -24,12 +24,6 @@ namespace en
 			float prevError = matPrevError[index];
 
 			float reluDeriv = oldInput > 0.0 ? 1.0 : 0.01;
-			//float reluDeriv = 0.0;
-			//if (!isNaN(oldInput) && !isInf(oldInput))
-			//{
-			//	reluDeriv = oldInput > 0.0 ? 1.0 : 0.0;
-			//	reluDeriv += oldInput * 0.0005;
-			//}
 
 			float localError = reluDeriv * prevError;
 			matLocalError[index] = localError;

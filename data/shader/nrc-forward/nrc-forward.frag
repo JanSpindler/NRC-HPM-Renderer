@@ -758,8 +758,8 @@ vec3 TracePath0(const vec3 rayOrigin, vec3 rayDir)
 			vec3 randomDir = NewRayDir(rayDir);
 			const float prob = 1.0 / (4.0 * PI * PI);
 			const float randomPhase = hg_phase_func(dot(randomDir, -rayDir));
-			//const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
-			const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
+			const vec3 randomLight = TracePath1(samplePoint, randomDir) * randomPhase;
+			//const vec3 randomLight = Forward(samplePoint, randomDir).xyz * randomPhase;
 			// Combine incomming light
 			const vec3 totalIncomingLight = (randomLight + sunLight) * 0.5;
 
@@ -785,6 +785,11 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	const vec3 dir = end - start;
 	const float stepSize = length(dir) / float(count);
 
+	if (stepSize == 0.0)
+	{
+		return 1.0;
+	}
+
 	float transmittance = 1.0;
 	for (uint i = 0; i < count; i++)
 	{
@@ -800,55 +805,65 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	return transmittance;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 16
+#define TRUE_TRACE_SAMPLE_COUNT 64
 vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
-{
-	// Gen positions / directions in volume
-	vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
-	
-	vec3 positions[TRUE_TRACE_SAMPLE_COUNT];
-	positions[0] = entry;
-	vec3 directions[TRUE_TRACE_SAMPLE_COUNT];
-	directions[0] = rayDir;
-
-	for (uint i = 1; i < TRUE_TRACE_SAMPLE_COUNT; i++)
-	{
-		const vec3 randomDir = NewRayDir(directions[i - 1]);
-		positions[i] = positions[i - 1] + (RandFloat(1.0) * randomDir);
-		directions[i] = randomDir;
-	}
-
-	// Calc incomming light for every position
-	vec3 incomingLights[TRUE_TRACE_SAMPLE_COUNT];
-	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
-	{
-		const float sunPhase = hg_phase_func(dot(dir_light.dir, -directions[i]));
-		incomingLights[i] = vec3(get_self_shadowing(positions[i])) * sunPhase;
-	}
-
-	// Calc scattered light
+{	
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
 
-	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT - 1; i++)
+	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
+	
+	vec3 currentPoint = entry;
+	vec3 lastPoint = entry;
+	vec3 currentDir = rayDir;
+
+	float totalTermProb = 1.0;
+
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
-		const float density = getDensity(positions[i]);
-		const float sampleSigmaS = density * SIGMA_S;
-		const float sampleSigmaE = density * SIGMA_E;
-
-		const float t_r = GetTransmittance(positions[i], positions[i + 1], 16);
-		
-		const vec3 s = sampleSigmaS * incomingLights[i];
-		const vec3 s_int = (s - (s * t_r)) / sampleSigmaE;
-
-		scatteredLight += transmittance * s_int;
-		
-		transmittance *= t_r;
-
-		if (transmittance < 0.01)
+		if (RandFloat(1.0) > totalTermProb)
 		{
-			break;
+			scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
+			return scatteredLight;
 		}
+		totalTermProb *= 1.0;
+
+		const float density = getDensity(currentPoint);
+
+		if (density > 0.0)
+		{
+			// Sigmas
+			const float sampleSigmaS = density * SIGMA_S;
+			const float sampleSigmaE = density * SIGMA_E;
+
+			// Incoming light directly from sun
+			const float sunPhase = hg_phase_func(dot(dir_light.dir, -currentDir));
+			const vec3 sunLight = vec3(get_self_shadowing(currentPoint)) * sunPhase;
+
+			// Transmittance calculation
+			const vec3 s = sampleSigmaS * sunLight;
+			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
+			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
+
+			scatteredLight += transmittance * s_int;
+			transmittance *= t_r;
+
+			// Low transmittance early exit
+			if (transmittance < 0.01)
+			{
+				break;
+			}
+
+			// Update last point
+			lastPoint = currentPoint;
+		}
+
+		// Generate new point
+		currentDir = NewRayDir(currentDir);
+		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
+		const float maxDistance = distance(exit, currentPoint);
+		const float nextDistance = RandFloat(maxDistance);
+		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 
 	return scatteredLight;
@@ -858,7 +873,7 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
 	if (volumeData.singleScatter != 1)
 	{
-		//return TrueTracePath(rayOrigin, rayDir);
+		return TrueTracePath(rayOrigin, rayDir) * exp(volumeData.brightness);
 	}
 
 	return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
