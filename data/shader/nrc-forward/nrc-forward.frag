@@ -805,7 +805,7 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	return transmittance;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 64
+#define TRUE_TRACE_SAMPLE_COUNT 32
 vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 {	
 	vec3 scatteredLight = vec3(0.0);
@@ -815,7 +815,9 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 	
 	vec3 currentPoint = entry;
 	vec3 lastPoint = entry;
+	
 	vec3 currentDir = rayDir;
+	vec3 lastDir = vec3(0.0);
 
 	float totalTermProb = 1.0;
 
@@ -840,8 +842,11 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			const float sunPhase = hg_phase_func(dot(dir_light.dir, -currentDir));
 			const vec3 sunLight = vec3(get_self_shadowing(currentPoint)) * sunPhase;
 
+			// Phase factor
+			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
+
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight;
+			const vec3 s = sampleSigmaS * sunLight * dirPhase;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 
@@ -854,8 +859,9 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 				break;
 			}
 
-			// Update last point
+			// Update last
 			lastPoint = currentPoint;
+			lastDir = currentDir;
 		}
 
 		// Generate new point
