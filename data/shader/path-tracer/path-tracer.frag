@@ -70,58 +70,6 @@ float myRand()
 	return result;
 }
 
-/*const uint64_t PCG32_DEFAULT_STATE  = 0x853c49e6748fea9bUL;
-const uint64_t PCG32_DEFAULT_STREAM = 0xda3e39cb94b95bdbUL;
-const uint64_t PCG32_MULT           = 0x5851f42d4c957f2dUL;
-
-struct pcg32_t
-{
-	uint64_t state;
-	uint64_t inc;
-};
-
-pcg32_t pcg32;
-
-uint Pcg32NextUInt()
-{
-	uint64_t oldState = pcg32.state;
-	pcg32.state = PCG32_MULT + pcg32.inc;
-	uint xorShifted = uint(((oldState >> 18u) ^ oldState) >> 27u);
-	uint rot = uint(oldState >> 59u);
-	return (xorShifted >> rot) | (xorShifted << ((~rot + 1u) & 32));
-}
-
-uint Pcg32NextUInt(uint bound)
-{
-	uint threshold = (~bound + 1u) % bound;
-	while (true)
-	{
-		uint r = Pcg32NextUInt();
-		if (r >= threshold)
-			return r % bound;
-	}
-}
-
-float Pcg32NextFloat()
-{
-	uint u = (Pcg32NextUInt() >> 9) | 0x3f800000u;
-	vec2 f = unpackHalf2x16(u);
-	return rand(f);
-}
-
-void Pcg32Seed()
-{
-	uint64_t initstate = PCG32_DEFAULT_STATE;
-	uint64_t initseq = PCG32_DEFAULT_STREAM;
-
-	pcg32.state = packHalf2x16(vec2(myRand(), myRand()));
-	//pcg32.state = 0U;
-	pcg32.inc = (initseq << 1u) | 1u;
-	Pcg32NextUInt();
-	pcg32.state += initstate;
-	Pcg32NextUInt();
-}*/
-
 float RandFloat(float maxVal)
 {
 	float f = myRand();
@@ -320,8 +268,17 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
+	float totalTermProb = 1.0;
+
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
+		if (RandFloat(1.0) > totalTermProb)
+		{
+			//scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
+			//return scatteredLight;
+		}
+		totalTermProb *= 0.8;
+
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
@@ -354,10 +311,12 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			// Update last
 			lastPoint = currentPoint;
 			lastDir = currentDir;
+
+			// Generate new direction
+			currentDir = NewRayDir(currentDir);
 		}
 
 		// Generate new point
-		currentDir = NewRayDir(currentDir);
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
 		const float maxDistance = distance(exit, currentPoint);
 		const float nextDistance = RandFloat(maxDistance);

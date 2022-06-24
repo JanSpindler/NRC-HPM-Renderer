@@ -817,7 +817,7 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	return transmittance;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 32
+#define TRUE_TRACE_SAMPLE_COUNT 64
 vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 {	
 	vec3 scatteredLight = vec3(0.0);
@@ -837,10 +837,10 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 	{
 		if (RandFloat(1.0) > totalTermProb)
 		{
-			scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
-			return scatteredLight;
+			//scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
+			//return scatteredLight;
 		}
-		totalTermProb *= 0.9999;
+		totalTermProb *= 0.8;
 
 		const float density = getDensity(currentPoint);
 
@@ -874,10 +874,12 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			// Update last
 			lastPoint = currentPoint;
 			lastDir = currentDir;
+
+			// Generate new direction
+			currentDir = NewRayDir(currentDir);
 		}
 
 		// Generate new point
-		currentDir = NewRayDir(currentDir);
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
 		const float maxDistance = distance(exit, currentPoint);
 		const float nextDistance = RandFloat(maxDistance);
@@ -921,6 +923,4 @@ void main()
 	vec4 oldColor = texture(lowPassTex, fragUV);
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
 	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
-
-	//outColor = vec4(Forward(ro, rd).xyz, 1.0);
 }
