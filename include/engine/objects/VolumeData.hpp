@@ -10,7 +10,7 @@ namespace en
 	struct VolumeUniformData
 	{
 		glm::vec4 random;
-		uint32_t singleScatter;
+		uint32_t useNN;
 		float densityFactor;
 		float g;
 		float sigmaS;

@@ -1,36 +1,23 @@
 
-        // The version to use 
+		// The version to use 
         #version 450
 
-		// Push constants
-		layout(push_constant) uniform PushConstants
-		{
-			uint rowCount;
-			uint colCount;
-        } config;
-
         // The buffers are provided via the tensors
-        layout(binding = 0) readonly buffer MatLeft { float matLeft[]; };
-        layout(binding = 1) readonly buffer MatRight { float matRight[]; };
-        layout(binding = 2) writeonly buffer MatResult { float matResult[]; };
+        layout(binding = 0) readonly buffer MatOldInput { float matOldInput[]; };
+        layout(binding = 1) readonly buffer MatPrevError { float matPrevError[]; };
+        layout(binding = 2) writeonly buffer MatLocalError { float matLocalError[]; };
 
         void main()
 		{
-			// Get row / col / counts
-			const uint outRow = gl_GlobalInvocationID.x;
-			const uint outCol = gl_GlobalInvocationID.y;
+			const uint index = gl_GlobalInvocationID.x;
+			
+			float oldInput = matOldInput[index];
+			float prevError = matPrevError[index];
 
-			const uint outRowCount = config.rowCount;
-			const uint outColCount = config.colCount;
+			float sigmoidVal = 1.0 / (1.0 + exp(-oldInput));
+			float sigmoidDeriv = sigmoidVal * (1.0 - sigmoidVal);
 
-			// Check row and col
-			if (outRow >= outRowCount || outCol >= outColCount)
-			{
-			    return;
-			}
-
-			// Matrix addition
-			uint index = outRow * outColCount + outCol;
-			matResult[index] = matLeft[index] + matRight[index];
+			float localError = sigmoidDeriv * prevError;
+			matLocalError[index] = localError;
         }
-      
+	

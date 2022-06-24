@@ -81,7 +81,7 @@ namespace en
 			{}),
 		m_UniformData({ 
 			.random = glm::vec4(0.0f),
-			.singleScatter = 1,
+			.useNN = 0,
 			.densityFactor = 2.0f,
 			.g = 0.6f,
 			.sigmaS = 0.7f,
@@ -107,7 +107,7 @@ namespace en
 	{
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
 
-		if (m_UniformData.singleScatter == 0 && m_UniformData.lowPassIndex < 1000000)
+		if (m_UniformData.lowPassIndex < 1000000)
 			m_UniformData.lowPassIndex++;
 
 		if (cameraChanged)
@@ -125,11 +125,7 @@ namespace en
 	{
 		ImGui::Begin("HPM Volume");
 
-		bool oldSingleScatter = m_UniformData.singleScatter != 0;
-		ImGui::Checkbox("Single Scatter", reinterpret_cast<bool*>(&m_UniformData.singleScatter));
-		if (m_UniformData.singleScatter == 0 && oldSingleScatter)
-			m_UniformData.lowPassIndex = 0;
-
+		ImGui::Checkbox("Use NN", reinterpret_cast<bool*>(&m_UniformData.useNN));
 		ImGui::SliderFloat("Density Factor", &m_UniformData.densityFactor, 0.0f, 16.0f);
 		ImGui::SliderFloat("G", &m_UniformData.g, 0.001f, 0.999f);
 		ImGui::SliderFloat("Sigma S", &m_UniformData.sigmaS, 0.001f, 1.0f);

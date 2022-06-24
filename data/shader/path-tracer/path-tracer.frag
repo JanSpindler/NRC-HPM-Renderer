@@ -275,13 +275,25 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 lastDir = vec3(0.0);
 
 	float totalTermProb = 1.0;
+	bool hasSelectedInternalPath = false;
 
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
-		if (RandFloat(1.0) > totalTermProb)
+		if (!hasSelectedInternalPath && RandFloat(1.0) > totalTermProb)
 		{
-			//scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
-			//return scatteredLight;
+			// Reset lighting
+			transmittance = 1.0;
+			scatteredLight = vec3(0.0);
+
+			// Encode new ray
+			float theta = atan(currentDir.y, currentDir.x);
+			float phi = atan(sqrt((currentDir.x * currentDir.x) + (currentDir.y * currentDir.y)), currentDir.z);
+
+			outPos = vec4(currentPoint / skySize.y, 1.0);
+			outDir = vec4(theta, phi, 0.0, 1.0);
+
+			// Store decision
+			hasSelectedInternalPath = true;
 		}
 		totalTermProb *= 0.8;
 
@@ -339,41 +351,30 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 // --------------- End: path trace -----------------
 
-// --------------- Main -----------------
-vec3 GenRandomDir()
-{
-	vec3 dir = vec3(0.0);
-	while (length(dir) == 0.0)
-	{
-		dir.x = RandFloat(1.0);
-		dir.y = RandFloat(1.0);
-		dir.z = RandFloat(1.0);
-	}
-	return normalize(dir);
-}
-
 void main()
 {
-	vec3 ro = vec3(RandFloat(skySize.x), RandFloat(skySize.y), RandFloat(skySize.z)) - (skySize * 0.5);
-	const vec3 rd = GenRandomDir();
-	
+	const vec3 ro = camera.pos;
+	const vec3 rd = normalize(pixelWorldPos - ro);
+
 	// uniform sample cosangle
 	float theta = atan(rd.y, rd.x);
-	float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
+	float phi = atan(sqrt((rd.x * rd.x) + (rd.y * rd.y)), rd.z);
 
 	outPos = vec4(ro / skySize.y, 1.0);
 	outDir = vec4(theta, phi, 0.0, 1.0);
 
-//	const vec3[2] entry_exit = find_entry_exit(ro, rd);
-//	const vec3 entry = entry_exit[0];
-//	const vec3 exit = entry_exit[1];
-//
-//	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
-//	{
-//		outColor = vec4(vec3(0.0), 1.0);
-//		return;
-//	}
+	// Check sdf collision
+	const vec3[2] entry_exit = find_entry_exit(ro, rd);
+	const vec3 entry = entry_exit[0];
+	const vec3 exit = entry_exit[1];
 
+	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
+	{
+		outColor = vec4(vec3(0.0), 1.0);
+		return;
+	}
+
+	// Trace path
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
 	outColor = newColor;
 }

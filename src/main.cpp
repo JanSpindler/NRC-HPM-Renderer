@@ -162,6 +162,7 @@ void TrainNrc(
 	{
 		en::Matrix inputMat(manager, { { inputs[i].x }, { inputs[i].y }, { inputs[i].z }, { inputs[i].theta }, { inputs[i].phi } });
 		en::Matrix targetMat(manager, { { targets[i].r }, { targets[i].g }, { targets[i].b }, { targets[i].a } });
+		//en::Matrix targetMat(manager, { { 10.0f }, { 10.0f }, { 10.0f }, { 10.0f } });
 
 		nn.Backprop(manager, inputMat, targetMat, learningRate);
 	}
@@ -296,7 +297,7 @@ void RunNrcHpmTrainer()
 
 	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.0001f, SIZE_MAX);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.01f, SIZE_MAX);
 	nn->SyncLayersToHost(*manager);
 
 	// Sync exit
@@ -342,7 +343,7 @@ void RunNrcHpm()
 
 		en::NeuralRadianceCache nrc;
 
-		pathTracer = new en::DensityPathTracer(width / 10, height / 10, &nrc, &camera, trainVolumeData, &sun);
+		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
@@ -357,15 +358,15 @@ void RunNrcHpm()
 
 		std::vector<en::Layer*> layers = {
 			new en::LinearLayer(*manager, 5, 64), // 0
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 1
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 2
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 3
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 64), // 4
-			new en::ReluLayer(*manager, 64),
+			new en::SigmoidLayer(*manager, 64),
 			new en::LinearLayer(*manager, 64, 4), // 5
 			new en::ReluLayer(*manager, 4) };
 

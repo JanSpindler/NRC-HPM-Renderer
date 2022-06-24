@@ -17,7 +17,7 @@ layout(set = 1, binding = 0) uniform sampler3D densityTex;
 layout(set = 1, binding = 1) uniform volumeData_t
 {
 	vec4 random;
-	uint singleScatter;
+	uint useNN;
 	float densityFactor;
 	float g;
 	float sigmaS;
@@ -66,36 +66,6 @@ layout(std140, set = 4, binding = 4) readonly buffer Weights4
 layout(std140, set = 4, binding = 5) readonly buffer Weights5
 {
 	float matWeights5[256]; // 64 x 4
-};
-
-layout(std140, set = 4, binding = 6) readonly buffer Biases0
-{
-	float matBiases0[64];
-};
-
-layout(std140, set = 4, binding = 7) readonly buffer Biases1
-{
-	float matBiases1[64];
-};
-
-layout(std140, set = 4, binding = 8) readonly buffer Biases2
-{
-	float matBiases2[64];
-};
-
-layout(std140, set = 4, binding = 9) readonly buffer Biases3
-{
-	float matBiases3[64];
-};
-
-layout(std140, set = 4, binding = 10) readonly buffer Biases4
-{
-	float matBiases4[64];
-};
-
-layout(std140, set = 4, binding = 11) readonly buffer Biases5
-{
-	float matBiases5[64];
 };
 
 // Output
@@ -295,60 +265,12 @@ void ApplyWeights5(in float[64] nr5, out float[4] nr6)
 	}
 }
 
-void AddBiases0(inout float[64] nr1)
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		nr1[i] += matBiases0[i];
-	}
-}
-
-void AddBiases1(inout float[64] nr2)
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		nr2[i] += matBiases1[i];
-	}
-}
-
-void AddBiases2(inout float[64] nr3)
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		nr3[i] += matBiases2[i];
-	}
-}
-
-void AddBiases3(inout float[64] nr4)
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		nr4[i] += matBiases3[i];
-	}
-}
-
-void AddBiases4(inout float[64] nr5)
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		nr5[i] += matBiases4[i];
-	}
-}
-
-void AddBiases5(inout float[4] nr6)
-{
-	for (uint i = 0; i < 4; i++)
-	{
-		nr6[i] += matBiases5[i];
-	}
-}
-
 void ActivateNr1(inout float[64] nr1)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr1[i] = Sigmoid(nr1[i]);
-		nr1[i] = Relu(nr1[i]);
+		nr1[i] = Sigmoid(nr1[i]);
+		//nr1[i] = Relu(nr1[i]);
 	}
 }
 
@@ -356,8 +278,8 @@ void ActivateNr2(inout float[64] nr2)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr2[i] = Sigmoid(nr2[i]);
-		nr2[i] = Relu(nr2[i]);
+		nr2[i] = Sigmoid(nr2[i]);
+		//nr2[i] = Relu(nr2[i]);
 	}
 }
 
@@ -365,8 +287,8 @@ void ActivateNr3(inout float[64] nr3)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr3[i] = Sigmoid(nr3[i]);
-		nr3[i] = Relu(nr3[i]);
+		nr3[i] = Sigmoid(nr3[i]);
+		//nr3[i] = Relu(nr3[i]);
 	}
 }
 
@@ -374,8 +296,8 @@ void ActivateNr4(inout float[64] nr4)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr4[i] = Sigmoid(nr4[i]);
-		nr4[i] = Relu(nr4[i]);
+		nr4[i] = Sigmoid(nr4[i]);
+		//nr4[i] = Relu(nr4[i]);
 	}
 }
 
@@ -383,8 +305,8 @@ void ActivateNr5(inout float[64] nr5)
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		//nr5[i] = Sigmoid(nr5[i]);
-		nr5[i] = Relu(nr5[i]);
+		nr5[i] = Sigmoid(nr5[i]);
+		//nr5[i] = Relu(nr5[i]);
 	}
 }
 
@@ -402,7 +324,7 @@ vec4 Forward(vec3 ro, const vec3 rd)
 	ro /= skySize.y;
 
 	const float theta = atan(rd.y, rd.x);
-	const float phi = atan(sqrt(rd.x * rd.x + rd.y * rd.y), rd.z);
+	const float phi = atan(sqrt((rd.x * rd.x) + (rd.y * rd.y)), rd.z);
 
 	const float nr0[5] = float[]( ro.x, ro.y, ro.z, theta, phi );
 	float nr1[64];
@@ -413,27 +335,21 @@ vec4 Forward(vec3 ro, const vec3 rd)
 	float nr6[4];
 
 	ApplyWeights0(nr0, nr1);
-	//AddBiases0(nr1);
 	ActivateNr1(nr1);
 	
 	ApplyWeights1(nr1, nr2);
-	//AddBiases1(nr2);
 	ActivateNr2(nr2);
 	
 	ApplyWeights2(nr2, nr3);
-	//AddBiases2(nr3);
 	ActivateNr3(nr3);
 	
 	ApplyWeights3(nr3, nr4);
-	//AddBiases3(nr4);
 	ActivateNr4(nr4);
 
 	ApplyWeights4(nr4, nr5);
-	//AddBiases4(nr5);
 	ActivateNr5(nr5);
 	
 	ApplyWeights5(nr5, nr6);
-	//AddBiases5(nr6);
 	ActivateNr6(nr6);
 
 	vec4 outputCol;
@@ -835,17 +751,20 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
-		if (RandFloat(1.0) > totalTermProb)
-		{
-			//scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
-			//return scatteredLight;
-		}
-		totalTermProb *= 0.8;
-
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
+			if (volumeData.useNN == 1)
+			{
+				if (RandFloat(1.0) > totalTermProb)
+				{
+					scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
+					return scatteredLight;
+				}
+				totalTermProb *= 0.5;
+			}
+
 			// Sigmas
 			const float sampleSigmaS = density * SIGMA_S;
 			const float sampleSigmaE = density * SIGMA_E;
@@ -891,12 +810,8 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
-	if (volumeData.singleScatter != 1)
-	{
-		return TrueTracePath(rayOrigin, rayDir) * exp(volumeData.brightness);
-	}
-
-	return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
+	return TrueTracePath(rayOrigin, rayDir) * exp(volumeData.brightness);
+	//return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
 }
 
 // Main

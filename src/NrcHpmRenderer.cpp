@@ -303,8 +303,29 @@ namespace en
 				std::vector<float> weights = linearLayer->GetWeights().GetDataVector();
 				std::vector<float> biases = linearLayer->GetBiases().GetDataVector();
 				
-				m_NrcForwardBuffers[linearLayerIndex]->SetData(weights.size(), weights.data(), 0, 0);
-				m_NrcForwardBuffers[linearLayerIndex + 6]->SetData(biases.size(), biases.data(), 0, 0);
+				size_t weightsDataSize = weights.size() * sizeof(float);
+				size_t biasesDataSize = biases.size() * sizeof(float);
+
+				vk::Buffer weightsStagingBuffer(
+					weightsDataSize,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					{});
+				
+				vk::Buffer biasesStagingBuffer(
+					biasesDataSize,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					{});
+
+				weightsStagingBuffer.SetData(weightsDataSize, weights.data(), 0, 0);
+				biasesStagingBuffer.SetData(biasesDataSize, biases.data(), 0, 0);
+
+				vk::Buffer::Copy(&weightsStagingBuffer, m_NrcForwardBuffers[linearLayerIndex], weightsDataSize);
+				vk::Buffer::Copy(&biasesStagingBuffer, m_NrcForwardBuffers[linearLayerIndex + 6], biasesDataSize);
+				
+				weightsStagingBuffer.Destroy();
+				biasesStagingBuffer.Destroy();
 
 				linearLayerIndex++;
 			}
@@ -422,8 +443,8 @@ namespace en
 		{
 			m_NrcForwardBuffers[i] = new vk::Buffer(
 				bufferSizes[i],
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				{});
 		}
 
