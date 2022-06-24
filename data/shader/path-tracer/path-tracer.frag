@@ -2,11 +2,19 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_debug_printf : enable
 
-layout(location = 0) in vec2 fragUV;
+// Inputs
+layout(location = 0) in vec3 pixelWorldPos;
+layout(location = 1) in vec2 fragUV;
 
-layout(set = 0, binding = 0) uniform sampler3D densityTex;
+// Uniforms
+layout(set = 0, binding = 1) uniform camera_t
+{
+	vec3 pos;
+} camera;
 
-layout(set = 0, binding = 1) uniform volumeData_t
+layout(set = 1, binding = 0) uniform sampler3D densityTex;
+
+layout(set = 1, binding = 1) uniform volumeData_t
 {
 	vec4 random;
 	uint singleScatter;
@@ -18,7 +26,7 @@ layout(set = 0, binding = 1) uniform volumeData_t
 	uint lowPassIndex;
 } volumeData;
 
-layout(set = 1, binding = 0) uniform dir_light_t // TODO: raname to sun_t
+layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 {
 	vec3 color;
 	float zenith;
@@ -26,8 +34,6 @@ layout(set = 1, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 	float azimuth;
 	float strength;
 } dir_light;
-
-layout(set = 2, binding = 0) uniform sampler2D lowPassTex;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outPos;

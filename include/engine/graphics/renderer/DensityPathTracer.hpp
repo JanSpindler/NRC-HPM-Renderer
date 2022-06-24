@@ -7,18 +7,18 @@
 #include <engine/graphics/Sun.hpp>
 #include <string>
 #include <engine/compute/NrcDataset.hpp>
+#include <engine/graphics/NeuralRadianceCache.hpp>
 
 namespace en
 {
 	class DensityPathTracer
 	{
 	public:
-		static void Init(VkDevice device);
-		static void Shutdown(VkDevice device);
-
 		DensityPathTracer(
-			uint32_t width, 
+			uint32_t width,
 			uint32_t height,
+			const NeuralRadianceCache* nrc,
+			const Camera* camera,
 			const VolumeData* volumeData,
 			const Sun* sun);
 
@@ -36,12 +36,11 @@ namespace en
 		size_t GetImageDataSize() const;
 
 	private:
-		static VkDescriptorSetLayout m_DescriptorSetLayout;
-		static VkDescriptorPool m_DescriptorPool;
-
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
 
+		const NeuralRadianceCache* m_Nrc;
+		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
 		const Sun* m_Sun;
 
@@ -63,12 +62,6 @@ namespace en
 		VkDeviceMemory m_DirImageMemory;
 		VkImageView m_DirImageView;
 
-		VkImage m_LowPassImage;
-		VkDeviceMemory m_LowPassImageMemory;
-		VkImageView m_LowPassImageView;
-		VkSampler m_LowPassSampler;
-		VkDescriptorSet m_DescriptorSet;
-
 		VkFramebuffer m_Framebuffer;
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
@@ -79,8 +72,6 @@ namespace en
 		void CreateColorImage(VkDevice device);
 		void CreatePosImage(VkDevice device);
 		void CreateDirImage(VkDevice device);
-		void CreateLowPassResources(VkDevice device);
-		void CreateLowPassImage(VkDevice device);
 		void CreateFramebuffer(VkDevice device);
 		void RecordCommandBuffer();
 	};

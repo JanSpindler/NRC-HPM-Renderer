@@ -111,7 +111,7 @@ const vec3 skyPos = vec3(0.0);
 #define MIN_RAY_DISTANCE 0.125
 
 #define SAMPLE_COUNT 40
-#define SECONDARY_SAMPLE_COUNT 12
+#define SECONDARY_SAMPLE_COUNT 32
 
 #define SAMPLE_COUNT0 16
 #define SAMPLE_COUNT1 16
@@ -882,7 +882,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
 		const float maxDistance = distance(exit, currentPoint);
-		const float nextDistance = RandFloat(maxDistance);
+		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
 		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 

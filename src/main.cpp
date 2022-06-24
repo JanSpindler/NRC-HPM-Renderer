@@ -28,6 +28,7 @@
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/compute/NrcDataset.hpp>
 #include <thread>
+#include <engine/graphics/NeuralRadianceCache.hpp>
 
 en::VolumeData* trainVolumeData = nullptr;
 en::DensityPathTracer* pathTracer = nullptr;
@@ -339,7 +340,9 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		pathTracer = new en::DensityPathTracer(64, 8, trainVolumeData, &sun); // To generate 128 batches
+		en::NeuralRadianceCache nrc;
+
+		pathTracer = new en::DensityPathTracer(width / 10, height / 10, &nrc, &camera, trainVolumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
