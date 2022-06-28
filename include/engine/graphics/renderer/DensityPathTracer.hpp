@@ -29,11 +29,10 @@ namespace en
 
 		void ExportForTraining(VkQueue queue, std::vector<en::NrcInput>& inputs, std::vector<en::NrcTarget>& targets);
 
-		void ExportImageToHost(VkQueue queue, uint64_t index);
+		//void ExportImageToHost(VkQueue queue, uint64_t index);
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
-		size_t GetImageDataSize() const;
 
 	private:
 		uint32_t m_FrameWidth;

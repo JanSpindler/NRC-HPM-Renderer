@@ -26,7 +26,7 @@ layout(set = 1, binding = 1) uniform volumeData_t
 	uint lowPassIndex;
 } volumeData;
 
-layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
+layout(set = 2, binding = 0) uniform dir_light_t
 {
 	vec3 color;
 	float zenith;
@@ -34,6 +34,8 @@ layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 	float azimuth;
 	float strength;
 } dir_light;
+
+
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outPos;
@@ -313,7 +315,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight * dirPhase;
+			const vec3 s = sampleSigmaS * sunLight;// * dirPhase;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 

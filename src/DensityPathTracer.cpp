@@ -122,20 +122,20 @@ namespace en
 	void DensityPathTracer::ExportForTraining(VkQueue queue, std::vector<en::NrcInput>& inputs, std::vector<en::NrcTarget>& targets)
 	{
 		//
-		VkDeviceSize colorSize = GetImageDataSize();
+		VkDeviceSize colorSize = m_FrameWidth * m_FrameHeight * 4 * 4;
 		vk::Buffer colorBuffer(
 			colorSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
-		VkDeviceSize posSize = colorSize * 4; // sizeof(float) = 4
+		VkDeviceSize posSize = colorSize;
 		vk::Buffer posBuffer(posSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
-		VkDeviceSize dirSize = colorSize * 4; // TODO: / 2
+		VkDeviceSize dirSize = colorSize;
 		vk::Buffer dirBuffer(dirSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -259,7 +259,7 @@ namespace en
 		// Check size
 		const size_t rgbaSize = sizeof(float) * 4;
 
-		if (colorSize * 4 != posSize ||
+		if (colorSize != posSize ||
 			posSize != dirSize ||
 			(posSize % rgbaSize) != 0)
 		{
@@ -267,15 +267,15 @@ namespace en
 		}
 
 		// Convert to float array
-		float* colorFData = reinterpret_cast<float*>(malloc(m_FrameWidth * m_FrameHeight * 4 * sizeof(float)));
-		for (size_t i = 0; i < m_FrameWidth * m_FrameHeight * 4; i++)
-		{
-			uint8_t colorInt = reinterpret_cast<uint8_t*>(colorData)[i];
-			//Log::Info(std::to_string(colorInt));
-			colorFData[i] = static_cast<float>(colorInt) / 255.0f;
-		}
-		free(colorData);
-
+		//float* colorFData = reinterpret_cast<float*>(malloc(m_FrameWidth * m_FrameHeight * 4 * sizeof(float)));
+		//for (size_t i = 0; i < m_FrameWidth * m_FrameHeight * 4; i++)
+		//{
+		//	uint8_t colorInt = reinterpret_cast<uint8_t*>(colorData)[i];
+		//	//Log::Info(std::to_string(colorInt));
+		//	colorFData[i] = static_cast<float>(colorInt) / 255.0f;
+		//}
+		//free(colorData);
+		float* colorFData = reinterpret_cast<float*>(colorData);
 		float* posFData = reinterpret_cast<float*>(posData);
 		float* dirFData = reinterpret_cast<float*>(dirData);
 
@@ -303,14 +303,15 @@ namespace en
 		}
 
 		// Free
+		free(colorData);
 		free(posData);
 		free(dirData);
 	}
 
-	void DensityPathTracer::ExportImageToHost(VkQueue queue, uint64_t index)
+	/*void DensityPathTracer::ExportImageToHost(VkQueue queue, uint64_t index)
 	{
 		//
-		VkDeviceSize colorSize = GetImageDataSize();
+		VkDeviceSize colorSize = m_FrameWidth * m_FrameHeight * 4;
 		vk::Buffer colorBuffer(
 			colorSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -467,7 +468,7 @@ namespace en
 		free(posData);
 		free(dirData);
 		free(colorFData);
-	}
+	}*/
 
 	VkImage DensityPathTracer::GetImage() const
 	{
@@ -479,18 +480,12 @@ namespace en
 		return m_ColorImageView;
 	}
 
-	size_t DensityPathTracer::GetImageDataSize() const
-	{
-		// Dependent on format
-		return m_FrameWidth * m_FrameHeight * 4;
-	}
-
 	void DensityPathTracer::CreateRenderPass(VkDevice device)
 	{
 		// Color attachment
 		VkAttachmentDescription colorAtt;
 		colorAtt.flags = 0;
-		colorAtt.format = VulkanAPI::GetSurfaceFormat().format;
+		colorAtt.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		colorAtt.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -794,13 +789,13 @@ namespace en
 		imageCI.pNext = nullptr;
 		imageCI.flags = 0;
 		imageCI.imageType = VK_IMAGE_TYPE_2D;
-		imageCI.format = VulkanAPI::GetSurfaceFormat().format;
+		imageCI.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
 		imageCI.mipLevels = 1;
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;
@@ -834,7 +829,7 @@ namespace en
 		imageViewCI.flags = 0;
 		imageViewCI.image = m_ColorImage;
 		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCI.format = VulkanAPI::GetSurfaceFormat().format;
+		imageViewCI.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;

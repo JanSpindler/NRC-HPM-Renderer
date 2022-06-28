@@ -297,7 +297,7 @@ void RunNrcHpmTrainer()
 
 	// NN learn
 	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.01f, SIZE_MAX);
+	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.001f, SIZE_MAX);
 	nn->SyncLayersToHost(*manager);
 
 	// Sync exit

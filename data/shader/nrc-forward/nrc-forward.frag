@@ -734,7 +734,7 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 }
 
 #define TRUE_TRACE_SAMPLE_COUNT 64
-vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
+vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 {	
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
@@ -755,7 +755,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 		if (density > 0.0)
 		{
-			if (volumeData.useNN == 1)
+			if (useNN)
 			{
 				if (RandFloat(1.0) > totalTermProb)
 				{
@@ -777,7 +777,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight * dirPhase;
+			const vec3 s = sampleSigmaS * sunLight;// * dirPhase; // Importance Sampling phase
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 
@@ -808,9 +808,9 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 	return scatteredLight;
 }
 
-vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
+vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 {
-	return TrueTracePath(rayOrigin, rayDir) * exp(volumeData.brightness);
+	return TrueTracePath(rayOrigin, rayDir, useNN) * exp(volumeData.brightness);
 	//return TracePath0(rayOrigin, rayDir) * exp(volumeData.brightness);
 }
 
@@ -836,6 +836,6 @@ void main()
 	float lowPassIndex = float(volumeData.lowPassIndex);
 	float alpha = lowPassIndex / (lowPassIndex + 1.0);
 	vec4 oldColor = texture(lowPassTex, fragUV);
-	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
+	vec4 newColor = vec4(TracePath(ro, rd, volumeData.useNN == 1), 1.0);
 	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
 }

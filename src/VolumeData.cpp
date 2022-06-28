@@ -83,9 +83,9 @@ namespace en
 			.random = glm::vec4(0.0f),
 			.useNN = 0,
 			.densityFactor = 2.0f,
-			.g = 0.6f,
+			.g = 0.8f,
 			.sigmaS = 0.7f,
-			.sigmaE = 0.3f,
+			.sigmaE = 0.05f,
 			.brightness = 0.0f,
 			.lowPassIndex = 0 })
 	{
