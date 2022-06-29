@@ -19,7 +19,7 @@ namespace en
 		lowPassImageBinding.binding = 0;
 		lowPassImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		lowPassImageBinding.descriptorCount = 1;
-		lowPassImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		lowPassImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		lowPassImageBinding.pImmutableSamplers = nullptr;
 
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { lowPassImageBinding };
@@ -40,42 +40,42 @@ namespace en
 		weights0Binding.binding = 0;
 		weights0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weights0Binding.descriptorCount = 1;
-		weights0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		weights0Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding weights1Binding;
 		weights1Binding.binding = 1;
 		weights1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weights1Binding.descriptorCount = 1;
-		weights1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		weights1Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding weights2Binding;
 		weights2Binding.binding = 2;
 		weights2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weights2Binding.descriptorCount = 1;
-		weights2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		weights2Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding weights3Binding;
 		weights3Binding.binding = 3;
 		weights3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weights3Binding.descriptorCount = 1;
-		weights3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		weights3Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding weights4Binding;
 		weights4Binding.binding = 4;
 		weights4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weights4Binding.descriptorCount = 1;
-		weights4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		weights4Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding weights5Binding;
 		weights5Binding.binding = 5;
 		weights5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weights5Binding.descriptorCount = 1;
-		weights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		weights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		weights5Binding.pImmutableSamplers = nullptr;
 
 		// Biases
@@ -83,42 +83,42 @@ namespace en
 		biases0Binding.binding = 6;
 		biases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases0Binding.descriptorCount = 1;
-		biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		biases0Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases1Binding;
 		biases1Binding.binding = 7;
 		biases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases1Binding.descriptorCount = 1;
-		biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		biases1Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases2Binding;
 		biases2Binding.binding = 8;
 		biases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases2Binding.descriptorCount = 1;
-		biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		biases2Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases3Binding;
 		biases3Binding.binding = 9;
 		biases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases3Binding.descriptorCount = 1;
-		biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		biases3Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases4Binding;
 		biases4Binding.binding = 10;
 		biases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases4Binding.descriptorCount = 1;
-		biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		biases4Binding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biases5Binding;
 		biases5Binding.binding = 11;
 		biases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biases5Binding.descriptorCount = 1;
-		biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		biases5Binding.pImmutableSamplers = nullptr;
 
 		bindings = {
@@ -178,14 +178,19 @@ namespace en
 	NrcHpmRenderer::NrcHpmRenderer(
 		uint32_t width,
 		uint32_t height,
+		uint32_t trainWidth,
+		uint32_t trainHeight,
 		const Camera* camera,
 		const VolumeData* volumeData,
 		const Sun* sun)
 		:
 		m_FrameWidth(width),
 		m_FrameHeight(height),
-		m_NrcForwardVertShader("nrc-forward/nrc-forward.vert", false),
-		m_NrcForwardFragShader("nrc-forward/nrc-forward.frag", false),
+		m_TrainWidth(trainWidth),
+		m_TrainHeight(trainHeight),
+		m_RenderVertShader("nrc-forward/nrc-forward.vert", false),
+		m_RenderFragShader("nrc-forward/nrc-forward.frag", false),
+		m_TrainShader("nrc-train/nrc-train.comp", false),
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
@@ -193,17 +198,18 @@ namespace en
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
-		CreateRenderPass(device);
-		
 		CreateNrcForwardResources(device);
-		CreateNrcForwardPipelineLayout(device);
-		CreateNrcForwardPipeline(device);
+
+		CreatePipelineLayout(device);
+		
+		CreateRenderRenderPass(device);
+		CreateRenderPipeline(device);
+		
+		CreateTrainPipeline(device);
 		
 		CreateColorImage(device);
-		
 		CreateLowPassResources(device);
 		CreateLowPassImage(device);
-
 		CreateFramebuffer(device);
 
 		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -251,12 +257,12 @@ namespace en
 			delete nrcForwardBuffer;
 		}
 
-		vkDestroyPipelineLayout(device, m_NrcForwardPipelineLayout, nullptr);
-		vkDestroyPipeline(device, m_NrcForwardPipeline, nullptr);
-		m_NrcForwardVertShader.Destroy();
-		m_NrcForwardFragShader.Destroy();
+		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
+		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
+		m_RenderVertShader.Destroy();
+		m_RenderFragShader.Destroy();
 
-		vkDestroyRenderPass(device, m_RenderPass, nullptr);
+		vkDestroyRenderPass(device, m_RenderRenderPass, nullptr);
 	}
 
 	void NrcHpmRenderer::ResizeFrame(uint32_t width, uint32_t height)
@@ -348,65 +354,6 @@ namespace en
 		return m_FrameWidth * m_FrameHeight * 4;
 	}
 
-	void NrcHpmRenderer::CreateRenderPass(VkDevice device)
-	{
-		// Color attachment
-		VkAttachmentDescription colorAtt;
-		colorAtt.flags = 0;
-		colorAtt.format = VulkanAPI::GetSurfaceFormat().format;
-		colorAtt.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAtt.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		VkAttachmentReference colorAttRef;
-		colorAttRef.attachment = 0;
-		colorAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		// Subpass 0: Render with nn
-		std::vector<VkAttachmentReference> subpass0ColorAttRefs = { colorAttRef };
-
-		VkSubpassDescription subpass;
-		subpass.flags = 0;
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.inputAttachmentCount = 0;
-		subpass.pInputAttachments = nullptr;
-		subpass.colorAttachmentCount = subpass0ColorAttRefs.size();
-		subpass.pColorAttachments = subpass0ColorAttRefs.data();
-		subpass.pResolveAttachments = nullptr;
-		subpass.pDepthStencilAttachment = nullptr;
-		subpass.preserveAttachmentCount = 0;
-		subpass.pPreserveAttachments = nullptr;
-
-		VkSubpassDependency subpassDependency;
-		subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		subpassDependency.dstSubpass = 0;
-		subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpassDependency.srcAccessMask = 0;
-		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		subpassDependency.dependencyFlags = 0;
-
-		std::vector<VkAttachmentDescription> attachments = { colorAtt };
-
-		VkRenderPassCreateInfo createInfo;
-		createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-		createInfo.attachmentCount = attachments.size();
-		createInfo.pAttachments = attachments.data();
-		createInfo.subpassCount = 1;
-		createInfo.pSubpasses = &subpass;
-		createInfo.dependencyCount = 1;
-		createInfo.pDependencies = &subpassDependency;
-
-		VkResult result = vkCreateRenderPass(device, &createInfo, nullptr, &m_RenderPass);
-		ASSERT_VULKAN(result);
-	}
-
 	void NrcHpmRenderer::CreateNrcForwardResources(VkDevice device)
 	{
 		// Allocate descriptor set
@@ -476,9 +423,9 @@ namespace en
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
 
-	void NrcHpmRenderer::CreateNrcForwardPipelineLayout(VkDevice device)
+	void NrcHpmRenderer::CreatePipelineLayout(VkDevice device)
 	{
-		std::vector<VkDescriptorSetLayout> layouts = { 
+		std::vector<VkDescriptorSetLayout> layouts = {
 			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
 			Sun::GetDescriptorSetLayout(),
@@ -494,11 +441,70 @@ namespace en
 		layoutCreateInfo.pushConstantRangeCount = 0;
 		layoutCreateInfo.pPushConstantRanges = nullptr;
 
-		VkResult result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &m_NrcForwardPipelineLayout);
+		VkResult result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &m_PipelineLayout);
 		ASSERT_VULKAN(result);
 	}
 
-	void NrcHpmRenderer::CreateNrcForwardPipeline(VkDevice device)
+	void NrcHpmRenderer::CreateRenderRenderPass(VkDevice device)
+	{
+		// Color attachment
+		VkAttachmentDescription colorAtt;
+		colorAtt.flags = 0;
+		colorAtt.format = VulkanAPI::GetSurfaceFormat().format;
+		colorAtt.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAtt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAtt.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkAttachmentReference colorAttRef;
+		colorAttRef.attachment = 0;
+		colorAttRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Subpass 0: Render with nn
+		std::vector<VkAttachmentReference> subpass0ColorAttRefs = { colorAttRef };
+
+		VkSubpassDescription subpass;
+		subpass.flags = 0;
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.inputAttachmentCount = 0;
+		subpass.pInputAttachments = nullptr;
+		subpass.colorAttachmentCount = subpass0ColorAttRefs.size();
+		subpass.pColorAttachments = subpass0ColorAttRefs.data();
+		subpass.pResolveAttachments = nullptr;
+		subpass.pDepthStencilAttachment = nullptr;
+		subpass.preserveAttachmentCount = 0;
+		subpass.pPreserveAttachments = nullptr;
+
+		VkSubpassDependency subpassDependency;
+		subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		subpassDependency.dstSubpass = 0;
+		subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.srcAccessMask = 0;
+		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		subpassDependency.dependencyFlags = 0;
+
+		std::vector<VkAttachmentDescription> attachments = { colorAtt };
+
+		VkRenderPassCreateInfo createInfo;
+		createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.attachmentCount = attachments.size();
+		createInfo.pAttachments = attachments.data();
+		createInfo.subpassCount = 1;
+		createInfo.pSubpasses = &subpass;
+		createInfo.dependencyCount = 1;
+		createInfo.pDependencies = &subpassDependency;
+
+		VkResult result = vkCreateRenderPass(device, &createInfo, nullptr, &m_RenderRenderPass);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::CreateRenderPipeline(VkDevice device)
 	{
 		// Shader stage
 		VkPipelineShaderStageCreateInfo vertStageCreateInfo;
@@ -506,7 +512,7 @@ namespace en
 		vertStageCreateInfo.pNext = nullptr;
 		vertStageCreateInfo.flags = 0;
 		vertStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertStageCreateInfo.module = m_NrcForwardVertShader.GetVulkanModule();
+		vertStageCreateInfo.module = m_RenderVertShader.GetVulkanModule();
 		vertStageCreateInfo.pName = "main";
 		vertStageCreateInfo.pSpecializationInfo = nullptr;
 
@@ -515,7 +521,7 @@ namespace en
 		fragStageCreateInfo.pNext = nullptr;
 		fragStageCreateInfo.flags = 0;
 		fragStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStageCreateInfo.module = m_NrcForwardFragShader.GetVulkanModule();
+		fragStageCreateInfo.module = m_RenderFragShader.GetVulkanModule();
 		fragStageCreateInfo.pName = "main";
 		fragStageCreateInfo.pSpecializationInfo = nullptr;
 
@@ -656,13 +662,59 @@ namespace en
 		createInfo.pDepthStencilState = nullptr; // TODO
 		createInfo.pColorBlendState = &colorBlendCreateInfo;
 		createInfo.pDynamicState = &dynamicStateCreateInfo;
-		createInfo.layout = m_NrcForwardPipelineLayout;
-		createInfo.renderPass = m_RenderPass;
+		createInfo.layout = m_PipelineLayout;
+		createInfo.renderPass = m_RenderRenderPass;
 		createInfo.subpass = 0;
 		createInfo.basePipelineHandle = VK_NULL_HANDLE;
 		createInfo.basePipelineIndex = -1;
 
-		VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &m_NrcForwardPipeline);
+		VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &m_RenderPipeline);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::CreateTrainPipeline(VkDevice device)
+	{
+		VkSpecializationMapEntry widthMapEntry;
+		widthMapEntry.constantID = 0;
+		widthMapEntry.offset = 0;
+		widthMapEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry heightMapEntry;
+		heightMapEntry.constantID = 1;
+		heightMapEntry.offset = sizeof(float);
+		heightMapEntry.size = sizeof(float);
+
+		std::vector<VkSpecializationMapEntry> specMapEntries = { widthMapEntry, heightMapEntry };
+
+		float specialData[] = { 
+			1.0f / static_cast<float>(m_TrainWidth), 
+			1.0f / static_cast<float>(m_TrainHeight) };
+
+		VkSpecializationInfo specInfo;
+		specInfo.mapEntryCount = specMapEntries.size();
+		specInfo.pMapEntries = specMapEntries.data();
+		specInfo.dataSize = sizeof(float) * 2;
+		specInfo.pData = specialData;
+
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.pNext = nullptr;
+		shaderStage.flags = 0;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_TrainShader.GetVulkanModule();
+		shaderStage.pName = "main";
+		shaderStage.pSpecializationInfo = &specInfo;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStage;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_TrainPipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -906,7 +958,7 @@ namespace en
 		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.renderPass = m_RenderPass;
+		createInfo.renderPass = m_RenderRenderPass;
 		createInfo.attachmentCount = attachments.size();
 		createInfo.pAttachments = attachments.data();
 		createInfo.width = m_FrameWidth;
@@ -919,6 +971,7 @@ namespace en
 
 	void NrcHpmRenderer::RecordCommandBuffer()
 	{
+		// Begin
 		VkCommandBufferBeginInfo beginInfo;
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.pNext = nullptr;
@@ -929,6 +982,26 @@ namespace en
 		if (result != VK_SUCCESS)
 			Log::Error("Failed to begin VkCommandBuffer", true);
 
+		// Bind descriptor sets
+		std::vector<VkDescriptorSet> descSets = {
+			m_Camera->GetDescriptorSet(),
+			m_VolumeData->GetDescriptorSet(),
+			m_Sun->GetDescriptorSet(),
+			m_DescriptorSet,
+			m_NrcForwardDS };
+
+		vkCmdBindDescriptorSets(
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			0, descSets.size(), descSets.data(),
+			0, nullptr);
+
+		// Bind train pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TrainPipeline);
+
+		// Dispatch training
+		vkCmdDispatch(m_CommandBuffer, m_TrainWidth, m_TrainHeight, 1);
+
+		// Begin render pass
 		std::vector<VkClearValue> clearValues = {
 			{ 0.0f, 0.0f, 0.0f, 1.0f },
 			{ 0.0f, 0.0f, 0.0f, 1.0f },
@@ -937,7 +1010,7 @@ namespace en
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassBeginInfo.pNext = nullptr;
-		renderPassBeginInfo.renderPass = m_RenderPass;
+		renderPassBeginInfo.renderPass = m_RenderRenderPass;
 		renderPassBeginInfo.framebuffer = m_Framebuffer;
 		renderPassBeginInfo.renderArea.offset = { 0, 0 };
 		renderPassBeginInfo.renderArea.extent = { m_FrameWidth, m_FrameHeight };
@@ -945,7 +1018,8 @@ namespace en
 		renderPassBeginInfo.pClearValues = clearValues.data();
 		vkCmdBeginRenderPass(m_CommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_NrcForwardPipeline);
+		// Bind render pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_RenderPipeline);
 
 		// Viewport
 		VkViewport viewport;
@@ -965,16 +1039,9 @@ namespace en
 
 		vkCmdSetScissor(m_CommandBuffer, 0, 1, &scissor);
 
-		// Bind descriptor sets
-		std::vector<VkDescriptorSet> descSets = {
-			m_Camera->GetDescriptorSet(),
-			m_VolumeData->GetDescriptorSet(),
-			m_Sun->GetDescriptorSet(),
-			m_DescriptorSet,
-			m_NrcForwardDS };
-
+		// Bind desc sets
 		vkCmdBindDescriptorSets(
-			m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_NrcForwardPipelineLayout,
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
 			0, descSets.size(), descSets.data(),
 			0, nullptr);
 

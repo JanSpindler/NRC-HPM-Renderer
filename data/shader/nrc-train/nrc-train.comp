@@ -1,12 +1,13 @@
 #version 460
-#extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_debug_printf : enable
 
-// Inputs
-layout(location = 0) in vec3 pixelWorldPos;
-layout(location = 1) in vec2 fragUV;
-
 // Uniforms
+layout(set = 0, binding = 0) uniform camMat_t
+{
+	mat4 projView;
+	mat4 oldProjView;
+} camMat;
+
 layout(set = 0, binding = 1) uniform camera_t
 {
 	vec3 pos;
@@ -17,7 +18,7 @@ layout(set = 1, binding = 0) uniform sampler3D densityTex;
 layout(set = 1, binding = 1) uniform volumeData_t
 {
 	vec4 random;
-	uint singleScatter;
+	uint useNN;
 	float densityFactor;
 	float g;
 	float sigmaS;
@@ -35,9 +36,40 @@ layout(set = 2, binding = 0) uniform dir_light_t
 	float strength;
 } dir_light;
 
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outPos;
-layout(location = 2) out vec4 outDir; // TODO: vec2
+// NN buffers
+layout(std140, set = 4, binding = 0) readonly buffer Weights0
+{
+	float matWeights0[320]; // 5 x 64
+};
+
+layout(std140, set = 4, binding = 1) readonly buffer Weights1
+{
+	float matWeights1[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 2) readonly buffer Weights2
+{
+	float matWeights2[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 3) readonly buffer Weights3
+{
+	float matWeights3[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 4) readonly buffer Weights4
+{
+	float matWeights4[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 5) readonly buffer Weights5
+{
+	float matWeights5[256]; // 64 x 4
+};
+
+// Constants
+layout(constant_id = 0) const float WIDTH_FACTOR = 0.1;
+layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
 
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
@@ -48,7 +80,7 @@ const vec3 skyPos = vec3(0.0);
 #define MIN_RAY_DISTANCE 0.125
 
 #define SAMPLE_COUNT 40
-#define SECONDARY_SAMPLE_COUNT 12
+#define SECONDARY_SAMPLE_COUNT 32
 
 #define SAMPLE_COUNT0 16
 #define SAMPLE_COUNT1 16
@@ -58,10 +90,11 @@ const vec3 skyPos = vec3(0.0);
 #define SIGMA_S volumeData.sigmaS
 #define SIGMA_E volumeData.sigmaE
 
-// --------------- Start: random ----------------
+#define NRC_PROB 0.5
 
-float preRand = volumeData.random.x * fragUV.x;
-float prePreRand = volumeData.random.y * fragUV.y;
+// Random
+float preRand;// = volumeData.random.x * fragUV.x;
+float prePreRand;// = volumeData.random.y * fragUV.y;
 
 float rand(vec2 co)
 {
@@ -82,10 +115,7 @@ float RandFloat(float maxVal)
 	return f * maxVal;
 }
 
-// --------------- End: random ----------------
-
-// --------------- Start: util -----------------
-
+// Path trace helper
 float sky_sdf(vec3 pos)
 {
 	vec3 d = abs(pos - skyPos) - skySize / 2;
@@ -154,10 +184,7 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
-// --------------- End: util -----------------
-
-// --------------- Start: single scatter -----------------
-
+// Path trace
 float get_self_shadowing(vec3 pos)
 {
 	// Exit if not used
@@ -193,10 +220,6 @@ float get_self_shadowing(vec3 pos)
 
 	return transmittance;
 }
-
-// --------------- End: util -----------------
-
-// --------------- Start: Path trace -----------------
 
 vec3 NewRayDir(vec3 oldRayDir)
 {
@@ -260,8 +283,8 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	return transmittance;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 32
-vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
+#define TRUE_TRACE_SAMPLE_COUNT 64
+vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {	
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
@@ -275,32 +298,18 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 lastDir = vec3(0.0);
 
 	float totalTermProb = 1.0;
-	bool hasSelectedInternalPath = false;
 
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
-		if (!hasSelectedInternalPath && RandFloat(1.0) > totalTermProb)
-		{
-			// Reset lighting
-			transmittance = 1.0;
-			scatteredLight = vec3(0.0);
-
-			// Encode new ray
-			float theta = atan(currentDir.y, currentDir.x);
-			float phi = atan(sqrt((currentDir.x * currentDir.x) + (currentDir.y * currentDir.y)), currentDir.z);
-
-			outPos = vec4(currentPoint / skySize.y, 1.0);
-			outDir = vec4(theta, phi, 0.0, 1.0);
-
-			// Store decision
-			hasSelectedInternalPath = true;
-		}
-		totalTermProb *= 0.8;
-
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
+			if (RandFloat(1.0) > totalTermProb)
+			{
+			}
+			totalTermProb *= 0.5;
+
 			// Sigmas
 			const float sampleSigmaS = density * SIGMA_S;
 			const float sampleSigmaE = density * SIGMA_E;
@@ -313,7 +322,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight;// * dirPhase;
+			const vec3 s = sampleSigmaS * sunLight;// * dirPhase; // Importance Sampling phase
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 
@@ -337,44 +346,40 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir)
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
 		const float maxDistance = distance(exit, currentPoint);
-		const float nextDistance = RandFloat(maxDistance);
+		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
 		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 
 	return scatteredLight;
 }
 
-vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
-{
-	return TrueTracePath(rayOrigin, rayDir) * exp(volumeData.brightness);
-}
-
-// --------------- End: path trace -----------------
-
 void main()
 {
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+
+	// Fraguv and world pos
+	const vec2 fragUV = vec2(float(x) * WIDTH_FACTOR, float(y) * HEIGHT_FACTOR);
+	const vec3 pixelWorldPos = vec3(0.0);
+
+	// Setup random
+	float preRand = volumeData.random.x * fragUV.x;
+	float prePreRand = volumeData.random.y * fragUV.y;
+
+	// Setup ray
 	const vec3 ro = camera.pos;
 	const vec3 rd = normalize(pixelWorldPos - ro);
 
-	// uniform sample cosangle
-	float theta = atan(rd.y, rd.x);
-	float phi = atan(sqrt((rd.x * rd.x) + (rd.y * rd.y)), rd.z);
-
-	outPos = vec4(ro / skySize.y, 1.0);
-	outDir = vec4(theta, phi, 0.0, 1.0);
-
-	// Check sdf collision
+	// SDF
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		outColor = vec4(vec3(0.0), 1.0);
 		return;
 	}
 
-	// Trace path
+	// Learn
 	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
-	outColor = newColor;
 }

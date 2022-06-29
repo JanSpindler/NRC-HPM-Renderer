@@ -162,7 +162,7 @@ void TrainNrc(
 	{
 		en::Matrix inputMat(manager, { { inputs[i].x }, { inputs[i].y }, { inputs[i].z }, { inputs[i].theta }, { inputs[i].phi } });
 		en::Matrix targetMat(manager, { { targets[i].r }, { targets[i].g }, { targets[i].b }, { targets[i].a } });
-		//en::Matrix targetMat(manager, { { 10.0f }, { 10.0f }, { 10.0f }, { 10.0f } });
+		//en::Matrix targetMat(manager, { { 0.0f }, { 10.0f }, { 0.0f }, { 1.0f } });
 
 		nn.Backprop(manager, inputMat, targetMat, learningRate);
 	}
@@ -344,7 +344,7 @@ void RunNrcHpm()
 		en::NeuralRadianceCache nrc;
 
 		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
-		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, &camera, &volumeData, &sun);
+		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 20, 20, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
 		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());

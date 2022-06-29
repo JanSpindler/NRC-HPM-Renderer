@@ -20,6 +20,8 @@ namespace en
 		NrcHpmRenderer(
 			uint32_t width,
 			uint32_t height,
+			uint32_t trainWidth,
+			uint32_t trainHeight,
 			const Camera* camera,
 			const VolumeData* volumeData,
 			const Sun* sun);
@@ -43,18 +45,26 @@ namespace en
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
 
+		uint32_t m_TrainWidth;
+		uint32_t m_TrainHeight;
+
 		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
 		const Sun* m_Sun;
 
-		VkRenderPass m_RenderPass;
-
-		vk::Shader m_NrcForwardVertShader;
-		vk::Shader m_NrcForwardFragShader;
-		VkPipelineLayout m_NrcForwardPipelineLayout;
-		VkPipeline m_NrcForwardPipeline;
+		// NN buffers
 		std::array<vk::Buffer*, 12> m_NrcForwardBuffers;
 		VkDescriptorSet m_NrcForwardDS;
+
+		VkPipelineLayout m_PipelineLayout;
+
+		VkRenderPass m_RenderRenderPass;
+		vk::Shader m_RenderVertShader;
+		vk::Shader m_RenderFragShader;
+		VkPipeline m_RenderPipeline;
+
+		vk::Shader m_TrainShader;
+		VkPipeline m_TrainPipeline;
 		
 		VkImage m_ColorImage;
 		VkDeviceMemory m_ColorImageMemory;
@@ -69,18 +79,19 @@ namespace en
 		VkFramebuffer m_Framebuffer;
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
-
-		void CreateRenderPass(VkDevice device);
 		
 		void CreateNrcForwardResources(VkDevice device);
-		void CreateNrcForwardPipelineLayout(VkDevice device);
-		void CreateNrcForwardPipeline(VkDevice device);
+
+		void CreatePipelineLayout(VkDevice device);
+
+		void CreateRenderRenderPass(VkDevice device);
+		void CreateRenderPipeline(VkDevice device);
+		
+		void CreateTrainPipeline(VkDevice device);
 
 		void CreateColorImage(VkDevice device);
-		
 		void CreateLowPassResources(VkDevice device);
 		void CreateLowPassImage(VkDevice device);
-
 		void CreateFramebuffer(VkDevice device);
 		
 		void RecordCommandBuffer();

@@ -16,14 +16,14 @@ namespace en
 		densityTexBinding.binding = 0;
 		densityTexBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		densityTexBinding.descriptorCount = 1;
-		densityTexBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		densityTexBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		densityTexBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding uniformBufferBinding;
 		uniformBufferBinding.binding = 1;
 		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uniformBufferBinding.descriptorCount = 1;
-		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		uniformBufferBinding.pImmutableSamplers = nullptr;
 
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { densityTexBinding, uniformBufferBinding };

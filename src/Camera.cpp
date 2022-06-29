@@ -16,14 +16,14 @@ namespace en
 		matrixBinding.binding = 0;
 		matrixBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		matrixBinding.descriptorCount = 1;
-		matrixBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		matrixBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		matrixBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding posBinding;
 		posBinding.binding = 1;
 		posBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		posBinding.descriptorCount = 1;
-		posBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		posBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		posBinding.pImmutableSamplers = nullptr;
 
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { matrixBinding, posBinding };
