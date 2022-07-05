@@ -324,7 +324,7 @@ vec4 Forward(vec3 ro, const vec3 rd)
 	ro /= skySize.y;
 
 	const float theta = atan(rd.y, rd.x);
-	const float phi = atan(sqrt((rd.x * rd.x) + (rd.y * rd.y)), rd.z);
+	const float phi = atan(length(rd.xy), rd.z);
 
 	const float nr0[5] = float[]( ro.x, ro.y, ro.z, theta, phi );
 	float nr1[64];

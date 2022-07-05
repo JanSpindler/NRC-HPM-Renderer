@@ -37,34 +37,64 @@ layout(set = 2, binding = 0) uniform dir_light_t
 } dir_light;
 
 // NN buffers
-layout(std140, set = 4, binding = 0) readonly buffer Weights0
+layout(std140, set = 4, binding = 0) buffer Weights0
 {
 	float matWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 4, binding = 1) readonly buffer Weights1
+layout(std140, set = 4, binding = 1) buffer Weights1
 {
 	float matWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 2) readonly buffer Weights2
+layout(std140, set = 4, binding = 2) buffer Weights2
 {
 	float matWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 3) readonly buffer Weights3
+layout(std140, set = 4, binding = 3) buffer Weights3
 {
 	float matWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 4) readonly buffer Weights4
+layout(std140, set = 4, binding = 4) buffer Weights4
 {
 	float matWeights4[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 5) readonly buffer Weights5
+layout(std140, set = 4, binding = 5) buffer Weights5
 {
-	float matWeights5[256]; // 64 x 4
+	float matWeights5[192]; // 64 x 3
+};
+
+layout(std140, set = 4, binding = 6) buffer DeltaWeights0
+{
+	float matDeltaWeights0[320]; // 5 x 64
+};
+
+layout(std140, set = 4, binding = 7) buffer DeltaWeights1
+{
+	float matDeltaWeights1[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 8) buffer DeltaWeights2
+{
+	float matDeltaWeights2[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 9) buffer DeltaWeights3
+{
+	float matDeltaWeights3[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 10) buffer DeltaWeights4
+{
+	float matDeltaWeights4[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 11) buffer DeltaWeights5
+{
+	float matDeltaWeights5[192]; // 64 x 3
 };
 
 // Constants
@@ -299,17 +329,34 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 	float totalTermProb = 1.0;
 
+	// Trace path and terminate at random
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	{
+		if (RandFloat(1.0) > totalTermProb)
+		{
+			break;
+		}
+		totalTermProb *= 0.75;
+
+		// Generate new ray
+		if (getDensity(currentPoint) > 0.0)
+		{
+			currentDir = NewRayDir(currentDir);
+		}
+
+		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
+		const float maxDistance = distance(exit, currentPoint);
+		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
+		currentPoint = currentPoint + (currentDir * nextDistance);
+	}
+
+	// Calculate lighting
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
-			if (RandFloat(1.0) > totalTermProb)
-			{
-			}
-			totalTermProb *= 0.5;
-
 			// Sigmas
 			const float sampleSigmaS = density * SIGMA_S;
 			const float sampleSigmaE = density * SIGMA_E;
@@ -353,6 +400,292 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	return scatteredLight;
 }
 
+// Start: NN
+
+float nr0[5];
+float nr1[64];
+float nr2[64];
+float nr3[64];
+float nr4[64];
+float nr5[64];
+float nr6[3];
+
+float Sigmoid(float x)
+{
+	return 1.0 / (1.0 + exp(-x));
+}
+
+float Relu(float x)
+{
+	if (x > 0.0)
+	{
+		return x;
+	}
+	else
+	{
+		return x * 0.01;
+	}
+}
+
+float SigmoidDeriv(float x)
+{
+	float sigmoid = Sigmoid(x);
+	return sigmoid * (1.0 - sigmoid);
+}
+
+float ReluDeriv(float x)
+{
+	if (x > 0.0)
+	{
+		return 1.0;
+	}
+	else
+	{
+		return 0.01;
+	}
+}
+
+float GetWeight0(uint row, uint col)
+{
+	uint linearIndex = row * 5 + col;
+	return matWeights0[linearIndex];
+}
+
+float GetWeight1(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights1[linearIndex];
+}
+
+float GetWeight2(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights2[linearIndex];
+}
+
+float GetWeight3(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights3[linearIndex];
+}
+
+float GetWeight4(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights4[linearIndex];
+}
+
+float GetWeight5(uint row, uint col)
+{
+	uint linearIndex = row * 64 + col;
+	return matWeights5[linearIndex];
+}
+
+void ApplyWeights0()
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 5; inCol++)
+		{
+			float inVal = nr0[inCol];
+			float weightVal = GetWeight0(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr1[outRow] = sum;
+	}
+}
+
+void ApplyWeights1()
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr1[inCol];
+			float weightVal = GetWeight1(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr2[outRow] = sum;
+	}
+}
+
+void ApplyWeights2()
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr2[inCol];
+			float weightVal = GetWeight2(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr3[outRow] = sum;
+	}
+}
+
+void ApplyWeights3()
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr3[inCol];
+			float weightVal = GetWeight3(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr4[outRow] = sum;
+	}
+}
+
+void ApplyWeights4()
+{
+	for (uint outRow = 0; outRow < 64; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr4[inCol];
+			float weightVal = GetWeight4(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr5[outRow] = sum;
+	}
+}
+
+void ApplyWeights5()
+{
+	for (uint outRow = 0; outRow < 3; outRow++)
+	{
+		float sum = 0;
+		
+		for (uint inCol = 0; inCol < 64; inCol++)
+		{
+			float inVal = nr5[inCol];
+			float weightVal = GetWeight5(outRow, inCol);
+			sum += inVal * weightVal;
+		}
+
+		nr6[outRow] = sum;
+	}
+}
+
+void ActivateNr1()
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr1[i] = Sigmoid(nr1[i]);
+		//nr1[i] = Relu(nr1[i]);
+	}
+}
+
+void ActivateNr2()
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr2[i] = Sigmoid(nr2[i]);
+		//nr2[i] = Relu(nr2[i]);
+	}
+}
+
+void ActivateNr3()
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr3[i] = Sigmoid(nr3[i]);
+		//nr3[i] = Relu(nr3[i]);
+	}
+}
+
+void ActivateNr4()
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr4[i] = Sigmoid(nr4[i]);
+		//nr4[i] = Relu(nr4[i]);
+	}
+}
+
+void ActivateNr5()
+{
+	for (uint i = 0; i < 64; i++)
+	{
+		nr5[i] = Sigmoid(nr5[i]);
+		//nr5[i] = Relu(nr5[i]);
+	}
+}
+
+void ActivateNr6()
+{
+	for (uint i = 0; i < 4; i++)
+	{
+		//nr6[i] = Sigmoid(nr6[i]);
+		nr6[i] = Relu(nr6[i]);
+	}
+}
+
+void Forward(const vec3 pos, const float theta, const float phi)
+{
+	// Assert: pos and dir are encoded correctly
+
+	nr0 = float[](pos.x, pos.y, pos.z, theta, phi);
+
+	ApplyWeights0();
+	ActivateNr1();
+	
+	ApplyWeights1();
+	ActivateNr2();
+	
+	ApplyWeights2();
+	ActivateNr3();
+	
+	ApplyWeights3();
+	ActivateNr4();
+
+	ApplyWeights4();
+	ActivateNr5();
+	
+	ApplyWeights5();
+	ActivateNr6();
+
+	// nr6 contains result
+}
+
+void Backprop(const vec3 target, vec3 pos, const vec3 dir)
+{
+	// Encode ray
+	pos /= skySize.y;
+	const float theta = atan(dir.y, dir.x);
+	const float phi = atan(length(dir.xy), dir.z);
+
+	// Forward
+	Forward(pos, theta, phi);
+	const vec3 pred = vec3(nr6[0], nr6[1], nr6[2]);
+
+	// Backprop
+	const vec3 error = target - pred;
+	nr6[0] = ReluDeriv(error.x);
+	nr6[1] = ReluDeriv(error.y);
+	nr6[2] = ReluDeriv(error.z);
+
+
+}
+
+// End: NN
+
 void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
@@ -360,7 +693,9 @@ void main()
 
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * WIDTH_FACTOR, float(y) * HEIGHT_FACTOR);
-	const vec3 pixelWorldPos = vec3(0.0);
+	const vec4 screenCoord = vec4((fragUV * 2.0) - vec2(1.0), 0.0, 1.0);
+	const vec4 worldPos = inverse(camMat.projView) * screenCoord;
+	const vec3 pixelWorldPos = worldPos.xyz / worldPos.w;
 
 	// Setup random
 	float preRand = volumeData.random.x * fragUV.x;
@@ -381,5 +716,6 @@ void main()
 	}
 
 	// Learn
-	vec4 newColor = vec4(TracePath(ro, rd), 1.0);
+	const vec3 color = TracePath(ro, rd);
+	Backprop(color, ro, rd);
 }

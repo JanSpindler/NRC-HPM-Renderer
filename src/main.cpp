@@ -344,7 +344,7 @@ void RunNrcHpm()
 		en::NeuralRadianceCache nrc;
 
 		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
-		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 20, 20, &camera, &volumeData, &sun);
+		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 100, 100, &camera, &volumeData, &sun);
 
 		en::ImGuiRenderer::Init(width, height);
 		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
