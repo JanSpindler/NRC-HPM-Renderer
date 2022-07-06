@@ -95,6 +95,14 @@ namespace en
 		deltaWeights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		deltaWeights5Binding.pImmutableSamplers = nullptr;
 
+		// Config uniform buffer
+		VkDescriptorSetLayoutBinding configBinding;
+		configBinding.binding = 12;
+		configBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		configBinding.descriptorCount = 1;
+		configBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		configBinding.pImmutableSamplers = nullptr;
+
 		std::vector<VkDescriptorSetLayoutBinding> layoutBindings = {
 			weights0Binding,
 			weights1Binding,
@@ -107,7 +115,8 @@ namespace en
 			deltaWeights2Binding,
 			deltaWeights3Binding,
 			deltaWeights4Binding,
-			deltaWeights5Binding };
+			deltaWeights5Binding,
+			configBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -124,7 +133,11 @@ namespace en
 		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		bufferPoolSize.descriptorCount = 12;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { bufferPoolSize };
+		VkDescriptorPoolSize uniformPoolSize;
+		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformPoolSize.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { bufferPoolSize, uniformPoolSize };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -149,7 +162,13 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	NeuralRadianceCache::NeuralRadianceCache()
+	NeuralRadianceCache::NeuralRadianceCache(float learningRate) :
+		m_ConfigData({ .learningRate = learningRate }),
+		m_ConfigUniformBuffer(
+			sizeof(ConfigData), 
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			{})
 	{
 		// Init sizes
 		std::array<size_t, 6> sizes = { 

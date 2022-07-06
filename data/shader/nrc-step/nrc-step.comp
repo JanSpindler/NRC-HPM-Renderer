@@ -1,0 +1,166 @@
+#version 460
+#extension GL_EXT_debug_printf : enable
+#extension GL_EXT_shader_atomic_float : enable
+
+// Uniforms
+layout(set = 0, binding = 0) uniform camMat_t
+{
+	mat4 projView;
+	mat4 invProjView;
+} camMat;
+
+layout(set = 0, binding = 1) uniform camera_t
+{
+	vec3 pos;
+} camera;
+
+layout(set = 1, binding = 0) uniform sampler3D densityTex;
+
+layout(set = 1, binding = 1) uniform volumeData_t
+{
+	vec4 random;
+	uint useNN;
+	float densityFactor;
+	float g;
+	float sigmaS;
+	float sigmaE;
+	float brightness;
+	uint lowPassIndex;
+} volumeData;
+
+layout(set = 2, binding = 0) uniform dir_light_t
+{
+	vec3 color;
+	float zenith;
+	vec3 dir;
+	float azimuth;
+	float strength;
+} dir_light;
+
+// NN buffers
+layout(std140, set = 4, binding = 0) buffer Weights0
+{
+	float matWeights0[320]; // 5 x 64
+};
+
+layout(std140, set = 4, binding = 1) buffer Weights1
+{
+	float matWeights1[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 2) buffer Weights2
+{
+	float matWeights2[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 3) buffer Weights3
+{
+	float matWeights3[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 4) buffer Weights4
+{
+	float matWeights4[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 5) buffer Weights5
+{
+	float matWeights5[192]; // 64 x 3
+};
+
+layout(std140, set = 4, binding = 6) buffer DeltaWeights0
+{
+	float matDeltaWeights0[320]; // 5 x 64
+};
+
+layout(std140, set = 4, binding = 7) buffer DeltaWeights1
+{
+	float matDeltaWeights1[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 8) buffer DeltaWeights2
+{
+	float matDeltaWeights2[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 9) buffer DeltaWeights3
+{
+	float matDeltaWeights3[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 10) buffer DeltaWeights4
+{
+	float matDeltaWeights4[4096]; // 64 x 64
+};
+
+layout(std140, set = 4, binding = 11) buffer DeltaWeights5
+{
+	float matDeltaWeights5[192]; // 64 x 3
+};
+
+layout(set = 4, binding = 12) uniform NrcConfig
+{
+	float learningRate;
+} nrcConfig;
+
+// Constants
+layout(constant_id = 0) const float WIDTH_FACTOR = 0.1;
+layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
+
+const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
+const vec3 skyPos = vec3(0.0);
+
+#define PI 3.14159265359
+
+#define MAX_RAY_DISTANCE 100000.0
+#define MIN_RAY_DISTANCE 0.125
+
+#define SAMPLE_COUNT 40
+#define SECONDARY_SAMPLE_COUNT 32
+
+#define SAMPLE_COUNT0 16
+#define SAMPLE_COUNT1 16
+#define SAMPLE_COUNT2 8
+#define SAMPLE_COUNT3 8
+
+#define SIGMA_S volumeData.sigmaS
+#define SIGMA_E volumeData.sigmaE
+
+#define NRC_PROB 0.5
+
+void StepWeights0()
+{
+}
+
+void StepWeights1()
+{
+}
+
+void StepWeights2()
+{
+}
+
+void StepWeights3()
+{
+}
+
+void StepWeights4()
+{
+}
+
+void StepWeights5()
+{
+}
+
+void main()
+{
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+
+	StepWeights0();
+	StepWeights1();
+	StepWeights2();
+	StepWeights3();
+	StepWeights4();
+	StepWeights5();
+}

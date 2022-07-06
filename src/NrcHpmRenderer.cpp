@@ -9,7 +9,7 @@
 namespace en
 {
 	VkDescriptorSetLayout NrcHpmRenderer::m_DescriptorSetLayout;
-	VkDescriptorSetLayout NrcHpmRenderer::m_NnDSL;
+//	VkDescriptorSetLayout NrcHpmRenderer::m_NnDSL;
 	VkDescriptorPool NrcHpmRenderer::m_DescriptorPool;
 
 	void NrcHpmRenderer::Init(VkDevice device)
@@ -34,127 +34,127 @@ namespace en
 		VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_DescriptorSetLayout);
 		ASSERT_VULKAN(result);
 
-		// Create NN descriptor set layout;
-		// Weights
-		VkDescriptorSetLayoutBinding weights0Binding;
-		weights0Binding.binding = 0;
-		weights0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		weights0Binding.descriptorCount = 1;
-		weights0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		weights0Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding weights1Binding;
-		weights1Binding.binding = 1;
-		weights1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		weights1Binding.descriptorCount = 1;
-		weights1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		weights1Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding weights2Binding;
-		weights2Binding.binding = 2;
-		weights2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		weights2Binding.descriptorCount = 1;
-		weights2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		weights2Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding weights3Binding;
-		weights3Binding.binding = 3;
-		weights3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		weights3Binding.descriptorCount = 1;
-		weights3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		weights3Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding weights4Binding;
-		weights4Binding.binding = 4;
-		weights4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		weights4Binding.descriptorCount = 1;
-		weights4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		weights4Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding weights5Binding;
-		weights5Binding.binding = 5;
-		weights5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		weights5Binding.descriptorCount = 1;
-		weights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		weights5Binding.pImmutableSamplers = nullptr;
-
-		// Biases
-		VkDescriptorSetLayoutBinding biases0Binding;
-		biases0Binding.binding = 6;
-		biases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		biases0Binding.descriptorCount = 1;
-		biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		biases0Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding biases1Binding;
-		biases1Binding.binding = 7;
-		biases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		biases1Binding.descriptorCount = 1;
-		biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		biases1Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding biases2Binding;
-		biases2Binding.binding = 8;
-		biases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		biases2Binding.descriptorCount = 1;
-		biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		biases2Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding biases3Binding;
-		biases3Binding.binding = 9;
-		biases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		biases3Binding.descriptorCount = 1;
-		biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		biases3Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding biases4Binding;
-		biases4Binding.binding = 10;
-		biases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		biases4Binding.descriptorCount = 1;
-		biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		biases4Binding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding biases5Binding;
-		biases5Binding.binding = 11;
-		biases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		biases5Binding.descriptorCount = 1;
-		biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		biases5Binding.pImmutableSamplers = nullptr;
-
-		bindings = {
-			weights0Binding,
-			weights1Binding,
-			weights2Binding,
-			weights3Binding,
-			weights4Binding,
-			weights5Binding,
-
-			biases0Binding,
-			biases1Binding,
-			biases2Binding,
-			biases3Binding,
-			biases4Binding,
-			biases5Binding };
-
-		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutCI.pNext = nullptr;
-		layoutCI.flags = 0;
-		layoutCI.bindingCount = bindings.size();
-		layoutCI.pBindings = bindings.data();
-
-		result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_NnDSL);
-		ASSERT_VULKAN(result);
+//		// Create NN descriptor set layout;
+//		// Weights
+//		VkDescriptorSetLayoutBinding weights0Binding;
+//		weights0Binding.binding = 0;
+//		weights0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		weights0Binding.descriptorCount = 1;
+//		weights0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		weights0Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding weights1Binding;
+//		weights1Binding.binding = 1;
+//		weights1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		weights1Binding.descriptorCount = 1;
+//		weights1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		weights1Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding weights2Binding;
+//		weights2Binding.binding = 2;
+//		weights2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		weights2Binding.descriptorCount = 1;
+//		weights2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		weights2Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding weights3Binding;
+//		weights3Binding.binding = 3;
+//		weights3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		weights3Binding.descriptorCount = 1;
+//		weights3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		weights3Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding weights4Binding;
+//		weights4Binding.binding = 4;
+//		weights4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		weights4Binding.descriptorCount = 1;
+//		weights4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		weights4Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding weights5Binding;
+//		weights5Binding.binding = 5;
+//		weights5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		weights5Binding.descriptorCount = 1;
+//		weights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		weights5Binding.pImmutableSamplers = nullptr;
+//
+//		// Biases
+//		VkDescriptorSetLayoutBinding biases0Binding;
+//		biases0Binding.binding = 6;
+//		biases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		biases0Binding.descriptorCount = 1;
+//		biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		biases0Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding biases1Binding;
+//		biases1Binding.binding = 7;
+//		biases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		biases1Binding.descriptorCount = 1;
+//		biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		biases1Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding biases2Binding;
+//		biases2Binding.binding = 8;
+//		biases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		biases2Binding.descriptorCount = 1;
+//		biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		biases2Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding biases3Binding;
+//		biases3Binding.binding = 9;
+//		biases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		biases3Binding.descriptorCount = 1;
+//		biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		biases3Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding biases4Binding;
+//		biases4Binding.binding = 10;
+//		biases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		biases4Binding.descriptorCount = 1;
+//		biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		biases4Binding.pImmutableSamplers = nullptr;
+//
+//		VkDescriptorSetLayoutBinding biases5Binding;
+//		biases5Binding.binding = 11;
+//		biases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		biases5Binding.descriptorCount = 1;
+//		biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+//		biases5Binding.pImmutableSamplers = nullptr;
+//
+//		bindings = {
+//			weights0Binding,
+//			weights1Binding,
+//			weights2Binding,
+//			weights3Binding,
+//			weights4Binding,
+//			weights5Binding,
+//
+//			biases0Binding,
+//			biases1Binding,
+//			biases2Binding,
+//			biases3Binding,
+//			biases4Binding,
+//			biases5Binding };
+//
+//		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+//		layoutCI.pNext = nullptr;
+//		layoutCI.flags = 0;
+//		layoutCI.bindingCount = bindings.size();
+//		layoutCI.pBindings = bindings.data();
+//
+//		result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_NnDSL);
+//		ASSERT_VULKAN(result);
 
 		// Create descriptor pool
 		VkDescriptorPoolSize lowPassImagePoolSize;
 		lowPassImagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		lowPassImagePoolSize.descriptorCount = 1;
 
-		VkDescriptorPoolSize bufferPoolSize;
-		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bufferPoolSize.descriptorCount = 12;
+//		VkDescriptorPoolSize bufferPoolSize;
+//		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//		bufferPoolSize.descriptorCount = 12;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { lowPassImagePoolSize, bufferPoolSize };
+		std::vector<VkDescriptorPoolSize> poolSizes = { lowPassImagePoolSize };// , bufferPoolSize};
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -171,7 +171,7 @@ namespace en
 	void NrcHpmRenderer::Shutdown(VkDevice device)
 	{
 		vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(device, m_NnDSL, nullptr);
+//		vkDestroyDescriptorSetLayout(device, m_NnDSL, nullptr);
 		vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr);
 	}
 
@@ -182,7 +182,8 @@ namespace en
 		uint32_t trainHeight,
 		const Camera* camera,
 		const VolumeData* volumeData,
-		const Sun* sun)
+		const Sun* sun,
+		const NeuralRadianceCache& nrc)
 		:
 		m_FrameWidth(width),
 		m_FrameHeight(height),
@@ -194,11 +195,12 @@ namespace en
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
-		m_Sun(sun)
+		m_Sun(sun),
+		m_Nrc(nrc)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
-		CreateNrcForwardResources(device);
+//		CreateNrcForwardResources(device);
 
 		CreatePipelineLayout(device);
 		
@@ -251,11 +253,11 @@ namespace en
 		vkFreeMemory(device, m_ColorImageMemory, nullptr);
 		vkDestroyImage(device, m_ColorImage, nullptr);
 
-		for (vk::Buffer* nrcForwardBuffer : m_NrcForwardBuffers)
-		{
-			nrcForwardBuffer->Destroy();
-			delete nrcForwardBuffer;
-		}
+//		for (vk::Buffer* nrcForwardBuffer : m_NrcForwardBuffers)
+//		{
+//			nrcForwardBuffer->Destroy();
+//			delete nrcForwardBuffer;
+//		}
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
@@ -295,48 +297,48 @@ namespace en
 		RecordCommandBuffer();
 	}
 
-	void NrcHpmRenderer::UpdateNnData(KomputeManager& manager, NeuralNetwork& nn)
-	{
-		nn.SyncLayersToHost(manager);
-		std::vector<Layer*> layers = nn.GetLayers();
-
-		size_t linearLayerIndex = 0;
-		for (size_t i = 0; i < layers.size() && linearLayerIndex < 6; i++)
-		{
-			LinearLayer* linearLayer = dynamic_cast<LinearLayer*>(layers[i]);
-			if (linearLayer != nullptr)
-			{
-				std::vector<float> weights = linearLayer->GetWeights().GetDataVector();
-				std::vector<float> biases = linearLayer->GetBiases().GetDataVector();
-				
-				size_t weightsDataSize = weights.size() * sizeof(float);
-				size_t biasesDataSize = biases.size() * sizeof(float);
-
-				vk::Buffer weightsStagingBuffer(
-					weightsDataSize,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					{});
-				
-				vk::Buffer biasesStagingBuffer(
-					biasesDataSize,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					{});
-
-				weightsStagingBuffer.SetData(weightsDataSize, weights.data(), 0, 0);
-				biasesStagingBuffer.SetData(biasesDataSize, biases.data(), 0, 0);
-
-				vk::Buffer::Copy(&weightsStagingBuffer, m_NrcForwardBuffers[linearLayerIndex], weightsDataSize);
-				vk::Buffer::Copy(&biasesStagingBuffer, m_NrcForwardBuffers[linearLayerIndex + 6], biasesDataSize);
-				
-				weightsStagingBuffer.Destroy();
-				biasesStagingBuffer.Destroy();
-
-				linearLayerIndex++;
-			}
-		}
-	}
+//	void NrcHpmRenderer::UpdateNnData(KomputeManager& manager, NeuralNetwork& nn)
+//	{
+//		nn.SyncLayersToHost(manager);
+//		std::vector<Layer*> layers = nn.GetLayers();
+//
+//		size_t linearLayerIndex = 0;
+//		for (size_t i = 0; i < layers.size() && linearLayerIndex < 6; i++)
+//		{
+//			LinearLayer* linearLayer = dynamic_cast<LinearLayer*>(layers[i]);
+//			if (linearLayer != nullptr)
+//			{
+//				std::vector<float> weights = linearLayer->GetWeights().GetDataVector();
+//				std::vector<float> biases = linearLayer->GetBiases().GetDataVector();
+//				
+//				size_t weightsDataSize = weights.size() * sizeof(float);
+//				size_t biasesDataSize = biases.size() * sizeof(float);
+//
+//				vk::Buffer weightsStagingBuffer(
+//					weightsDataSize,
+//					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+//					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+//					{});
+//				
+//				vk::Buffer biasesStagingBuffer(
+//					biasesDataSize,
+//					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+//					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+//					{});
+//
+//				weightsStagingBuffer.SetData(weightsDataSize, weights.data(), 0, 0);
+//				biasesStagingBuffer.SetData(biasesDataSize, biases.data(), 0, 0);
+//
+//				vk::Buffer::Copy(&weightsStagingBuffer, m_NrcForwardBuffers[linearLayerIndex], weightsDataSize);
+//				vk::Buffer::Copy(&biasesStagingBuffer, m_NrcForwardBuffers[linearLayerIndex + 6], biasesDataSize);
+//				
+//				weightsStagingBuffer.Destroy();
+//				biasesStagingBuffer.Destroy();
+//
+//				linearLayerIndex++;
+//			}
+//		}
+//	}
 
 	VkImage NrcHpmRenderer::GetImage() const
 	{
@@ -354,74 +356,74 @@ namespace en
 		return m_FrameWidth * m_FrameHeight * 4;
 	}
 
-	void NrcHpmRenderer::CreateNrcForwardResources(VkDevice device)
-	{
-		// Allocate descriptor set
-		VkDescriptorSetAllocateInfo descSetAI;
-		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descSetAI.pNext = nullptr;
-		descSetAI.descriptorPool = m_DescriptorPool;
-		descSetAI.descriptorSetCount = 1;
-		descSetAI.pSetLayouts = &m_NnDSL;
-
-		VkResult result = vkAllocateDescriptorSets(device, &descSetAI, &m_NrcForwardDS);
-		ASSERT_VULKAN(result);
-
-		// Set buffer sizes
-		std::array<VkDeviceSize, 12> bufferSizes = {
-			// Weights
-			sizeof(float) * 5 * 64,
-			sizeof(float) * 64 * 64,
-			sizeof(float) * 64 * 64,
-			sizeof(float) * 64 * 64,
-			sizeof(float) * 64 * 64,
-			sizeof(float) * 64 * 4,
-
-			// Biases
-			sizeof(float) * 64,
-			sizeof(float) * 64,
-			sizeof(float) * 64,
-			sizeof(float) * 64,
-			sizeof(float) * 64,
-			sizeof(float) * 4, };
-
-		// Create buffers
-		for (size_t i = 0; i < bufferSizes.size(); i++)
-		{
-			m_NrcForwardBuffers[i] = new vk::Buffer(
-				bufferSizes[i],
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-				{});
-		}
-
-		// Set buffer infos
-		std::array<VkDescriptorBufferInfo, 12> bufferInfos;
-		for (size_t i = 0; i < bufferInfos.size(); i++)
-		{
-			bufferInfos[i].buffer = m_NrcForwardBuffers[i]->GetVulkanHandle();
-			bufferInfos[i].offset = 0;
-			bufferInfos[i].range = bufferSizes[i];
-		}
-
-		// Set writes
-		std::array<VkWriteDescriptorSet, 12> writes;
-		for (size_t i = 0; i < writes.size(); i++)
-		{
-			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writes[i].pNext = nullptr;
-			writes[i].dstSet = m_NrcForwardDS;
-			writes[i].dstBinding = i;
-			writes[i].dstArrayElement = 0;
-			writes[i].descriptorCount = 1;
-			writes[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			writes[i].pImageInfo = nullptr;
-			writes[i].pBufferInfo = &bufferInfos[i];
-			writes[i].pTexelBufferView = nullptr;
-		}
-
-		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
-	}
+//	void NrcHpmRenderer::CreateNrcForwardResources(VkDevice device)
+//	{
+//		// Allocate descriptor set
+//		VkDescriptorSetAllocateInfo descSetAI;
+//		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+//		descSetAI.pNext = nullptr;
+//		descSetAI.descriptorPool = m_DescriptorPool;
+//		descSetAI.descriptorSetCount = 1;
+//		descSetAI.pSetLayouts = &m_NnDSL;
+//
+//		VkResult result = vkAllocateDescriptorSets(device, &descSetAI, &m_NrcForwardDS);
+//		ASSERT_VULKAN(result);
+//
+//		// Set buffer sizes
+//		std::array<VkDeviceSize, 12> bufferSizes = {
+//			// Weights
+//			sizeof(float) * 5 * 64,
+//			sizeof(float) * 64 * 64,
+//			sizeof(float) * 64 * 64,
+//			sizeof(float) * 64 * 64,
+//			sizeof(float) * 64 * 64,
+//			sizeof(float) * 64 * 4,
+//
+//			// Biases
+//			sizeof(float) * 64,
+//			sizeof(float) * 64,
+//			sizeof(float) * 64,
+//			sizeof(float) * 64,
+//			sizeof(float) * 64,
+//			sizeof(float) * 4, };
+//
+//		// Create buffers
+//		for (size_t i = 0; i < bufferSizes.size(); i++)
+//		{
+//			m_NrcForwardBuffers[i] = new vk::Buffer(
+//				bufferSizes[i],
+//				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+//				{});
+//		}
+//
+//		// Set buffer infos
+//		std::array<VkDescriptorBufferInfo, 12> bufferInfos;
+//		for (size_t i = 0; i < bufferInfos.size(); i++)
+//		{
+//			bufferInfos[i].buffer = m_NrcForwardBuffers[i]->GetVulkanHandle();
+//			bufferInfos[i].offset = 0;
+//			bufferInfos[i].range = bufferSizes[i];
+//		}
+//
+//		// Set writes
+//		std::array<VkWriteDescriptorSet, 12> writes;
+//		for (size_t i = 0; i < writes.size(); i++)
+//		{
+//			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//			writes[i].pNext = nullptr;
+//			writes[i].dstSet = m_NrcForwardDS;
+//			writes[i].dstBinding = i;
+//			writes[i].dstArrayElement = 0;
+//			writes[i].descriptorCount = 1;
+//			writes[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+//			writes[i].pImageInfo = nullptr;
+//			writes[i].pBufferInfo = &bufferInfos[i];
+//			writes[i].pTexelBufferView = nullptr;
+//		}
+//
+//		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+//	}
 
 	void NrcHpmRenderer::CreatePipelineLayout(VkDevice device)
 	{
@@ -430,7 +432,8 @@ namespace en
 			VolumeData::GetDescriptorSetLayout(),
 			Sun::GetDescriptorSetLayout(),
 			m_DescriptorSetLayout,
-			m_NnDSL };
+			NeuralRadianceCache::GetDescSetLayout() };
+//			m_NnDSL };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -988,7 +991,8 @@ namespace en
 			m_VolumeData->GetDescriptorSet(),
 			m_Sun->GetDescriptorSet(),
 			m_DescriptorSet,
-			m_NrcForwardDS };
+			m_Nrc.GetDescSet() };
+//			m_NrcForwardDS };
 
 		vkCmdBindDescriptorSets(
 			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,

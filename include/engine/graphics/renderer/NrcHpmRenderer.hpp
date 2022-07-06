@@ -8,6 +8,7 @@
 #include <string>
 #include <engine/compute/NeuralNetwork.hpp>
 #include <array>
+#include <engine/graphics/NeuralRadianceCache.hpp>
 
 namespace en
 {
@@ -24,14 +25,15 @@ namespace en
 			uint32_t trainHeight,
 			const Camera* camera,
 			const VolumeData* volumeData,
-			const Sun* sun);
+			const Sun* sun,
+			const NeuralRadianceCache& nrc);
 
 		void Render(VkQueue queue) const;
 		void Destroy();
 
 		void ResizeFrame(uint32_t width, uint32_t height);
 
-		void UpdateNnData(KomputeManager& manager, NeuralNetwork& nn);
+//		void UpdateNnData(KomputeManager& manager, NeuralNetwork& nn);
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
@@ -39,7 +41,7 @@ namespace en
 
 	private:
 		static VkDescriptorSetLayout m_DescriptorSetLayout;
-		static VkDescriptorSetLayout m_NnDSL;
+//		static VkDescriptorSetLayout m_NnDSL;
 		static VkDescriptorPool m_DescriptorPool;
 
 		uint32_t m_FrameWidth;
@@ -51,10 +53,11 @@ namespace en
 		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
 		const Sun* m_Sun;
+		const NeuralRadianceCache& m_Nrc;
 
 		// NN buffers
-		std::array<vk::Buffer*, 12> m_NrcForwardBuffers;
-		VkDescriptorSet m_NrcForwardDS;
+//		std::array<vk::Buffer*, 12> m_NrcForwardBuffers;
+//		VkDescriptorSet m_NrcForwardDS;
 
 		VkPipelineLayout m_PipelineLayout;
 
@@ -80,7 +83,7 @@ namespace en
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
 		
-		void CreateNrcForwardResources(VkDevice device);
+//		void CreateNrcForwardResources(VkDevice device);
 
 		void CreatePipelineLayout(VkDevice device);
 

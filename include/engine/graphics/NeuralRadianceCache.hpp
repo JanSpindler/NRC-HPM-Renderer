@@ -12,18 +12,26 @@ namespace en
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescSetLayout();
 
-		NeuralRadianceCache();
+		NeuralRadianceCache(float learningRate);
 
 		void Destroy();
 
 		VkDescriptorSet GetDescSet() const;
 
 	private:
+		struct ConfigData
+		{
+			float learningRate;
+		};
+		
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
 
 		std::array<vk::Buffer*, 6> m_Weights;
 		std::array<vk::Buffer*, 6> m_DeltaWeights;
+		
+		ConfigData m_ConfigData;
+		vk::Buffer m_ConfigUniformBuffer;
 
 		VkDescriptorSet m_DescSet;
 	};

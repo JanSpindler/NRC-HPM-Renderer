@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_debug_printf : enable
+#extension GL_EXT_shader_atomic_float : enable
 
 // Uniforms
 layout(set = 0, binding = 0) uniform camMat_t
@@ -637,11 +638,17 @@ void ActivateNr6()
 	}
 }
 
-void Forward(const vec3 pos, const float theta, const float phi)
+void EncodeRay(vec3 pos, const vec3 dir)
+{
+	pos /= skySize.y;
+	const float theta = atan(dir.y, dir.x);
+	const float phi = atan(length(dir.xy), dir.z);
+	nr0 = float[](pos.x, pos.y, pos.z, theta, phi);
+}
+
+void Forward()
 {
 	// Assert: pos and dir are encoded correctly
-
-	nr0 = float[](pos.x, pos.y, pos.z, theta, phi);
 
 	ApplyWeights0();
 	ActivateNr1();
@@ -664,24 +671,206 @@ void Forward(const vec3 pos, const float theta, const float phi)
 	// nr6 contains result
 }
 
-void Backprop(const vec3 target, vec3 pos, const vec3 dir)
+void Backprop5()
 {
-	// Encode ray
-	pos /= skySize.y;
-	const float theta = atan(dir.y, dir.x);
-	const float phi = atan(length(dir.xy), dir.z);
+	// Backprop end activation
+	for (uint i = 0; i < 3; i++)
+	{
+		nr6[i] = ReluDeriv(nr6[i]);
+	}
 
+	// Calc delta Weights5
+	for (uint row = 0; row < 3; row++)
+	{
+		for (uint col = 0; col < 64; col++)
+		{
+			uint linearIndex = (row * 64) + col;
+			float deltaWeight = -nr5[col] * nr6[row];
+			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight);
+		}
+	}
+
+	// Backprop weights5
+	for (uint col = 0; col < 64; col++)
+	{
+		float error = 0.0;
+		for (uint row = 0; row < 3; row++)
+		{
+			uint linearIndex = row * 64 + col;
+			error += matWeights5[linearIndex] * nr6[row];
+		}
+		nr5[col] = error;
+	}
+}
+
+void Backprop4()
+{
+	// Backprop end activation
+	for (uint i = 0; i < 64; i++)
+	{
+		nr5[i] = SigmoidDeriv(nr5[i]);
+	}
+
+	// Calc delta Weights5
+	for (uint row = 0; row < 64; row++)
+	{
+		for (uint col = 0; col < 64; col++)
+		{
+			uint linearIndex = (row * 64) + col;
+			float deltaWeight = -nr4[col] * nr5[row];
+			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight);
+		}
+	}
+
+	// Backprop weights5
+	for (uint col = 0; col < 64; col++)
+	{
+		float error = 0.0;
+		for (uint row = 0; row < 64; row++)
+		{
+			uint linearIndex = row * 64 + col;
+			error += matWeights4[linearIndex] * nr5[row];
+		}
+		nr4[col] = error;
+	}
+}
+
+void Backprop3()
+{
+	// Backprop end activation
+	for (uint i = 0; i < 64; i++)
+	{
+		nr4[i] = SigmoidDeriv(nr4[i]);
+	}
+
+	// Calc delta Weights5
+	for (uint row = 0; row < 64; row++)
+	{
+		for (uint col = 0; col < 64; col++)
+		{
+			uint linearIndex = (row * 64) + col;
+			float deltaWeight = -nr3[col] * nr4[row];
+			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight);
+		}
+	}
+
+	// Backprop weights5
+	for (uint col = 0; col < 64; col++)
+	{
+		float error = 0.0;
+		for (uint row = 0; row < 64; row++)
+		{
+			uint linearIndex = row * 64 + col;
+			error += matWeights3[linearIndex] * nr4[row];
+		}
+		nr3[col] = error;
+	}
+}
+
+void Backprop2()
+{
+	// Backprop end activation
+	for (uint i = 0; i < 64; i++)
+	{
+		nr3[i] = SigmoidDeriv(nr3[i]);
+	}
+
+	// Calc delta Weights5
+	for (uint row = 0; row < 64; row++)
+	{
+		for (uint col = 0; col < 64; col++)
+		{
+			uint linearIndex = (row * 64) + col;
+			float deltaWeight = -nr2[col] * nr3[row];
+			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight);
+		}
+	}
+
+	// Backprop weights5
+	for (uint col = 0; col < 64; col++)
+	{
+		float error = 0.0;
+		for (uint row = 0; row < 64; row++)
+		{
+			uint linearIndex = row * 64 + col;
+			error += matWeights2[linearIndex] * nr3[row];
+		}
+		nr2[col] = error;
+	}
+}
+
+void Backprop1()
+{
+	// Backprop end activation
+	for (uint i = 0; i < 64; i++)
+	{
+		nr2[i] = SigmoidDeriv(nr2[i]);
+	}
+
+	// Calc delta Weights5
+	for (uint row = 0; row < 64; row++)
+	{
+		for (uint col = 0; col < 64; col++)
+		{
+			uint linearIndex = (row * 64) + col;
+			float deltaWeight = -nr1[col] * nr2[row];
+			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight);
+		}
+	}
+
+	// Backprop weights5
+	for (uint col = 0; col < 64; col++)
+	{
+		float error = 0.0;
+		for (uint row = 0; row < 64; row++)
+		{
+			uint linearIndex = row * 64 + col;
+			error += matWeights1[linearIndex] * nr2[row];
+		}
+		nr1[col] = error;
+	}
+}
+
+void Backprop0()
+{
+	
+	// Backprop end activation
+	for (uint i = 0; i < 64; i++)
+	{
+		nr1[i] = SigmoidDeriv(nr1[i]);
+	}
+
+	// Calc delta Weights5
+	for (uint row = 0; row < 64; row++)
+	{
+		for (uint col = 0; col < 5; col++)
+		{
+			uint linearIndex = (row * 5) + col;
+			float deltaWeight = -nr0[col] * nr1[row];
+			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight);
+		}
+	}
+}
+
+void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
+{
 	// Forward
-	Forward(pos, theta, phi);
+	EncodeRay(pos, dir);
+	Forward();
 	const vec3 pred = vec3(nr6[0], nr6[1], nr6[2]);
 
 	// Backprop
 	const vec3 error = target - pred;
-	nr6[0] = ReluDeriv(error.x);
-	nr6[1] = ReluDeriv(error.y);
-	nr6[2] = ReluDeriv(error.z);
+	nr6[0] = error.x;
+	nr6[1] = error.y;
+	nr6[2] = error.z;
 
-
+	Backprop5();
+	Backprop4();
+	Backprop3();
+	Backprop2();
+	Backprop1();
+	Backprop0();
 }
 
 // End: NN

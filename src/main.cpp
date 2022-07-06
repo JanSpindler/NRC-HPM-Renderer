@@ -280,32 +280,32 @@ void SwapchainResizeCallback()
 	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
 }
 
-void RunNrcHpmTrainer()
-{
-	VkQueue queue = en::VulkanAPI::GetComputeQueue();
-
-	// Update
-	trainVolumeData->Update(true);
-
-	// Render
-	pathTracer->Render(queue);
-	VkResult result = vkQueueWaitIdle(queue);
-	ASSERT_VULKAN(result);
-
-	// Get train data
-	pathTracer->ExportForTraining(queue, trainInputs, trainTargets);
-
-	// NN learn
-	nn->SyncLayersToDevice(*manager);
-	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.001f, SIZE_MAX);
-	nn->SyncLayersToHost(*manager);
-
-	// Sync exit
-	doneTraining = true;
-
-	en::Log::Info("Nn update");
-	en::Log::Info(nn->ToString());
-}
+//void RunNrcHpmTrainer()
+//{
+//	VkQueue queue = en::VulkanAPI::GetComputeQueue();
+//
+//	// Update
+//	trainVolumeData->Update(true);
+//
+//	// Render
+//	pathTracer->Render(queue);
+//	VkResult result = vkQueueWaitIdle(queue);
+//	ASSERT_VULKAN(result);
+//
+//	// Get train data
+//	pathTracer->ExportForTraining(queue, trainInputs, trainTargets);
+//
+//	// NN learn
+//	nn->SyncLayersToDevice(*manager);
+//	TrainNrc(*manager, *nn, trainInputs, trainTargets, 0.001f, SIZE_MAX);
+//	nn->SyncLayersToHost(*manager);
+//
+//	// Sync exit
+//	doneTraining = true;
+//
+//	en::Log::Info("Nn update");
+//	en::Log::Info(nn->ToString());
+//}
 
 void RunNrcHpm()
 {
@@ -341,10 +341,10 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		en::NeuralRadianceCache nrc;
+		en::NeuralRadianceCache nrc(0.001f);
 
 		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
-		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 100, 100, &camera, &volumeData, &sun);
+		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 32, 32, &camera, &volumeData, &sun, nrc);
 
 		en::ImGuiRenderer::Init(width, height);
 		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
@@ -372,8 +372,8 @@ void RunNrcHpm()
 
 		nn = new en::NeuralNetwork(layers);
 
-		doneTraining = false;
-		std::thread* trainerThread = new std::thread(RunNrcHpmTrainer);
+//		doneTraining = false;
+//		std::thread* trainerThread = new std::thread(RunNrcHpmTrainer);
 
 		// Main loop
 		VkDevice device = en::VulkanAPI::GetDevice();
@@ -404,16 +404,16 @@ void RunNrcHpm()
 			camera.UpdateUniformBuffer();
 
 			// Render
-			if (doneTraining)
-			{
-				doneTraining = false;
-				trainerThread->join();
-				delete trainerThread;
-
-				nrcHpmRenderer->UpdateNnData(*manager, *nn);
-				
-				trainerThread = new std::thread(RunNrcHpmTrainer);
-			}
+//			if (doneTraining)
+//			{
+//				doneTraining = false;
+//				trainerThread->join();
+//				delete trainerThread;
+//
+//				nrcHpmRenderer->UpdateNnData(*manager, *nn);
+//				
+//				trainerThread = new std::thread(RunNrcHpmTrainer);
+//			}
 
 			nrcHpmRenderer->Render(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
@@ -441,8 +441,8 @@ void RunNrcHpm()
 		result = vkDeviceWaitIdle(device);
 		ASSERT_VULKAN(result);
 
-		trainerThread->join();
-		delete trainerThread;
+//		trainerThread->join();
+//		delete trainerThread;
 
 		delete nn;
 		delete manager;
@@ -458,6 +458,8 @@ void RunNrcHpm()
 
 		nrcHpmRenderer->Destroy();
 		delete nrcHpmRenderer;
+
+		nrc.Destroy();
 
 		swapchain.Destroy(true);
 
