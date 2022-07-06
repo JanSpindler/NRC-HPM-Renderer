@@ -65,7 +65,7 @@ layout(std140, set = 4, binding = 4) readonly buffer Weights4
 
 layout(std140, set = 4, binding = 5) readonly buffer Weights5
 {
-	float matWeights5[256]; // 64 x 4
+	float matWeights5[192]; // 64 x 3
 };
 
 // Output
@@ -248,9 +248,9 @@ void ApplyWeights4(in float[64] nr4, out float[64] nr5)
 	}
 }
 
-void ApplyWeights5(in float[64] nr5, out float[4] nr6)
+void ApplyWeights5(in float[64] nr5, out float[3] nr6)
 {
-	for (uint outRow = 0; outRow < 4; outRow++)
+	for (uint outRow = 0; outRow < 3; outRow++)
 	{
 		float sum = 0;
 		
@@ -310,16 +310,16 @@ void ActivateNr5(inout float[64] nr5)
 	}
 }
 
-void ActivateNr6(inout float[4] nr6)
+void ActivateNr6(inout float[3] nr6)
 {
-	for (uint i = 0; i < 4; i++)
+	for (uint i = 0; i < 3; i++)
 	{
 		//nr6[i] = Sigmoid(nr6[i]);
 		nr6[i] = Relu(nr6[i]);
 	}
 }
 
-vec4 Forward(vec3 ro, const vec3 rd)
+vec3 Forward(vec3 ro, const vec3 rd)
 {
 	ro /= skySize.y;
 
@@ -332,7 +332,7 @@ vec4 Forward(vec3 ro, const vec3 rd)
 	float nr3[64];
 	float nr4[64];
 	float nr5[64];
-	float nr6[4];
+	float nr6[3];
 
 	ApplyWeights0(nr0, nr1);
 	ActivateNr1(nr1);
@@ -352,11 +352,10 @@ vec4 Forward(vec3 ro, const vec3 rd)
 	ApplyWeights5(nr5, nr6);
 	ActivateNr6(nr6);
 
-	vec4 outputCol;
+	vec3 outputCol;
 	outputCol.x = nr6[0];
 	outputCol.y = nr6[1];
 	outputCol.z = nr6[2];
-	outputCol.w = nr6[3];
 
 	return outputCol;
 }
@@ -555,7 +554,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 			{
 				if (RandFloat(1.0) > totalTermProb)
 				{
-					scatteredLight += transmittance * Forward(currentPoint, currentDir).xyz;
+					scatteredLight += transmittance * Forward(currentPoint, currentDir);
 					return scatteredLight;
 				}
 				totalTermProb *= 0.5;

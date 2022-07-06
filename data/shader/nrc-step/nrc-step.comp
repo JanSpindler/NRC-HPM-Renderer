@@ -128,39 +128,84 @@ const vec3 skyPos = vec3(0.0);
 
 #define NRC_PROB 0.5
 
-void StepWeights0()
+void StepWeights0(const uint index)
 {
+	if (index < 320)
+	{
+		matWeights0[index] += matDeltaWeights0[index] * nrcConfig.learningRate;
+	}
 }
 
-void StepWeights1()
+void StepWeights1(const uint index)
 {
+	if (index < 4096)
+	{
+		matWeights1[index] += matDeltaWeights1[index] * nrcConfig.learningRate;
+	}
 }
 
-void StepWeights2()
+void StepWeights2(const uint index)
 {
+	if (index < 4096)
+	{
+		matWeights2[index] += matDeltaWeights2[index] * nrcConfig.learningRate;
+	}
 }
 
-void StepWeights3()
+void StepWeights3(const uint index)
 {
+	if (index < 4096)
+	{
+		matWeights3[index] += matDeltaWeights3[index] * nrcConfig.learningRate;
+	}
 }
 
-void StepWeights4()
+void StepWeights4(const uint index)
 {
+	if (index < 4096)
+	{
+		matWeights4[index] += matDeltaWeights4[index] * nrcConfig.learningRate;
+	}
 }
 
-void StepWeights5()
+void StepWeights5(const uint index)
 {
+	if (index < 192)
+	{
+		matWeights5[index] += matDeltaWeights5[index] * nrcConfig.learningRate;
+	}
+}
+
+void ClearDeltaWeights(const uint index)
+{
+	if (index < 320)
+	{
+		matDeltaWeights0[index] = 0.0;
+	}
+
+	if (index < 4096)
+	{
+		matDeltaWeights1[index] = 0.0;
+		matDeltaWeights2[index] = 0.0;
+		matDeltaWeights3[index] = 0.0;
+		matDeltaWeights4[index] = 0.0;
+	}
+
+	if (index < 192)
+	{
+		matDeltaWeights5[index] = 0.0;
+	}
 }
 
 void main()
 {
-	const uint x = gl_GlobalInvocationID.x;
-	const uint y = gl_GlobalInvocationID.y;
+	const uint index = gl_GlobalInvocationID.x;
 
-	StepWeights0();
-	StepWeights1();
-	StepWeights2();
-	StepWeights3();
-	StepWeights4();
-	StepWeights5();
+	StepWeights0(index);
+	StepWeights1(index);
+	StepWeights2(index);
+	StepWeights3(index);
+	StepWeights4(index);
+	StepWeights5(index);
+	ClearDeltaWeights(index);
 }

@@ -69,6 +69,9 @@ namespace en
 		vk::Shader m_TrainShader;
 		VkPipeline m_TrainPipeline;
 		
+		vk::Shader m_StepShader;
+		VkPipeline m_StepPipeline;
+
 		VkImage m_ColorImage;
 		VkDeviceMemory m_ColorImageMemory;
 		VkImageView m_ColorImageView;
@@ -91,6 +94,8 @@ namespace en
 		void CreateRenderPipeline(VkDevice device);
 		
 		void CreateTrainPipeline(VkDevice device);
+
+		void CreateStepPipeline(VkDevice device);
 
 		void CreateColorImage(VkDevice device);
 		void CreateLowPassResources(VkDevice device);

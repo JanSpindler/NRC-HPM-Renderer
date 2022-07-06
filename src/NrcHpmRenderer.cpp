@@ -192,6 +192,7 @@ namespace en
 		m_RenderVertShader("nrc-forward/nrc-forward.vert", false),
 		m_RenderFragShader("nrc-forward/nrc-forward.frag", false),
 		m_TrainShader("nrc-train/nrc-train.comp", false),
+		m_StepShader("nrc-step/nrc-step.comp", false),
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
@@ -209,6 +210,8 @@ namespace en
 		
 		CreateTrainPipeline(device);
 		
+		CreateStepPipeline(device);
+
 		CreateColorImage(device);
 		CreateLowPassResources(device);
 		CreateLowPassImage(device);
@@ -258,6 +261,10 @@ namespace en
 //			nrcForwardBuffer->Destroy();
 //			delete nrcForwardBuffer;
 //		}
+
+		vkDestroyPipeline(device, m_StepPipeline, nullptr);
+
+		vkDestroyPipeline(device, m_TrainPipeline, nullptr);
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
@@ -721,6 +728,30 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
+	void NrcHpmRenderer::CreateStepPipeline(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.pNext = nullptr;
+		shaderStage.flags = 0;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_StepShader.GetVulkanModule();
+		shaderStage.pName = "main";
+		shaderStage.pSpecializationInfo = nullptr;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStage;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_StepPipeline);
+		ASSERT_VULKAN(result);
+	}
+
 	void NrcHpmRenderer::CreateColorImage(VkDevice device)
 	{
 		// Create Image
@@ -1004,6 +1035,18 @@ namespace en
 
 		// Dispatch training
 		vkCmdDispatch(m_CommandBuffer, m_TrainWidth, m_TrainHeight, 1);
+
+		// Bind pipeline layout
+		vkCmdBindDescriptorSets(
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			0, descSets.size(), descSets.data(),
+			0, nullptr);
+
+		// Bind step pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_StepPipeline);
+
+		// Dispatch gradient step
+		vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
 
 		// Begin render pass
 		std::vector<VkClearValue> clearValues = {

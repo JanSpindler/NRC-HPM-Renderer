@@ -166,10 +166,13 @@ namespace en
 		m_ConfigData({ .learningRate = learningRate }),
 		m_ConfigUniformBuffer(
 			sizeof(ConfigData), 
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			{})
 	{
+		// Set config
+		m_ConfigUniformBuffer.SetData(sizeof(ConfigData), &m_ConfigData, 0, 0);
+
 		// Init sizes
 		std::array<size_t, 6> sizes = { 
 			5 * 64,
@@ -237,7 +240,7 @@ namespace en
 
 		// Update descriptor set
 		// Set buffer infos
-		std::array<VkDescriptorBufferInfo, 12> bufferInfos;
+		std::vector<VkDescriptorBufferInfo> bufferInfos(12);
 		for (size_t i = 0; i < m_Weights.size(); i++)
 		{
 			bufferInfos[i].buffer = m_Weights[i]->GetVulkanHandle();
@@ -250,7 +253,7 @@ namespace en
 		}
 
 		// Set writes
-		std::array<VkWriteDescriptorSet, 12> writes;
+		std::vector<VkWriteDescriptorSet> writes(12);
 		for (size_t i = 0; i < writes.size(); i++)
 		{
 			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -264,6 +267,25 @@ namespace en
 			writes[i].pBufferInfo = &bufferInfos[i];
 			writes[i].pTexelBufferView = nullptr;
 		}
+
+		VkDescriptorBufferInfo configBufferInfo;
+		configBufferInfo.buffer = m_ConfigUniformBuffer.GetVulkanHandle();
+		configBufferInfo.offset = 0;
+		configBufferInfo.range = sizeof(ConfigData);
+
+		VkWriteDescriptorSet configWrite;
+		configWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		configWrite.pNext = nullptr;
+		configWrite.dstSet = m_DescSet;
+		configWrite.dstBinding = 12;
+		configWrite.dstArrayElement = 0;
+		configWrite.descriptorCount = 1;
+		configWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		configWrite.pImageInfo = nullptr;
+		configWrite.pBufferInfo = &configBufferInfo;
+		configWrite.pTexelBufferView = nullptr;
+
+		writes.push_back(configWrite);
 
 		vkUpdateDescriptorSets(VulkanAPI::GetDevice(), writes.size(), writes.data(), 0, nullptr);
 	}
