@@ -124,8 +124,23 @@ float Sigmoid(float x)
 
 float Relu(float x)
 {
-	return x > 0.0 ? x : x * 0.01;
+	if (x > 0.0)
+	{
+		return x;
+	}
+	else
+	{
+		return x * 0.01;
+	}
 }
+
+float nr0[5];
+float nr1[64];
+float nr2[64];
+float nr3[64];
+float nr4[64];
+float nr5[64];
+float nr6[3];
 
 float GetWeight0(uint row, uint col)
 {
@@ -163,7 +178,7 @@ float GetWeight5(uint row, uint col)
 	return matWeights5[linearIndex];
 }
 
-void ApplyWeights0(in float[5] nr0, out float[64] nr1)
+void ApplyWeights0()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
@@ -180,7 +195,7 @@ void ApplyWeights0(in float[5] nr0, out float[64] nr1)
 	}
 }
 
-void ApplyWeights1(in float[64] nr1, out float[64] nr2)
+void ApplyWeights1()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
@@ -197,7 +212,7 @@ void ApplyWeights1(in float[64] nr1, out float[64] nr2)
 	}
 }
 
-void ApplyWeights2(in float[64] nr2, out float[64] nr3)
+void ApplyWeights2()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
@@ -214,7 +229,7 @@ void ApplyWeights2(in float[64] nr2, out float[64] nr3)
 	}
 }
 
-void ApplyWeights3(in float[64] nr3, out float[64] nr4)
+void ApplyWeights3()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
@@ -231,7 +246,7 @@ void ApplyWeights3(in float[64] nr3, out float[64] nr4)
 	}
 }
 
-void ApplyWeights4(in float[64] nr4, out float[64] nr5)
+void ApplyWeights4()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
@@ -248,7 +263,7 @@ void ApplyWeights4(in float[64] nr4, out float[64] nr5)
 	}
 }
 
-void ApplyWeights5(in float[64] nr5, out float[3] nr6)
+void ApplyWeights5()
 {
 	for (uint outRow = 0; outRow < 3; outRow++)
 	{
@@ -265,7 +280,7 @@ void ApplyWeights5(in float[64] nr5, out float[3] nr6)
 	}
 }
 
-void ActivateNr1(inout float[64] nr1)
+void ActivateNr1()
 {
 	for (uint i = 0; i < 64; i++)
 	{
@@ -274,7 +289,7 @@ void ActivateNr1(inout float[64] nr1)
 	}
 }
 
-void ActivateNr2(inout float[64] nr2)
+void ActivateNr2()
 {
 	for (uint i = 0; i < 64; i++)
 	{
@@ -283,7 +298,7 @@ void ActivateNr2(inout float[64] nr2)
 	}
 }
 
-void ActivateNr3(inout float[64] nr3)
+void ActivateNr3()
 {
 	for (uint i = 0; i < 64; i++)
 	{
@@ -292,7 +307,7 @@ void ActivateNr3(inout float[64] nr3)
 	}
 }
 
-void ActivateNr4(inout float[64] nr4)
+void ActivateNr4()
 {
 	for (uint i = 0; i < 64; i++)
 	{
@@ -301,7 +316,7 @@ void ActivateNr4(inout float[64] nr4)
 	}
 }
 
-void ActivateNr5(inout float[64] nr5)
+void ActivateNr5()
 {
 	for (uint i = 0; i < 64; i++)
 	{
@@ -310,7 +325,7 @@ void ActivateNr5(inout float[64] nr5)
 	}
 }
 
-void ActivateNr6(inout float[3] nr6)
+void ActivateNr6()
 {
 	for (uint i = 0; i < 3; i++)
 	{
@@ -319,43 +334,40 @@ void ActivateNr6(inout float[3] nr6)
 	}
 }
 
+void EncodeRay(vec3 pos, const vec3 dir)
+{
+	pos /= skySize.y;
+	const float theta = atan(dir.y, dir.x);
+	const float phi = atan(length(dir.xy), dir.z);
+	nr0 = float[](pos.x, pos.y, pos.z, theta, phi);
+}
+
 vec3 Forward(vec3 ro, const vec3 rd)
 {
-	ro /= skySize.y;
+	EncodeRay(ro, rd);
 
-	const float theta = atan(rd.y, rd.x);
-	const float phi = atan(length(rd.xy), rd.z);
+	ApplyWeights0();
+	ActivateNr1();
+	
+	ApplyWeights1();
+	ActivateNr2();
+	
+	ApplyWeights2();
+	ActivateNr3();
+	
+	ApplyWeights3();
+	ActivateNr4();
 
-	const float nr0[5] = float[]( ro.x, ro.y, ro.z, theta, phi );
-	float nr1[64];
-	float nr2[64];
-	float nr3[64];
-	float nr4[64];
-	float nr5[64];
-	float nr6[3];
-
-	ApplyWeights0(nr0, nr1);
-	ActivateNr1(nr1);
+	ApplyWeights4();
+	ActivateNr5();
 	
-	ApplyWeights1(nr1, nr2);
-	ActivateNr2(nr2);
-	
-	ApplyWeights2(nr2, nr3);
-	ActivateNr3(nr3);
-	
-	ApplyWeights3(nr3, nr4);
-	ActivateNr4(nr4);
-
-	ApplyWeights4(nr4, nr5);
-	ActivateNr5(nr5);
-	
-	ApplyWeights5(nr5, nr6);
-	ActivateNr6(nr6);
+	ApplyWeights5();
+	ActivateNr6();
 
 	vec3 outputCol;
-	outputCol.x = nr6[0];
-	outputCol.y = nr6[1];
-	outputCol.z = nr6[2];
+	outputCol.x = max(0.0, nr6[0]);
+	outputCol.y = max(0.0, nr6[1]);
+	outputCol.z = max(0.0, nr6[2]);
 
 	return outputCol;
 }

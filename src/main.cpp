@@ -341,9 +341,9 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		en::NeuralRadianceCache nrc(0.001f);
+		en::NeuralRadianceCache nrc(0.01f);
 
-		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
+//		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 32, 32, &camera, &volumeData, &sun, nrc);
 
 		en::ImGuiRenderer::Init(width, height);
@@ -354,23 +354,23 @@ void RunNrcHpm()
 		// NN
 		//LoadTrainData(trainInputs, trainTargets);
 
-		manager = new en::KomputeManager();
-
-		std::vector<en::Layer*> layers = {
-			new en::LinearLayer(*manager, 5, 64), // 0
-			new en::SigmoidLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 64), // 1
-			new en::SigmoidLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 64), // 2
-			new en::SigmoidLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 64), // 3
-			new en::SigmoidLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 64), // 4
-			new en::SigmoidLayer(*manager, 64),
-			new en::LinearLayer(*manager, 64, 4), // 5
-			new en::ReluLayer(*manager, 4) };
-
-		nn = new en::NeuralNetwork(layers);
+//		manager = new en::KomputeManager();
+//
+//		std::vector<en::Layer*> layers = {
+//			new en::LinearLayer(*manager, 5, 64), // 0
+//			new en::SigmoidLayer(*manager, 64),
+//			new en::LinearLayer(*manager, 64, 64), // 1
+//			new en::SigmoidLayer(*manager, 64),
+//			new en::LinearLayer(*manager, 64, 64), // 2
+//			new en::SigmoidLayer(*manager, 64),
+//			new en::LinearLayer(*manager, 64, 64), // 3
+//			new en::SigmoidLayer(*manager, 64),
+//			new en::LinearLayer(*manager, 64, 64), // 4
+//			new en::SigmoidLayer(*manager, 64),
+//			new en::LinearLayer(*manager, 64, 4), // 5
+//			new en::ReluLayer(*manager, 4) };
+//
+//		nn = new en::NeuralNetwork(layers);
 
 //		doneTraining = false;
 //		std::thread* trainerThread = new std::thread(RunNrcHpmTrainer);
@@ -444,8 +444,8 @@ void RunNrcHpm()
 //		trainerThread->join();
 //		delete trainerThread;
 
-		delete nn;
-		delete manager;
+//		delete nn;
+//		delete manager;
 
 		// End
 		density3DTex.Destroy();

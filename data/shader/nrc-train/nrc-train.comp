@@ -891,8 +891,8 @@ void main()
 	float prePreRand = volumeData.random.y * fragUV.y;
 
 	// Setup ray
-	const vec3 ro = camera.pos;
-	const vec3 rd = normalize(pixelWorldPos - ro);
+	vec3 ro = camera.pos;
+	vec3 rd = normalize(pixelWorldPos - ro);
 
 	// SDF
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
@@ -901,10 +901,19 @@ void main()
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		return;
+		// Gen random ray if volume was not hit
+		//ro = vec3(RandFloat(1.0), RandFloat(1.0), RandFloat(1.0));
+		//ro -= vec3(0.5);
+		//ro *= skySize;
+		ro = vec3(0.0);
+
+		float theta = RandFloat(2 * PI);
+		float phi = RandFloat(2 * PI);
+		rd = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+		rd = normalize(rd);
 	}
 
 	// Learn
-	const vec3 color = TracePath(ro, rd);
+	const vec3 color = vec3(10.0, 0.0, 0.0);//TracePath(ro, rd);
 	Backprop(color, ro, rd);
 }
