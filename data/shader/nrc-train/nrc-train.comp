@@ -5,7 +5,7 @@
 layout(set = 0, binding = 0) uniform camMat_t
 {
 	mat4 projView;
-	mat4 oldProjView;
+	mat4 invProjView;
 } camMat;
 
 layout(set = 0, binding = 1) uniform camera_t
@@ -694,7 +694,7 @@ void main()
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * WIDTH_FACTOR, float(y) * HEIGHT_FACTOR);
 	const vec4 screenCoord = vec4((fragUV * 2.0) - vec2(1.0), 0.0, 1.0);
-	const vec4 worldPos = inverse(camMat.projView) * screenCoord;
+	const vec4 worldPos = camMat.invProjView * screenCoord;
 	const vec3 pixelWorldPos = worldPos.xyz / worldPos.w;
 
 	// Setup random

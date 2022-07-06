@@ -19,7 +19,7 @@ int indices[6] = int[] ( 0, 1, 2, 2, 3, 0 );
 layout(set = 0, binding = 0) uniform camMat_t
 {
 	mat4 projView;
-	mat4 oldProjView;
+	mat4 invProjView;
 } camMat;
 
 layout(location = 0) out vec3 pixelWorldPos;
@@ -33,7 +33,7 @@ void main()
 	vec4 screenCoord = gl_Position;
 	screenCoord.y *= -1.0;
 
-	vec4 worldPos = inverse(camMat.projView) * screenCoord;
+	vec4 worldPos = camMat.invProjView * screenCoord;
 	pixelWorldPos = worldPos.xyz / worldPos.w;
 
 	fragUV = uv[index];

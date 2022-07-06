@@ -11,7 +11,7 @@ namespace en
 	struct CameraMatrices
 	{
 		glm::mat4 projView;
-		glm::mat4 oldProjView;
+		glm::mat4 invProjView;
 	};
 
 	class Camera
