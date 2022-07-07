@@ -166,35 +166,42 @@ namespace en
 		m_ConfigData({ .learningRate = learningRate }),
 		m_ConfigUniformBuffer(
 			sizeof(ConfigData), 
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{})
 	{
 		// Set config
-		m_ConfigUniformBuffer.SetData(sizeof(ConfigData), &m_ConfigData, 0, 0);
+		vk::Buffer stagingBuffer(
+			sizeof(ConfigData),
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+		stagingBuffer.SetData(sizeof(ConfigData), &m_ConfigData, 0, 0);
+		vk::Buffer::Copy(&stagingBuffer, &m_ConfigUniformBuffer, sizeof(ConfigData));
+		stagingBuffer.Destroy();
 
 		// Init sizes
-		std::array<size_t, 6> sizes = { 
-			5 * 64,
-			64 * 64,
-			64 * 64, 
-			64 * 64, 
-			64 * 64, 
-			64 * 3 };
+		std::array<size_t, 6> sizes = {
+			5 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 3 * sizeof(float) };
 
 		// Init weights and delta weights buffer
 		for (size_t i = 0; i < m_Weights.size(); i++)
 		{
 			m_Weights[i] = new vk::Buffer(
 				sizes[i],
-				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // TODO: device local
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				{});
 
 			m_DeltaWeights[i] = new vk::Buffer(
 				sizes[i],
-				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				{});
 		}
 
@@ -204,27 +211,36 @@ namespace en
 		
 		for (size_t i = 0; i < m_Weights.size(); i++)
 		{
-			float norm = static_cast<float>(sizes[i]);
+			stagingBuffer = vk::Buffer(
+				sizes[i],
+				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+
+			float norm = static_cast<float>(sizes[i] / sizeof(float));
 			
-			float* data = reinterpret_cast<float*>(malloc(sizeof(float) * sizes[i]));
+			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
 
 			// Weights
-			for (size_t weight = 0; weight < sizes[i]; weight++)
+			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
 			{
-				data[weight] = distribution(generator);// / norm;
+				data[weight] = distribution(generator) / norm;
 			}
 
-			m_Weights[i]->SetData(sizes[i], data, 0, 0);
+			stagingBuffer.SetData(sizes[i], data, 0, 0);
+			vk::Buffer::Copy(&stagingBuffer, m_Weights[i], sizes[i]);
 
 			// Delta weights
-			for (size_t weight = 0; weight < sizes[i]; weight++)
+			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
 			{
 				data[weight] = 0.0;
 			}
 
-			m_DeltaWeights[i]->SetData(sizes[i], data, 0, 0);
+			stagingBuffer.SetData(sizes[i], data, 0, 0);
+			vk::Buffer::Copy(&stagingBuffer, m_DeltaWeights[i], sizes[i]);
 
 			free(data);
+			stagingBuffer.Destroy();
 		}
 
 		// Allocate desc set
@@ -300,10 +316,48 @@ namespace en
 			m_DeltaWeights[i]->Destroy();
 			delete m_DeltaWeights[i];
 		}
+
+		m_ConfigUniformBuffer.Destroy();
 	}
 
 	VkDescriptorSet NeuralRadianceCache::GetDescSet() const
 	{
 		return m_DescSet;
+	}
+
+	void NeuralRadianceCache::PrintWeights() const
+	{
+		std::array<size_t, 6> sizes = {
+			5 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 3 * sizeof(float) };
+
+		for (size_t i = 0; i < m_Weights.size(); i++)
+		{
+			vk::Buffer stagingBuffer(
+				sizes[i], 
+				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+				{});
+
+			vk::Buffer::Copy(m_Weights[i], &stagingBuffer, sizes[i]);
+
+			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
+
+			stagingBuffer.GetData(sizes[i], data, 0, 0);
+
+			std::string str = "Weights " + std::to_string(i) + ": [";
+			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
+			{
+				str += std::to_string(data[weight]) + ", ";
+			}
+			str += "]";
+			Log::Info(str);
+
+			free(data);
+		}
 	}
 }

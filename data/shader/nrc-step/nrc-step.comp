@@ -38,62 +38,62 @@ layout(set = 2, binding = 0) uniform dir_light_t
 } dir_light;
 
 // NN buffers
-layout(std140, set = 4, binding = 0) buffer Weights0
+layout(std430, set = 4, binding = 0) buffer Weights0
 {
 	float matWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 4, binding = 1) buffer Weights1
+layout(std430, set = 4, binding = 1) buffer Weights1
 {
 	float matWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 2) buffer Weights2
+layout(std430, set = 4, binding = 2) buffer Weights2
 {
 	float matWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 3) buffer Weights3
+layout(std430, set = 4, binding = 3) buffer Weights3
 {
 	float matWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 4) buffer Weights4
+layout(std430, set = 4, binding = 4) buffer Weights4
 {
 	float matWeights4[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 5) buffer Weights5
+layout(std430, set = 4, binding = 5) buffer Weights5
 {
 	float matWeights5[192]; // 64 x 3
 };
 
-layout(std140, set = 4, binding = 6) buffer DeltaWeights0
+layout(std430, set = 4, binding = 6) buffer DeltaWeights0
 {
 	float matDeltaWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 4, binding = 7) buffer DeltaWeights1
+layout(std430, set = 4, binding = 7) buffer DeltaWeights1
 {
 	float matDeltaWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 8) buffer DeltaWeights2
+layout(std430, set = 4, binding = 8) buffer DeltaWeights2
 {
 	float matDeltaWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 9) buffer DeltaWeights3
+layout(std430, set = 4, binding = 9) buffer DeltaWeights3
 {
 	float matDeltaWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 10) buffer DeltaWeights4
+layout(std430, set = 4, binding = 10) buffer DeltaWeights4
 {
 	float matDeltaWeights4[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 11) buffer DeltaWeights5
+layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 {
 	float matDeltaWeights5[192]; // 64 x 3
 };
@@ -128,11 +128,21 @@ const vec3 skyPos = vec3(0.0);
 
 #define NRC_PROB 0.5
 
+bool IsResonable(float deltaWeight)
+{
+	return !isnan(deltaWeight) && !isinf(deltaWeight) && clamp(deltaWeight, -100.0, 100.0) == deltaWeight;
+}
+
 void StepWeights0(const uint index)
 {
 	if (index < 320)
 	{
-		matWeights0[index] += matDeltaWeights0[index] * nrcConfig.learningRate;
+		float deltaWeight = matDeltaWeights0[index];
+		if (IsResonable(deltaWeight))
+		{
+			//debugPrintfEXT("%f\n", deltaWeight);
+			matWeights0[index] += deltaWeight * nrcConfig.learningRate;
+		}
 	}
 }
 
@@ -140,7 +150,11 @@ void StepWeights1(const uint index)
 {
 	if (index < 4096)
 	{
-		matWeights1[index] += matDeltaWeights1[index] * nrcConfig.learningRate;
+		float deltaWeight = matDeltaWeights1[index];
+		if (IsResonable(deltaWeight))
+		{
+			matWeights1[index] += deltaWeight * nrcConfig.learningRate;
+		}
 	}
 }
 
@@ -148,7 +162,11 @@ void StepWeights2(const uint index)
 {
 	if (index < 4096)
 	{
-		matWeights2[index] += matDeltaWeights2[index] * nrcConfig.learningRate;
+		float deltaWeight = matDeltaWeights2[index];
+		if (IsResonable(deltaWeight))
+		{
+			matWeights2[index] += deltaWeight * nrcConfig.learningRate;
+		}
 	}
 }
 
@@ -156,7 +174,11 @@ void StepWeights3(const uint index)
 {
 	if (index < 4096)
 	{
-		matWeights3[index] += matDeltaWeights3[index] * nrcConfig.learningRate;
+		float deltaWeight = matDeltaWeights3[index];
+		if (IsResonable(deltaWeight))
+		{
+			matWeights3[index] += deltaWeight * nrcConfig.learningRate;
+		}
 	}
 }
 
@@ -164,7 +186,11 @@ void StepWeights4(const uint index)
 {
 	if (index < 4096)
 	{
-		matWeights4[index] += matDeltaWeights4[index] * nrcConfig.learningRate;
+		float deltaWeight = matDeltaWeights4[index];
+		if (IsResonable(deltaWeight))
+		{
+			matWeights4[index] += deltaWeight * nrcConfig.learningRate;
+		}
 	}
 }
 
@@ -172,7 +198,11 @@ void StepWeights5(const uint index)
 {
 	if (index < 192)
 	{
-		matWeights5[index] += matDeltaWeights5[index] * nrcConfig.learningRate;
+		float deltaWeight = matDeltaWeights5[index];
+		if (IsResonable(deltaWeight))
+		{
+			matWeights5[index] += deltaWeight * nrcConfig.learningRate;
+		}
 	}
 }
 

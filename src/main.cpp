@@ -382,6 +382,11 @@ void RunNrcHpm()
 		size_t counter = 0;
 		while (!en::Window::IsClosed())
 		{
+			if (counter % 100 == 0)
+			{
+				nrc.PrintWeights();
+			}
+
 			//nn.SyncLayersToDevice(manager);
 			//TrainNrc(manager, nn, distr, trainInputs, trainTargets, 0.1f, 16);
 			//nn.SyncLayersToHost(manager);

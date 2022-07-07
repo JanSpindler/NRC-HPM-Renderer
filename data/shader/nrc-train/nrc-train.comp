@@ -38,62 +38,62 @@ layout(set = 2, binding = 0) uniform dir_light_t
 } dir_light;
 
 // NN buffers
-layout(std140, set = 4, binding = 0) buffer Weights0
+layout(std430, set = 4, binding = 0) buffer Weights0
 {
 	float matWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 4, binding = 1) buffer Weights1
+layout(std430, set = 4, binding = 1) buffer Weights1
 {
 	float matWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 2) buffer Weights2
+layout(std430, set = 4, binding = 2) buffer Weights2
 {
 	float matWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 3) buffer Weights3
+layout(std430, set = 4, binding = 3) buffer Weights3
 {
 	float matWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 4) buffer Weights4
+layout(std430, set = 4, binding = 4) buffer Weights4
 {
 	float matWeights4[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 5) buffer Weights5
+layout(std430, set = 4, binding = 5) buffer Weights5
 {
 	float matWeights5[192]; // 64 x 3
 };
 
-layout(std140, set = 4, binding = 6) buffer DeltaWeights0
+layout(std430, set = 4, binding = 6) buffer DeltaWeights0
 {
 	float matDeltaWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 4, binding = 7) buffer DeltaWeights1
+layout(std430, set = 4, binding = 7) buffer DeltaWeights1
 {
 	float matDeltaWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 8) buffer DeltaWeights2
+layout(std430, set = 4, binding = 8) buffer DeltaWeights2
 {
 	float matDeltaWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 9) buffer DeltaWeights3
+layout(std430, set = 4, binding = 9) buffer DeltaWeights3
 {
 	float matDeltaWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 10) buffer DeltaWeights4
+layout(std430, set = 4, binding = 10) buffer DeltaWeights4
 {
 	float matDeltaWeights4[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 11) buffer DeltaWeights5
+layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 {
 	float matDeltaWeights5[192]; // 64 x 3
 };
@@ -101,6 +101,8 @@ layout(std140, set = 4, binding = 11) buffer DeltaWeights5
 // Constants
 layout(constant_id = 0) const float WIDTH_FACTOR = 0.1;
 layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
+
+#define ONE_OVER_PIXEL_COUNT (WIDTH_FACTOR * HEIGHT_FACTOR)
 
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
@@ -314,93 +316,6 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	return transmittance;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 64
-vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
-{	
-	vec3 scatteredLight = vec3(0.0);
-	float transmittance = 1.0;
-
-	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
-	
-	vec3 currentPoint = entry;
-	vec3 lastPoint = entry;
-	
-	vec3 currentDir = rayDir;
-	vec3 lastDir = vec3(0.0);
-
-	float totalTermProb = 1.0;
-
-	// Trace path and terminate at random
-	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
-	{
-		if (RandFloat(1.0) > totalTermProb)
-		{
-			break;
-		}
-		totalTermProb *= 0.75;
-
-		// Generate new ray
-		if (getDensity(currentPoint) > 0.0)
-		{
-			currentDir = NewRayDir(currentDir);
-		}
-
-		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint);
-		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
-		currentPoint = currentPoint + (currentDir * nextDistance);
-	}
-
-	// Calculate lighting
-	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
-	{
-		const float density = getDensity(currentPoint);
-
-		if (density > 0.0)
-		{
-			// Sigmas
-			const float sampleSigmaS = density * SIGMA_S;
-			const float sampleSigmaE = density * SIGMA_E;
-
-			// Incoming light directly from sun
-			const float sunPhase = hg_phase_func(dot(dir_light.dir, -currentDir));
-			const vec3 sunLight = vec3(get_self_shadowing(currentPoint)) * sunPhase;
-
-			// Phase factor
-			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
-
-			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight;// * dirPhase; // Importance Sampling phase
-			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
-			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
-
-			scatteredLight += transmittance * s_int;
-			transmittance *= t_r;
-
-			// Low transmittance early exit
-			if (transmittance < 0.01)
-			{
-				break;
-			}
-
-			// Update last
-			lastPoint = currentPoint;
-			lastDir = currentDir;
-
-			// Generate new direction
-			currentDir = NewRayDir(currentDir);
-		}
-
-		// Generate new point
-		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint);
-		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
-		currentPoint = currentPoint + (currentDir * nextDistance);
-	}
-
-	return scatteredLight;
-}
-
 // Start: NN
 
 float nr0[5];
@@ -588,8 +503,8 @@ void ActivateNr1()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr1[i] = Sigmoid(nr1[i]);
-		//nr1[i] = Relu(nr1[i]);
+		//nr1[i] = Sigmoid(nr1[i]);
+		nr1[i] = Relu(nr1[i]);
 	}
 }
 
@@ -597,8 +512,8 @@ void ActivateNr2()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr2[i] = Sigmoid(nr2[i]);
-		//nr2[i] = Relu(nr2[i]);
+		//nr2[i] = Sigmoid(nr2[i]);
+		nr2[i] = Relu(nr2[i]);
 	}
 }
 
@@ -606,8 +521,8 @@ void ActivateNr3()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr3[i] = Sigmoid(nr3[i]);
-		//nr3[i] = Relu(nr3[i]);
+		//nr3[i] = Sigmoid(nr3[i]);
+		nr3[i] = Relu(nr3[i]);
 	}
 }
 
@@ -615,8 +530,8 @@ void ActivateNr4()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr4[i] = Sigmoid(nr4[i]);
-		//nr4[i] = Relu(nr4[i]);
+		//nr4[i] = Sigmoid(nr4[i]);
+		nr4[i] = Relu(nr4[i]);
 	}
 }
 
@@ -624,8 +539,8 @@ void ActivateNr5()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr5[i] = Sigmoid(nr5[i]);
-		//nr5[i] = Relu(nr5[i]);
+		//nr5[i] = Sigmoid(nr5[i]);
+		nr5[i] = Relu(nr5[i]);
 	}
 }
 
@@ -640,15 +555,26 @@ void ActivateNr6()
 
 void EncodeRay(vec3 pos, const vec3 dir)
 {
+	//debugPrintfEXT("%f, %f, %f\n", pos.x, pos.y, pos.z);
+
 	pos /= skySize.y;
 	const float theta = atan(dir.y, dir.x);
 	const float phi = atan(length(dir.xy), dir.z);
-	nr0 = float[](pos.x, pos.y, pos.z, theta, phi);
+	
+	//debugPrintfEXT("%f, %f, %f, %f, %f\n", pos.x, pos.y, pos.z, theta, phi);
+
+	nr0[0] = pos.x;
+	nr0[1] = pos.y;
+	nr0[2] = pos.z;
+	nr0[3] = theta;
+	nr0[4] = phi;
 }
 
 void Forward()
 {
 	// Assert: pos and dir are encoded correctly
+
+	//debugPrintfEXT("%f, %f, %f, %f, %f\n", nr0[0], nr0[1], nr0[2], nr0[3], nr0[4]);
 
 	ApplyWeights0();
 	ActivateNr1();
@@ -669,6 +595,7 @@ void Forward()
 	ActivateNr6();
 
 	// nr6 contains result
+	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 }
 
 void Backprop5()
@@ -686,7 +613,7 @@ void Backprop5()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr5[col] * nr6[row];
-			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight);
+			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
 	}
 
@@ -708,7 +635,7 @@ void Backprop4()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr5[i] = SigmoidDeriv(nr5[i]);
+		nr5[i] = ReluDeriv(nr5[i]);
 	}
 
 	// Calc delta Weights5
@@ -718,7 +645,7 @@ void Backprop4()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr4[col] * nr5[row];
-			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight);
+			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
 	}
 
@@ -740,7 +667,7 @@ void Backprop3()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr4[i] = SigmoidDeriv(nr4[i]);
+		nr4[i] = ReluDeriv(nr4[i]);
 	}
 
 	// Calc delta Weights5
@@ -750,7 +677,7 @@ void Backprop3()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr3[col] * nr4[row];
-			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight);
+			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
 	}
 
@@ -772,7 +699,7 @@ void Backprop2()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr3[i] = SigmoidDeriv(nr3[i]);
+		nr3[i] = ReluDeriv(nr3[i]);
 	}
 
 	// Calc delta Weights5
@@ -782,7 +709,7 @@ void Backprop2()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr2[col] * nr3[row];
-			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight);
+			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
 	}
 
@@ -804,7 +731,7 @@ void Backprop1()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr2[i] = SigmoidDeriv(nr2[i]);
+		nr2[i] = ReluDeriv(nr2[i]);
 	}
 
 	// Calc delta Weights5
@@ -814,7 +741,7 @@ void Backprop1()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr1[col] * nr2[row];
-			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight);
+			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
 	}
 
@@ -833,11 +760,10 @@ void Backprop1()
 
 void Backprop0()
 {
-	
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr1[i] = SigmoidDeriv(nr1[i]);
+		nr1[i] = ReluDeriv(nr1[i]);
 	}
 
 	// Calc delta Weights5
@@ -846,7 +772,8 @@ void Backprop0()
 		for (uint col = 0; col < 5; col++)
 		{
 			uint linearIndex = (row * 5) + col;
-			float deltaWeight = -nr0[col] * nr1[row];
+			float deltaWeight = -nr0[col] * nr1[row] * ONE_OVER_PIXEL_COUNT;
+			//debugPrintfEXT("%f\n", deltaWeight);
 			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight);
 		}
 	}
@@ -856,14 +783,26 @@ void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
 {
 	// Forward
 	EncodeRay(pos, dir);
+
+	for (uint i = 0; i < 5; i++)
+	{
+		if (isnan(nr0[i]))
+		{
+			return;
+		}
+	}
+
 	Forward();
 	const vec3 pred = vec3(nr6[0], nr6[1], nr6[2]);
 
 	// Backprop
-	const vec3 error = target - pred;
+	const vec3 error = pred - target;
 	nr6[0] = error.x;
 	nr6[1] = error.y;
 	nr6[2] = error.z;
+
+	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
+	//debugPrintfEXT("%f, %f, %f\n", target.x, target.y, target.z);
 
 	Backprop5();
 	Backprop4();
@@ -874,6 +813,96 @@ void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
 }
 
 // End: NN
+
+#define TRUE_TRACE_SAMPLE_COUNT 64
+void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
+{
+	vec3 scatteredLight = vec3(0.0);
+	float transmittance = 1.0;
+
+	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
+	
+	vec3 currentPoint = entry;
+	vec3 lastPoint = entry;
+	
+	vec3 currentDir = rayDir;
+	vec3 lastDir = vec3(0.0);
+
+	float totalTermProb = 1.0;
+
+	// Trace path and terminate at random
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	{
+		if (RandFloat(1.0) > totalTermProb)
+		{
+			break;
+		}
+		totalTermProb *= 0.5;
+
+		// Generate new ray
+		if (getDensity(currentPoint) > 0.0)
+		{
+			currentDir = NewRayDir(currentDir);
+		}
+
+		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
+		const float maxDistance = distance(exit, currentPoint);
+		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
+		currentPoint = currentPoint + (currentDir * nextDistance);
+	}
+
+	const vec3 ro = currentPoint;
+	const vec3 rd = currentDir;
+
+	// Calculate lighting
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	{
+		const float density = getDensity(currentPoint);
+
+		if (density > 0.0)
+		{
+			// Sigmas
+			const float sampleSigmaS = density * SIGMA_S;
+			const float sampleSigmaE = density * SIGMA_E;
+
+			// Incoming light directly from sun
+			const float sunPhase = hg_phase_func(dot(dir_light.dir, -currentDir));
+			const vec3 sunLight = vec3(get_self_shadowing(currentPoint)) * sunPhase;
+
+			// Phase factor
+			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
+
+			// Transmittance calculation
+			const vec3 s = sampleSigmaS * sunLight;// * dirPhase; // Importance Sampling phase
+			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
+			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
+
+			scatteredLight += transmittance * s_int;
+			transmittance *= t_r;
+
+			// Low transmittance early exit
+			if (transmittance < 0.01)
+			{
+				break;
+			}
+
+			// Update last
+			lastPoint = currentPoint;
+			lastDir = currentDir;
+
+			// Generate new direction
+			currentDir = NewRayDir(currentDir);
+		}
+
+		// Generate new point
+		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
+		const float maxDistance = distance(exit, currentPoint);
+		const float nextDistance = maxDistance * exp(-RandFloat(1.0));//RandFloat(maxDistance);
+		currentPoint = currentPoint + (currentDir * nextDistance);
+	}
+
+	Backprop(scatteredLight, ro, rd);
+}
 
 void main()
 {
@@ -887,8 +916,8 @@ void main()
 	const vec3 pixelWorldPos = worldPos.xyz / worldPos.w;
 
 	// Setup random
-	float preRand = volumeData.random.x * fragUV.x;
-	float prePreRand = volumeData.random.y * fragUV.y;
+	preRand = volumeData.random.x * fragUV.x;
+	prePreRand = volumeData.random.y * fragUV.y;
 
 	// Setup ray
 	vec3 ro = camera.pos;
@@ -901,19 +930,17 @@ void main()
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		// Gen random ray if volume was not hit
-		//ro = vec3(RandFloat(1.0), RandFloat(1.0), RandFloat(1.0));
-		//ro -= vec3(0.5);
-		//ro *= skySize;
 		ro = vec3(0.0);
 
 		float theta = RandFloat(2 * PI);
 		float phi = RandFloat(2 * PI);
+
+		//debugPrintfEXT("%f, %f\n", theta, phi);
+
 		rd = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
 		rd = normalize(rd);
 	}
 
 	// Learn
-	const vec3 color = vec3(10.0, 0.0, 0.0);//TracePath(ro, rd);
-	Backprop(color, ro, rd);
+	TracePathAndLearn(ro, rd);
 }

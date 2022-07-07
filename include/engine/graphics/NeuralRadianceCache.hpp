@@ -18,6 +18,8 @@ namespace en
 
 		VkDescriptorSet GetDescSet() const;
 
+		void PrintWeights() const;
+
 	private:
 		struct ConfigData
 		{

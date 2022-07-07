@@ -410,12 +410,12 @@ namespace en
 		VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures;
 		atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
 		atomicFloatFeatures.pNext = nullptr;
-		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
 		atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
 		atomicFloatFeatures.shaderBufferFloat64Atomics = VK_FALSE;
 		atomicFloatFeatures.shaderBufferFloat64AtomicAdd = VK_FALSE;
-		atomicFloatFeatures.shaderSharedFloat32Atomics = VK_FALSE;
-		atomicFloatFeatures.shaderSharedFloat32AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat32Atomics = VK_TRUE;
+		atomicFloatFeatures.shaderSharedFloat32AtomicAdd = VK_TRUE;
 		atomicFloatFeatures.shaderSharedFloat64Atomics = VK_FALSE;
 		atomicFloatFeatures.shaderSharedFloat64AtomicAdd = VK_FALSE;
 		atomicFloatFeatures.shaderImageFloat32Atomics = VK_FALSE;

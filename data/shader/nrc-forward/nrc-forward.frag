@@ -38,32 +38,32 @@ layout(set = 2, binding = 0) uniform dir_light_t // TODO: raname to sun_t
 layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
 
 // NN buffers
-layout(std140, set = 4, binding = 0) readonly buffer Weights0
+layout(std430, set = 4, binding = 0) readonly buffer Weights0
 {
 	float matWeights0[320]; // 5 x 64
 };
 
-layout(std140, set = 4, binding = 1) readonly buffer Weights1
+layout(std430, set = 4, binding = 1) readonly buffer Weights1
 {
 	float matWeights1[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 2) readonly buffer Weights2
+layout(std430, set = 4, binding = 2) readonly buffer Weights2
 {
 	float matWeights2[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 3) readonly buffer Weights3
+layout(std430, set = 4, binding = 3) readonly buffer Weights3
 {
 	float matWeights3[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 4) readonly buffer Weights4
+layout(std430, set = 4, binding = 4) readonly buffer Weights4
 {
 	float matWeights4[4096]; // 64 x 64
 };
 
-layout(std140, set = 4, binding = 5) readonly buffer Weights5
+layout(std430, set = 4, binding = 5) readonly buffer Weights5
 {
 	float matWeights5[192]; // 64 x 3
 };
@@ -182,7 +182,7 @@ void ApplyWeights0()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
-		float sum = 0;
+		float sum = 0.0;
 		
 		for (uint inCol = 0; inCol < 5; inCol++)
 		{
@@ -199,7 +199,7 @@ void ApplyWeights1()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
-		float sum = 0;
+		float sum = 0.0;
 		
 		for (uint inCol = 0; inCol < 64; inCol++)
 		{
@@ -216,7 +216,7 @@ void ApplyWeights2()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
-		float sum = 0;
+		float sum = 0.0;
 		
 		for (uint inCol = 0; inCol < 64; inCol++)
 		{
@@ -233,7 +233,7 @@ void ApplyWeights3()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
-		float sum = 0;
+		float sum = 0.0;
 		
 		for (uint inCol = 0; inCol < 64; inCol++)
 		{
@@ -250,7 +250,7 @@ void ApplyWeights4()
 {
 	for (uint outRow = 0; outRow < 64; outRow++)
 	{
-		float sum = 0;
+		float sum = 0.0;
 		
 		for (uint inCol = 0; inCol < 64; inCol++)
 		{
@@ -267,7 +267,7 @@ void ApplyWeights5()
 {
 	for (uint outRow = 0; outRow < 3; outRow++)
 	{
-		float sum = 0;
+		float sum = 0.0;
 		
 		for (uint inCol = 0; inCol < 64; inCol++)
 		{
@@ -284,8 +284,8 @@ void ActivateNr1()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr1[i] = Sigmoid(nr1[i]);
-		//nr1[i] = Relu(nr1[i]);
+		//nr1[i] = Sigmoid(nr1[i]);
+		nr1[i] = Relu(nr1[i]);
 	}
 }
 
@@ -293,8 +293,8 @@ void ActivateNr2()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr2[i] = Sigmoid(nr2[i]);
-		//nr2[i] = Relu(nr2[i]);
+		//nr2[i] = Sigmoid(nr2[i]);
+		nr2[i] = Relu(nr2[i]);
 	}
 }
 
@@ -302,8 +302,8 @@ void ActivateNr3()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr3[i] = Sigmoid(nr3[i]);
-		//nr3[i] = Relu(nr3[i]);
+		//nr3[i] = Sigmoid(nr3[i]);
+		nr3[i] = Relu(nr3[i]);
 	}
 }
 
@@ -311,8 +311,8 @@ void ActivateNr4()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr4[i] = Sigmoid(nr4[i]);
-		//nr4[i] = Relu(nr4[i]);
+		//nr4[i] = Sigmoid(nr4[i]);
+		nr4[i] = Relu(nr4[i]);
 	}
 }
 
@@ -320,8 +320,8 @@ void ActivateNr5()
 {
 	for (uint i = 0; i < 64; i++)
 	{
-		nr5[i] = Sigmoid(nr5[i]);
-		//nr5[i] = Relu(nr5[i]);
+		//nr5[i] = Sigmoid(nr5[i]);
+		nr5[i] = Relu(nr5[i]);
 	}
 }
 
@@ -339,12 +339,19 @@ void EncodeRay(vec3 pos, const vec3 dir)
 	pos /= skySize.y;
 	const float theta = atan(dir.y, dir.x);
 	const float phi = atan(length(dir.xy), dir.z);
-	nr0 = float[](pos.x, pos.y, pos.z, theta, phi);
+
+	nr0[0] = pos.x;
+	nr0[1] = pos.y;
+	nr0[2] = pos.z;
+	nr0[3] = theta;
+	nr0[4] = phi;
 }
 
 vec3 Forward(vec3 ro, const vec3 rd)
 {
 	EncodeRay(ro, rd);
+
+	//debugPrintfEXT("%f, %f, %f, %f, %f\n", nr0[0], nr0[1], nr0[2], nr0[3], nr0[4]);
 
 	ApplyWeights0();
 	ActivateNr1();
@@ -368,6 +375,8 @@ vec3 Forward(vec3 ro, const vec3 rd)
 	outputCol.x = max(0.0, nr6[0]);
 	outputCol.y = max(0.0, nr6[1]);
 	outputCol.z = max(0.0, nr6[2]);
+
+	debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 
 	return outputCol;
 }
