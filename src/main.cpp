@@ -341,7 +341,7 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		en::NeuralRadianceCache nrc(0.01f);
+		en::NeuralRadianceCache nrc(0.0001f);
 
 //		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
 		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 32, 32, &camera, &volumeData, &sun, nrc);
