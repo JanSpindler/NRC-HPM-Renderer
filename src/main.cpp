@@ -382,7 +382,7 @@ void RunNrcHpm()
 		size_t counter = 0;
 		while (!en::Window::IsClosed())
 		{
-			if (counter % 100 == 0)
+			if (counter % 1000 == 0)
 			{
 				nrc.PrintWeights();
 			}
