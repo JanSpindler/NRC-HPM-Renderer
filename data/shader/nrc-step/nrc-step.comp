@@ -131,15 +131,21 @@ const vec3 skyPos = vec3(0.0);
 
 float ModifyDeltaWeight(float deltaWeight, const float weight)
 {
+	const float border = 10.0;
+
 	if (isnan(deltaWeight) || isinf(deltaWeight))
 	{
-		deltaWeight = 0.0;
+		deltaWeight = border * sign(deltaWeight);
 	}
 
-	deltaWeight = clamp(deltaWeight, -1024.0, 1024.0);
+	deltaWeight = clamp(deltaWeight, -border, border);
 
 	// Weight decay
-	deltaWeight += -sign(weight) * exp(abs(weight)) * nrcConfig.weightDecay;
+	if (abs(weight) > 0.25)
+	{
+		deltaWeight += -sign(weight) * exp(abs(weight)) * nrcConfig.weightDecay;
+		//deltaWeight += -weight * nrcConfig.weightDecay;
+	}
 
 	return deltaWeight;
 }

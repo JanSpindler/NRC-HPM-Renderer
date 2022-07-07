@@ -618,7 +618,7 @@ void Backprop5()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr5[col] * nr6[row];
-			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
+			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight * WIDTH_FACTOR);
 		}
 	}
 
@@ -650,7 +650,7 @@ void Backprop4()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr4[col] * nr5[row];
-			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
+			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight * WIDTH_FACTOR);
 		}
 	}
 
@@ -682,7 +682,7 @@ void Backprop3()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr3[col] * nr4[row];
-			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
+			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight * WIDTH_FACTOR);
 		}
 	}
 
@@ -714,7 +714,7 @@ void Backprop2()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr2[col] * nr3[row];
-			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
+			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight * WIDTH_FACTOR);
 		}
 	}
 
@@ -746,7 +746,7 @@ void Backprop1()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr1[col] * nr2[row];
-			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
+			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight * WIDTH_FACTOR);
 		}
 	}
 
@@ -777,15 +777,17 @@ void Backprop0()
 		for (uint col = 0; col < 5; col++)
 		{
 			uint linearIndex = (row * 5) + col;
-			float deltaWeight = -nr0[col] * nr1[row] * ONE_OVER_PIXEL_COUNT;
-			//debugPrintfEXT("%f\n", deltaWeight);
-			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight);
+			float deltaWeight = -nr0[col] * nr1[row];
+			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight * WIDTH_FACTOR);
 		}
 	}
 }
 
-void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
+void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 {
+	target = min(target, vec3(1024.0));
+	//target = vec3(10.0, 0.0, 0.0);
+
 	// Forward
 	EncodeRay(pos, dir);
 
@@ -803,8 +805,7 @@ void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
 
 	// Backprop
 	const vec3 error = pred - target;
-	const float norm1Loss = dot(abs(error), vec3(1.0));
-	const float mseLoss = (norm1Loss * norm1Loss) / 3.0;
+	const float mseLoss = ((error.x * error.x) + (error.y * error.y) + (error.z * error.z)) / 3.0;
 	atomicAdd(nrcStats.mseLoss, mseLoss * WIDTH_FACTOR * HEIGHT_FACTOR);
 
 	nr6[0] = 2.0 * error.x;

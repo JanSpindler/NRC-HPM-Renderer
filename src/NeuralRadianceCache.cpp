@@ -235,7 +235,7 @@ namespace en
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				{});
 
-			float norm = 0.1f;
+			float norm = 512.0f / static_cast<float>(sizes[i]);
 			
 			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
 

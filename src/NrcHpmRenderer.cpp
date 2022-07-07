@@ -1016,7 +1016,7 @@ namespace en
 		if (result != VK_SUCCESS)
 			Log::Error("Failed to begin VkCommandBuffer", true);
 
-		// Bind descriptor sets
+		// Collect descriptor sets
 		std::vector<VkDescriptorSet> descSets = {
 			m_Camera->GetDescriptorSet(),
 			m_VolumeData->GetDescriptorSet(),
@@ -1025,28 +1025,33 @@ namespace en
 			m_Nrc.GetDescSet() };
 //			m_NrcForwardDS };
 
-		vkCmdBindDescriptorSets(
-			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
-			0, descSets.size(), descSets.data(),
-			0, nullptr);
+		// Use train width as batch size
+		for (uint32_t y = 0; y < m_TrainHeight; y++)
+		{
+			// Bind descriptor sets
+			vkCmdBindDescriptorSets(
+				m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+				0, descSets.size(), descSets.data(),
+				0, nullptr);
 
-		// Bind train pipeline
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TrainPipeline);
+			// Bind train pipeline
+			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TrainPipeline);
 
-		// Dispatch training
-		vkCmdDispatch(m_CommandBuffer, m_TrainWidth, m_TrainHeight, 1);
+			// Dispatch training
+			vkCmdDispatchBase(m_CommandBuffer, 0, y, 0, m_TrainWidth, 1, 1);
 
-		// Bind pipeline layout
-		vkCmdBindDescriptorSets(
-			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
-			0, descSets.size(), descSets.data(),
-			0, nullptr);
+			// Bind pipeline layout
+			vkCmdBindDescriptorSets(
+				m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+				0, descSets.size(), descSets.data(),
+				0, nullptr);
 
-		// Bind step pipeline
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_StepPipeline);
+			// Bind step pipeline
+			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_StepPipeline);
 
-		// Dispatch gradient step
-		vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
+			// Dispatch gradient step
+			vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
+		}
 
 		// Begin render pass
 		std::vector<VkClearValue> clearValues = {
