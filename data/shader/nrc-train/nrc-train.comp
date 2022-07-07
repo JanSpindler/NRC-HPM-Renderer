@@ -98,6 +98,11 @@ layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 	float matDeltaWeights5[192]; // 64 x 3
 };
 
+layout(std430, set = 4, binding = 13) buffer NrcStats
+{
+	float mseLoss;
+} nrcStats;
+
 // Constants
 layout(constant_id = 0) const float WIDTH_FACTOR = 0.1;
 layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
@@ -267,19 +272,19 @@ vec3 NewRayDir(vec3 oldRayDir)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-	float g = volumeData.g;
-	float cosTheta;
-	if (abs(g) < 0.001)
-    {
-		cosTheta = 1 - 2 * RandFloat(1.0);
-	}
-	else
-	{
-		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
-		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
-	}
-	float angle = acos(cosTheta);
-	//float angle = RandFloat(PI);
+//	float g = volumeData.g;
+//	float cosTheta;
+//	if (abs(g) < 0.001)
+//    {
+//		cosTheta = 1 - 2 * RandFloat(1.0);
+//	}
+//	else
+//	{
+//		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
+//		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+//	}
+//	float angle = acos(cosTheta);
+	float angle = RandFloat(PI);
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
@@ -603,7 +608,7 @@ void Backprop5()
 	// Backprop end activation
 	for (uint i = 0; i < 3; i++)
 	{
-		nr6[i] = ReluDeriv(nr6[i]);
+		nr6[i] *= ReluDeriv(nr5[i]);
 	}
 
 	// Calc delta Weights5
@@ -635,7 +640,7 @@ void Backprop4()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr5[i] = ReluDeriv(nr5[i]);
+		nr5[i] *= ReluDeriv(nr4[i]);
 	}
 
 	// Calc delta Weights5
@@ -667,7 +672,7 @@ void Backprop3()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr4[i] = ReluDeriv(nr4[i]);
+		nr4[i] *= ReluDeriv(nr3[i]);
 	}
 
 	// Calc delta Weights5
@@ -699,7 +704,7 @@ void Backprop2()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr3[i] = ReluDeriv(nr3[i]);
+		nr3[i] *= ReluDeriv(nr2[i]);
 	}
 
 	// Calc delta Weights5
@@ -731,7 +736,7 @@ void Backprop1()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr2[i] = ReluDeriv(nr2[i]);
+		nr2[i] *= ReluDeriv(nr1[i]);
 	}
 
 	// Calc delta Weights5
@@ -763,7 +768,7 @@ void Backprop0()
 	// Backprop end activation
 	for (uint i = 0; i < 64; i++)
 	{
-		nr1[i] = ReluDeriv(nr1[i]);
+		nr1[i] *= ReluDeriv(nr0[i]);
 	}
 
 	// Calc delta Weights5
@@ -794,12 +799,17 @@ void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
 
 	Forward();
 	const vec3 pred = vec3(nr6[0], nr6[1], nr6[2]);
+	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 
 	// Backprop
 	const vec3 error = pred - target;
-	nr6[0] = error.x;
-	nr6[1] = error.y;
-	nr6[2] = error.z;
+	const float norm1Loss = dot(abs(error), vec3(1.0));
+	const float mseLoss = (norm1Loss * norm1Loss) / 3.0;
+	atomicAdd(nrcStats.mseLoss, mseLoss * WIDTH_FACTOR * HEIGHT_FACTOR);
+
+	nr6[0] = 2.0 * error.x;
+	nr6[1] = 2.0 * error.y;
+	nr6[2] = 2.0 * error.z;
 
 	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	//debugPrintfEXT("%f, %f, %f\n", target.x, target.y, target.z);
@@ -814,7 +824,7 @@ void Backprop(const vec3 target, const vec3 pos, const vec3 dir)
 
 // End: NN
 
-#define TRUE_TRACE_SAMPLE_COUNT 64
+#define TRUE_TRACE_SAMPLE_COUNT 128
 void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 {
 	vec3 scatteredLight = vec3(0.0);
@@ -873,7 +883,7 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight;// * dirPhase; // Importance Sampling phase
+			const vec3 s = sampleSigmaS * sunLight * dirPhase; // Importance Sampling phase
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 
@@ -920,7 +930,7 @@ void main()
 	prePreRand = volumeData.random.y * fragUV.y;
 
 	// Setup ray
-	vec3 ro = camera.pos;
+	const vec3 ro = camera.pos;
 	vec3 rd = normalize(pixelWorldPos - ro);
 
 	// SDF
@@ -930,15 +940,7 @@ void main()
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		ro = vec3(0.0);
-
-		float theta = RandFloat(2 * PI);
-		float phi = RandFloat(2 * PI);
-
-		//debugPrintfEXT("%f, %f\n", theta, phi);
-
-		rd = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
-		rd = normalize(rd);
+		rd = -normalize(ro);
 	}
 
 	// Learn

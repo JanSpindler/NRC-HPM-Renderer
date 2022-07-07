@@ -500,19 +500,19 @@ vec3 NewRayDir(vec3 oldRayDir)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-	float g = volumeData.g;
-	float cosTheta;
-	if (abs(g) < 0.001)
-    {
-		cosTheta = 1 - 2 * RandFloat(1.0);
-	}
-	else
-	{
-		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
-		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
-	}
-	float angle = acos(cosTheta);
-	//float angle = RandFloat(PI);
+//	float g = volumeData.g;
+//	float cosTheta;
+//	if (abs(g) < 0.001)
+//    {
+//		cosTheta = 1 - 2 * RandFloat(1.0);
+//	}
+//	else
+//	{
+//		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
+//		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+//	}
+//	float angle = acos(cosTheta);
+	float angle = RandFloat(PI);
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
@@ -549,7 +549,7 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 	return transmittance;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 64
+#define TRUE_TRACE_SAMPLE_COUNT 128
 vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 {	
 	vec3 scatteredLight = vec3(0.0);
@@ -575,7 +575,8 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 			{
 				if (RandFloat(1.0) > totalTermProb)
 				{
-					scatteredLight += transmittance * Forward(currentPoint, currentDir);
+					const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
+					scatteredLight += transmittance * Forward(currentPoint, currentDir) * dirPhase;
 					return scatteredLight;
 				}
 				totalTermProb *= 0.5;
@@ -593,7 +594,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight;// * dirPhase; // Importance Sampling phase
+			const vec3 s = sampleSigmaS * sunLight * dirPhase; // Importance Sampling phase
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 

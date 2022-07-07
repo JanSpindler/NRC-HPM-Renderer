@@ -103,6 +103,14 @@ namespace en
 		configBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		configBinding.pImmutableSamplers = nullptr;
 
+		// Stats buffer
+		VkDescriptorSetLayoutBinding statsBinding;
+		statsBinding.binding = 13;
+		statsBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		statsBinding.descriptorCount = 1;
+		statsBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		statsBinding.pImmutableSamplers = nullptr;
+
 		std::vector<VkDescriptorSetLayoutBinding> layoutBindings = {
 			weights0Binding,
 			weights1Binding,
@@ -116,7 +124,8 @@ namespace en
 			deltaWeights3Binding,
 			deltaWeights4Binding,
 			deltaWeights5Binding,
-			configBinding };
+			configBinding,
+			statsBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -131,7 +140,7 @@ namespace en
 		// Create desc pool
 		VkDescriptorPoolSize bufferPoolSize;
 		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bufferPoolSize.descriptorCount = 12;
+		bufferPoolSize.descriptorCount = 13;
 
 		VkDescriptorPoolSize uniformPoolSize;
 		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -162,12 +171,18 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	NeuralRadianceCache::NeuralRadianceCache(float learningRate) :
-		m_ConfigData({ .learningRate = learningRate }),
+	NeuralRadianceCache::NeuralRadianceCache(float learningRate, float weightDecay) :
+		m_ConfigData({ .learningRate = learningRate, .weightDecay = weightDecay }),
+		m_StatsData({ .mseLoss = 0.0f }),
 		m_ConfigUniformBuffer(
 			sizeof(ConfigData), 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{}),
+		m_StatsBuffer(
+			sizeof(StatsData),
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{})
 	{
 		// Set config
@@ -179,6 +194,9 @@ namespace en
 		stagingBuffer.SetData(sizeof(ConfigData), &m_ConfigData, 0, 0);
 		vk::Buffer::Copy(&stagingBuffer, &m_ConfigUniformBuffer, sizeof(ConfigData));
 		stagingBuffer.Destroy();
+
+		// Set stats
+		m_StatsBuffer.SetData(sizeof(StatsData), &m_StatsData, 0, 0);
 
 		// Init sizes
 		std::array<size_t, 6> sizes = {
@@ -217,14 +235,14 @@ namespace en
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				{});
 
-			float norm = static_cast<float>(sizes[i] / sizeof(float));
+			float norm = 0.1f;
 			
 			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
 
 			// Weights
 			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
 			{
-				data[weight] = distribution(generator) / norm;
+				data[weight] = distribution(generator) * norm;
 			}
 
 			stagingBuffer.SetData(sizes[i], data, 0, 0);
@@ -301,7 +319,25 @@ namespace en
 		configWrite.pBufferInfo = &configBufferInfo;
 		configWrite.pTexelBufferView = nullptr;
 
+		VkDescriptorBufferInfo statsBufferInfo;
+		statsBufferInfo.buffer = m_StatsBuffer.GetVulkanHandle();
+		statsBufferInfo.offset = 0;
+		statsBufferInfo.range = sizeof(StatsData);
+
+		VkWriteDescriptorSet statsWrite;
+		statsWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		statsWrite.pNext = nullptr;
+		statsWrite.dstSet = m_DescSet;
+		statsWrite.dstBinding = 13;
+		statsWrite.dstArrayElement = 0;
+		statsWrite.descriptorCount = 1;
+		statsWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		statsWrite.pImageInfo = nullptr;
+		statsWrite.pBufferInfo = &statsBufferInfo;
+		statsWrite.pTexelBufferView = nullptr;
+
 		writes.push_back(configWrite);
+		writes.push_back(statsWrite);
 
 		vkUpdateDescriptorSets(VulkanAPI::GetDevice(), writes.size(), writes.data(), 0, nullptr);
 	}
@@ -320,9 +356,21 @@ namespace en
 		m_ConfigUniformBuffer.Destroy();
 	}
 
+	void NeuralRadianceCache::ResetStats()
+	{
+		m_StatsData.mseLoss = 0.0f;
+		m_StatsBuffer.SetData(sizeof(StatsData), &m_StatsData, 0, 0);
+	}
+
 	VkDescriptorSet NeuralRadianceCache::GetDescSet() const
 	{
 		return m_DescSet;
+	}
+
+	const NeuralRadianceCache::StatsData& NeuralRadianceCache::GetStats()
+	{
+		m_StatsBuffer.GetData(sizeof(StatsData), &m_StatsData, 0, 0);
+		return m_StatsData;
 	}
 
 	void NeuralRadianceCache::PrintWeights() const

@@ -101,6 +101,7 @@ layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 layout(set = 4, binding = 12) uniform NrcConfig
 {
 	float learningRate;
+	float weightDecay;
 } nrcConfig;
 
 // Constants
@@ -128,11 +129,6 @@ const vec3 skyPos = vec3(0.0);
 
 #define NRC_PROB 0.5
 
-bool IsResonable(float deltaWeight)
-{
-	return !isnan(deltaWeight) && !isinf(deltaWeight) && clamp(deltaWeight, -100.0, 100.0) == deltaWeight;
-}
-
 float ModifyDeltaWeight(float deltaWeight, const float weight)
 {
 	if (isnan(deltaWeight) || isinf(deltaWeight))
@@ -140,10 +136,10 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 		deltaWeight = 0.0;
 	}
 
-	deltaWeight = clamp(deltaWeight, -100.0, 100.0);
+	deltaWeight = clamp(deltaWeight, -1024.0, 1024.0);
 
 	// Weight decay
-	deltaWeight += -sign(weight) * exp(weight) * 0.01;
+	deltaWeight += -sign(weight) * exp(abs(weight)) * nrcConfig.weightDecay;
 
 	return deltaWeight;
 }

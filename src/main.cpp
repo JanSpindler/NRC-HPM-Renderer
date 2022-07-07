@@ -341,10 +341,10 @@ void RunNrcHpm()
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		en::NeuralRadianceCache nrc(0.0001f);
+		en::NeuralRadianceCache nrc(0.01f, 0.001f);
 
 //		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
-		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 32, 32, &camera, &volumeData, &sun, nrc);
+		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 100, 100, &camera, &volumeData, &sun, nrc);
 
 		en::ImGuiRenderer::Init(width, height);
 		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
@@ -382,7 +382,7 @@ void RunNrcHpm()
 		size_t counter = 0;
 		while (!en::Window::IsClosed())
 		{
-			if (counter % 1000 == 0)
+			if (counter % 100 == 0)
 			{
 				nrc.PrintWeights();
 			}
@@ -420,9 +420,16 @@ void RunNrcHpm()
 //				trainerThread = new std::thread(RunNrcHpmTrainer);
 //			}
 
+			nrc.ResetStats();
 			nrcHpmRenderer->Render(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
 			ASSERT_VULKAN(result);
+			
+			if (counter % 100 == 0)
+			{
+				const en::NeuralRadianceCache::StatsData& nrcStats = nrc.GetStats();
+				en::Log::Info("NRC MSE Loss: " + std::to_string(nrcStats.mseLoss));
+			}
 
 			en::ImGuiRenderer::StartFrame();
 

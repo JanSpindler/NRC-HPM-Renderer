@@ -8,15 +8,24 @@ namespace en
 	class NeuralRadianceCache
 	{
 	public:
+		struct StatsData
+		{
+			float mseLoss;
+		};
+
 		static void Init(VkDevice device);
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescSetLayout();
 
-		NeuralRadianceCache(float learningRate);
+		NeuralRadianceCache(float learningRate, float weightDecay);
 
 		void Destroy();
 
+		void ResetStats();
+
 		VkDescriptorSet GetDescSet() const;
+
+		const StatsData& GetStats();
 
 		void PrintWeights() const;
 
@@ -24,6 +33,7 @@ namespace en
 		struct ConfigData
 		{
 			float learningRate;
+			float weightDecay;
 		};
 		
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -34,6 +44,9 @@ namespace en
 		
 		ConfigData m_ConfigData;
 		vk::Buffer m_ConfigUniformBuffer;
+
+		StatsData m_StatsData;
+		vk::Buffer m_StatsBuffer;
 
 		VkDescriptorSet m_DescSet;
 	};
