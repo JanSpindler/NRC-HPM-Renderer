@@ -4,7 +4,7 @@
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/Camera.hpp>
-#include <engine/graphics/Sun.hpp>
+#include <engine/graphics/DirLight.hpp>
 #include <string>
 #include <engine/compute/NrcDataset.hpp>
 #include <engine/graphics/NeuralRadianceCache.hpp>
@@ -20,7 +20,7 @@ namespace en
 			const NeuralRadianceCache* nrc,
 			const Camera* camera,
 			const VolumeData* volumeData,
-			const Sun* sun);
+			const DirLight* sun);
 
 		void Render(VkQueue queue) const;
 		void Destroy();
@@ -41,7 +41,7 @@ namespace en
 		const NeuralRadianceCache* m_Nrc;
 		const Camera* m_Camera;
 		const VolumeData* m_VolumeData;
-		const Sun* m_Sun;
+		const DirLight* m_Sun;
 
 		VkRenderPass m_RenderPass;
 		vk::Shader m_VertShader;

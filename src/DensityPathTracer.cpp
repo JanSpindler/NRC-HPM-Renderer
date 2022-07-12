@@ -13,7 +13,7 @@ namespace en
 		const NeuralRadianceCache* nrc,
 		const Camera* camera,
 		const VolumeData* volumeData,
-		const Sun* sun)
+		const DirLight* sun)
 		:
 		m_FrameWidth(width),
 		m_FrameHeight(height),
@@ -575,7 +575,7 @@ namespace en
 		std::vector<VkDescriptorSetLayout> layouts = {
 			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
-			Sun::GetDescriptorSetLayout(),
+			DirLight::GetDescriptorSetLayout(),
 			NeuralRadianceCache::GetDescSetLayout() };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;

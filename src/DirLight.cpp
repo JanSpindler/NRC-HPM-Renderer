@@ -1,4 +1,4 @@
-#include <engine/graphics/Sun.hpp>
+#include <engine/graphics/DirLight.hpp>
 #include <glm/gtx/transform.hpp>
 #include <imgui.h>
 
@@ -15,10 +15,10 @@ glm::vec3 VecFromAngles(float zenith, float azimuth)
 
 namespace en
 {
-	VkDescriptorSetLayout Sun::m_DescriptorSetLayout;
-	VkDescriptorPool Sun::m_Pool;
+	VkDescriptorSetLayout DirLight::m_DescriptorSetLayout;
+	VkDescriptorPool DirLight::m_Pool;
 
-	void Sun::Init()
+	void DirLight::Init()
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
@@ -58,7 +58,7 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void Sun::Shutdown()
+	void DirLight::Shutdown()
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
@@ -66,20 +66,20 @@ namespace en
 		vkDestroyDescriptorPool(device, m_Pool, nullptr);
 	}
 
-	VkDescriptorSetLayout Sun::GetDescriptorSetLayout()
+	VkDescriptorSetLayout DirLight::GetDescriptorSetLayout()
 	{
 		return m_DescriptorSetLayout;
 	}
 
-	Sun::Sun(float zenith, float azimuth, glm::vec3 color) :
-		m_SunData {
+	DirLight::DirLight(float zenith, float azimuth, glm::vec3 color) :
+		m_DirLightData {
 			color,
 			zenith,
 			VecFromAngles(zenith, azimuth),
 			azimuth,
 			1.0f },
 			m_UniformBuffer{ vk::Buffer(
-				sizeof(SunData),
+				sizeof(DirLightData),
 				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -103,7 +103,7 @@ namespace en
 		VkDescriptorBufferInfo bufferInfo;
 		bufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(SunData);
+		bufferInfo.range = sizeof(DirLightData);
 
 		VkWriteDescriptorSet writeDescSet;
 		writeDescSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -119,48 +119,48 @@ namespace en
 
 		vkUpdateDescriptorSets(device, 1, &writeDescSet, 0, nullptr);
 
-		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
+		m_UniformBuffer.SetData(sizeof(DirLightData), &m_DirLightData, 0, 0);
 	}
 
-	void Sun::Destroy()
+	void DirLight::Destroy()
 	{
 		m_UniformBuffer.Destroy();
 	}
 
-	void Sun::SetZenith(float z)
+	void DirLight::SetZenith(float z)
 	{
-		m_SunData.m_Zenith = z;
-		m_SunData.m_SunDir = VecFromAngles(z, m_SunData.m_Azimuth);
-		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
+		m_DirLightData.m_Zenith = z;
+		m_DirLightData.m_Dir = VecFromAngles(z, m_DirLightData.m_Azimuth);
+		m_UniformBuffer.SetData(sizeof(DirLightData), &m_DirLightData, 0, 0);
 	}
 
-	void Sun::SetAzimuth(float a)
+	void DirLight::SetAzimuth(float a)
 	{
-		m_SunData.m_Azimuth = a;
-		m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, a);
-		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
+		m_DirLightData.m_Azimuth = a;
+		m_DirLightData.m_Dir = VecFromAngles(m_DirLightData.m_Zenith, a);
+		m_UniformBuffer.SetData(sizeof(DirLightData), &m_DirLightData, 0, 0);
 	}
 
-	void Sun::SetColor(glm::vec3 c)
+	void DirLight::SetColor(glm::vec3 c)
 	{
-		m_SunData.m_Color = c;
-		m_UniformBuffer.SetData(sizeof(glm::vec3), &c, offsetof(SunData, m_Color), 0);
+		m_DirLightData.m_Color = c;
+		m_UniformBuffer.SetData(sizeof(glm::vec3), &c, offsetof(DirLightData, m_Color), 0);
 	}
 
-	VkDescriptorSet Sun::GetDescriptorSet() const
+	VkDescriptorSet DirLight::GetDescriptorSet() const
 	{
 		return m_DescriptorSet;
 	}
 
-	void Sun::RenderImgui()
+	void DirLight::RenderImgui()
 	{
 		ImGui::Begin("Sun");
-		ImGui::DragFloat("zenith", &m_SunData.m_Zenith, 0.001);
-		ImGui::DragFloat("azimuth", &m_SunData.m_Azimuth, 0.001);
-		ImGui::DragFloat("Strength", &m_SunData.m_Strenth, 0.01);
+		ImGui::DragFloat("zenith", &m_DirLightData.m_Zenith, 0.001);
+		ImGui::DragFloat("azimuth", &m_DirLightData.m_Azimuth, 0.001);
+		ImGui::DragFloat("Strength", &m_DirLightData.m_Strenth, 0.01);
 
-		m_SunData.m_SunDir = VecFromAngles(m_SunData.m_Zenith, m_SunData.m_Azimuth);
-		m_UniformBuffer.SetData(sizeof(SunData), &m_SunData, 0, 0);
+		m_DirLightData.m_Dir = VecFromAngles(m_DirLightData.m_Zenith, m_DirLightData.m_Azimuth);
+		m_UniformBuffer.SetData(sizeof(DirLightData), &m_DirLightData, 0, 0);
 
 		ImGui::End();
 	}

@@ -4,7 +4,7 @@
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/Camera.hpp>
-#include <engine/graphics/Sun.hpp>
+#include <engine/graphics/DirLight.hpp>
 #include <string>
 #include <engine/compute/NeuralNetwork.hpp>
 #include <array>
@@ -23,9 +23,9 @@ namespace en
 			uint32_t height,
 			uint32_t trainWidth,
 			uint32_t trainHeight,
-			const Camera* camera,
-			const VolumeData* volumeData,
-			const Sun* sun,
+			const Camera& camera,
+			const VolumeData& volumeData,
+			const DirLight& dirLight,
 			const NeuralRadianceCache& nrc);
 
 		void Render(VkQueue queue) const;
@@ -50,9 +50,9 @@ namespace en
 		uint32_t m_TrainWidth;
 		uint32_t m_TrainHeight;
 
-		const Camera* m_Camera;
-		const VolumeData* m_VolumeData;
-		const Sun* m_Sun;
+		const Camera& m_Camera;
+		const VolumeData& m_VolumeData;
+		const DirLight& m_DirLight;
 		const NeuralRadianceCache& m_Nrc;
 
 		// NN buffers

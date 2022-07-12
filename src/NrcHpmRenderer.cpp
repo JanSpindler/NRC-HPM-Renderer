@@ -180,9 +180,9 @@ namespace en
 		uint32_t height,
 		uint32_t trainWidth,
 		uint32_t trainHeight,
-		const Camera* camera,
-		const VolumeData* volumeData,
-		const Sun* sun,
+		const Camera& camera,
+		const VolumeData& volumeData,
+		const DirLight& dirLight,
 		const NeuralRadianceCache& nrc)
 		:
 		m_FrameWidth(width),
@@ -196,7 +196,7 @@ namespace en
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
-		m_Sun(sun),
+		m_DirLight(dirLight),
 		m_Nrc(nrc)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
@@ -437,7 +437,7 @@ namespace en
 		std::vector<VkDescriptorSetLayout> layouts = {
 			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
-			Sun::GetDescriptorSetLayout(),
+			DirLight::GetDescriptorSetLayout(),
 			m_DescriptorSetLayout,
 			NeuralRadianceCache::GetDescSetLayout() };
 //			m_NnDSL };
@@ -718,7 +718,7 @@ namespace en
 		VkComputePipelineCreateInfo pipelineCI;
 		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		pipelineCI.pNext = nullptr;
-		pipelineCI.flags = 0;
+		pipelineCI.flags = VK_PIPELINE_CREATE_DISPATCH_BASE_BIT;
 		pipelineCI.stage = shaderStage;
 		pipelineCI.layout = m_PipelineLayout;
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
@@ -1018,9 +1018,9 @@ namespace en
 
 		// Collect descriptor sets
 		std::vector<VkDescriptorSet> descSets = {
-			m_Camera->GetDescriptorSet(),
-			m_VolumeData->GetDescriptorSet(),
-			m_Sun->GetDescriptorSet(),
+			m_Camera.GetDescriptorSet(),
+			m_VolumeData.GetDescriptorSet(),
+			m_DirLight.GetDescriptorSet(),
 			m_DescriptorSet,
 			m_Nrc.GetDescSet() };
 //			m_NrcForwardDS };

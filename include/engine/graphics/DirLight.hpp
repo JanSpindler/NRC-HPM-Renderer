@@ -4,25 +4,25 @@
 #include <glm/glm.hpp>
 
 // properly aligned by default!
-struct SunData
+struct DirLightData
 {
 	glm::vec3 m_Color;
 	float m_Zenith;
-	glm::vec3 m_SunDir;
+	glm::vec3 m_Dir;
 	float m_Azimuth;
 	float m_Strenth;
 };
 
 namespace en
 {
-	class Sun
+	class DirLight
 	{
 	public:
 		static void Init();
 		static void Shutdown();
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		Sun(float zenith, float azimuth, glm::vec3 color);
+		DirLight(float zenith, float azimuth, glm::vec3 color);
 
 		void Destroy();
 
@@ -38,7 +38,7 @@ namespace en
 		static VkDescriptorSetLayout m_DescriptorSetLayout;
 		static VkDescriptorPool m_Pool;
 
-		SunData m_SunData;
+		DirLightData m_DirLightData;
 		VkDescriptorSet m_DescriptorSet;
 		vk::Buffer m_UniformBuffer;
 

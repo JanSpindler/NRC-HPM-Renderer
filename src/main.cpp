@@ -12,7 +12,7 @@
 #include <engine/objects/VolumeData.hpp>
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
-#include <engine/graphics/Sun.hpp>
+#include <engine/graphics/DirLight.hpp>
 #include <engine/compute/Matrix.hpp>
 #include <mnist/mnist_reader.hpp>
 #include <kompute/Kompute.hpp>
@@ -337,14 +337,14 @@ void RunNrcHpm()
 			0.1f,
 			100.0f);
 
-		en::Sun sun(-1.57f, 0.0f, glm::vec3(1.0f));
+		en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f));
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-		en::NeuralRadianceCache nrc(0.001f, 0.1f);
+		en::NeuralRadianceCache nrc(0.001f, 0.001f);
 
 //		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
-		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 100, 100, &camera, &volumeData, &sun, nrc);
+		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 100, 100, camera, volumeData, dirLight, nrc);
 
 		en::ImGuiRenderer::Init(width, height);
 		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
@@ -435,7 +435,7 @@ void RunNrcHpm()
 
 			volumeData.RenderImGui();
 			volumeData.Update(camera.HasChanged());
-			sun.RenderImgui();
+			dirLight.RenderImgui();
 
 			en::ImGuiRenderer::EndFrame(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
@@ -477,7 +477,7 @@ void RunNrcHpm()
 
 		camera.Destroy();
 
-		sun.Destroy();
+		dirLight.Destroy();
 	}
 
 	en::VulkanAPI::Shutdown();
