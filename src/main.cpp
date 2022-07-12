@@ -30,6 +30,7 @@
 #include <thread>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
+#include <engine/graphics/HdrEnvMap.hpp>
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 
@@ -131,6 +132,10 @@ void RunNrcHpm()
 	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
 	en::VolumeData volumeData(&density3DTex);
 
+	int hdrWidth, hdrHeight;
+	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
+	en::HdrEnvMap hdrEnvMap(hdr4fData, hdrWidth, hdrHeight);
+
 	// Setup rendering
 	en::Camera camera(
 		glm::vec3(0.0f, 0.0f, -5.0f),
@@ -146,7 +151,7 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.001f, 0.01f);
+	en::NeuralRadianceCache nrc(0.001f, 0.001f);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
@@ -235,6 +240,7 @@ void RunNrcHpm()
 
 	camera.Destroy();
 
+	hdrEnvMap.Destroy();
 	pointLight.Destroy();
 	dirLight.Destroy();
 

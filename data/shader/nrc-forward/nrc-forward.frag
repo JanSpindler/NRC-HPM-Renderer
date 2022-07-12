@@ -131,14 +131,7 @@ float Sigmoid(float x)
 
 float Relu(float x)
 {
-	if (x > 0.0)
-	{
-		return x;
-	}
-	else
-	{
-		return x * 0.01;
-	}
+	return max(0.0, x);
 }
 
 float nr0[5];

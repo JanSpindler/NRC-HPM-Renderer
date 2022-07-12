@@ -2,6 +2,8 @@
 #include <stb_image.h>
 #include <engine/util/Log.hpp>
 #include <fstream>
+#include <thread>
+#include <array>
 
 namespace en
 {
@@ -75,27 +77,77 @@ namespace en
 		return density3D;
 	}
 
+	struct Hdr3To4Info
+	{
+		float* src;
+		float* dst;
+		size_t startPixel;
+		size_t endPixel;
+		size_t threadIndex;
+	};
+
+	void ConvertHdr3To4(Hdr3To4Info* info)
+	{
+		for (size_t i = info->startPixel; i < info->endPixel; i++)
+		{
+			info->dst[i * 4 + 0] = info->src[i * 3 + 0];
+			info->dst[i * 4 + 1] = info->src[i * 3 + 1];
+			info->dst[i * 4 + 2] = info->src[i * 3 + 2];
+			info->dst[i * 4 + 3] = 1.0f;
+		}
+
+		Log::Info("Thread " + std::to_string(info->threadIndex) + " finished");
+	}
+
 	std::vector<float> ReadFileHdr4f(const std::string& fileName, int& width, int& height)
 	{
 		int channel;
-		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, 4);
+		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, STBI_rgb_alpha);
 		
 		if (data == nullptr)
 		{
 			Log::Error("Failed to load Hdr4f from File: " + fileName, true);
 		}
 
-		if (channel != 4)
-		{
-			Log::Error("Failed to load 4 channels from File: " + fileName, true);
-		}
-
 		const size_t floatCount = width * height * channel;
 		const size_t rawSize = floatCount * sizeof(float);
 
-		std::vector<float> hdr4fData(floatCount);
-		memcpy(hdr4fData.data(), data, rawSize);
+		std::vector<float> hdrData(floatCount);
+		memcpy(hdrData.data(), data, rawSize);
 
-		return hdr4fData;
+		if (channel == 3)
+		{
+			size_t newSize = width * height * 4;
+			if (newSize % 16 != 0)
+			{
+				Log::Error("Hdr4f pixel count not dividable by 16", true);
+			}
+			std::vector<float> hdr4fData(newSize);
+
+			std::array<Hdr3To4Info, 16> convertInfos;
+			std::array<std::thread, 16> threads;
+			size_t pixelPerThread = newSize / 64;
+			for (size_t i = 0; i < 16; i++)
+			{
+				Hdr3To4Info info;
+				info.src = hdrData.data();
+				info.dst = hdr4fData.data();
+				info.startPixel = pixelPerThread * i;
+				info.endPixel = info.startPixel + pixelPerThread;
+				info.threadIndex = i;
+				convertInfos[i] = info;
+			
+				threads[i] = std::thread(ConvertHdr3To4, &convertInfos[i]);
+			}
+			
+			for (size_t i = 0; i < 16; i++)
+			{
+				threads[i].join();
+			}
+
+			return hdr4fData;
+		}
+
+		return hdrData;
 	}
 }
