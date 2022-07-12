@@ -71,13 +71,13 @@ namespace en
 		return m_DescriptorSetLayout;
 	}
 
-	DirLight::DirLight(float zenith, float azimuth, glm::vec3 color) :
+	DirLight::DirLight(float zenith, float azimuth, glm::vec3 color, float strength) :
 		m_DirLightData {
 			color,
 			zenith,
 			VecFromAngles(zenith, azimuth),
 			azimuth,
-			1.0f },
+			strength },
 			m_UniformBuffer{ vk::Buffer(
 				sizeof(DirLightData),
 				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
@@ -154,7 +154,7 @@ namespace en
 
 	void DirLight::RenderImgui()
 	{
-		ImGui::Begin("Sun");
+		ImGui::Begin("Dir Light");
 		ImGui::DragFloat("zenith", &m_DirLightData.m_Zenith, 0.001);
 		ImGui::DragFloat("azimuth", &m_DirLightData.m_Azimuth, 0.001);
 		ImGui::DragFloat("Strength", &m_DirLightData.m_Strenth, 0.01);

@@ -22,7 +22,7 @@ namespace en
 		static void Shutdown();
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		DirLight(float zenith, float azimuth, glm::vec3 color);
+		DirLight(float zenith, float azimuth, glm::vec3 color, float strength);
 
 		void Destroy();
 

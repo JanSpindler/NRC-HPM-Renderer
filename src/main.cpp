@@ -29,6 +29,7 @@
 #include <engine/compute/NrcDataset.hpp>
 #include <thread>
 #include <engine/graphics/NeuralRadianceCache.hpp>
+#include <engine/graphics/PointLight.hpp>
 
 en::VolumeData* trainVolumeData = nullptr;
 en::DensityPathTracer* pathTracer = nullptr;
@@ -310,7 +311,7 @@ void SwapchainResizeCallback()
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 512;
+	uint32_t width = 800;
 	uint32_t height = width;
 
 	// Start engine
@@ -337,14 +338,21 @@ void RunNrcHpm()
 			0.1f,
 			100.0f);
 
-		en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f));
+		en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 1.0f);
+		en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 1.0f), 0.1f);
 
 		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
 		en::NeuralRadianceCache nrc(0.001f, 0.001f);
 
 //		pathTracer = new en::DensityPathTracer(width / 20, height / 20, &nrc, &camera, trainVolumeData, &sun);
-		nrcHpmRenderer = new en::NrcHpmRenderer(width, height, 100, 100, camera, volumeData, dirLight, nrc);
+		nrcHpmRenderer = new en::NrcHpmRenderer(
+			width, height, 
+			100, 100, 
+			camera, 
+			volumeData, 
+			dirLight, pointLight,
+			nrc);
 
 		en::ImGuiRenderer::Init(width, height);
 		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
@@ -436,6 +444,7 @@ void RunNrcHpm()
 			volumeData.RenderImGui();
 			volumeData.Update(camera.HasChanged());
 			dirLight.RenderImgui();
+			pointLight.RenderImGui();
 
 			en::ImGuiRenderer::EndFrame(graphicsQueue);
 			result = vkQueueWaitIdle(graphicsQueue);
@@ -477,6 +486,7 @@ void RunNrcHpm()
 
 		camera.Destroy();
 
+		pointLight.Destroy();
 		dirLight.Destroy();
 	}
 

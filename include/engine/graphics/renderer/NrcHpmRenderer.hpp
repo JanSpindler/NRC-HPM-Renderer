@@ -9,6 +9,7 @@
 #include <engine/compute/NeuralNetwork.hpp>
 #include <array>
 #include <engine/graphics/NeuralRadianceCache.hpp>
+#include <engine/graphics/PointLight.hpp>
 
 namespace en
 {
@@ -26,6 +27,7 @@ namespace en
 			const Camera& camera,
 			const VolumeData& volumeData,
 			const DirLight& dirLight,
+			const PointLight& pointLight,
 			const NeuralRadianceCache& nrc);
 
 		void Render(VkQueue queue) const;
@@ -53,6 +55,7 @@ namespace en
 		const Camera& m_Camera;
 		const VolumeData& m_VolumeData;
 		const DirLight& m_DirLight;
+		const PointLight& m_PointLight;
 		const NeuralRadianceCache& m_Nrc;
 
 		// NN buffers

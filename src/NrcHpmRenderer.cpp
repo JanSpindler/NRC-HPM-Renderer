@@ -183,6 +183,7 @@ namespace en
 		const Camera& camera,
 		const VolumeData& volumeData,
 		const DirLight& dirLight,
+		const PointLight& pointLight,
 		const NeuralRadianceCache& nrc)
 		:
 		m_FrameWidth(width),
@@ -197,6 +198,7 @@ namespace en
 		m_Camera(camera),
 		m_VolumeData(volumeData),
 		m_DirLight(dirLight),
+		m_PointLight(pointLight),
 		m_Nrc(nrc)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
@@ -439,7 +441,8 @@ namespace en
 			VolumeData::GetDescriptorSetLayout(),
 			DirLight::GetDescriptorSetLayout(),
 			m_DescriptorSetLayout,
-			NeuralRadianceCache::GetDescSetLayout() };
+			NeuralRadianceCache::GetDescSetLayout(),
+			PointLight::GetDescriptorSetLayout() };
 //			m_NnDSL };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
@@ -1022,7 +1025,8 @@ namespace en
 			m_VolumeData.GetDescriptorSet(),
 			m_DirLight.GetDescriptorSet(),
 			m_DescriptorSet,
-			m_Nrc.GetDescSet() };
+			m_Nrc.GetDescSet(),
+			m_PointLight.GetDescriptorSet() };
 //			m_NrcForwardDS };
 
 		// Use train width as batch size
