@@ -123,6 +123,11 @@ namespace en
 		
 		ImGui::End();
 
+		if (m_UniformData.strength < 0.0f)
+		{
+			m_UniformData.strength = 0.0f;
+		}
+
 		if (oldPos != m_UniformData.pos ||
 			oldColor != m_UniformData.color ||
 			oldStrength != m_UniformData.strength)

@@ -103,6 +103,13 @@ layout(std430, set = 4, binding = 13) buffer NrcStats
 	float mseLoss;
 } nrcStats;
 
+layout(set = 5, binding = 0) uniform PointLight
+{
+	vec3 pos;
+	float strength;
+	vec3 color;
+} pointLight;
+
 // Constants
 layout(constant_id = 0) const float WIDTH_FACTOR = 0.1;
 layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
@@ -825,6 +832,27 @@ void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 
 // End: NN
 
+vec3 TraceDirLight(const vec3 pos, const vec3 dir)
+{
+	const float phase = hg_phase_func(dot(dir_light.dir, -dir));
+	const vec3 dirLighting = vec3(get_self_shadowing(pos)) * dir_light.strength * phase;
+	return dirLighting;
+}
+
+vec3 TracePointLight(const vec3 pos, const vec3 dir)
+{
+	const float transmittance = GetTransmittance(pointLight.pos, pos, 16);
+	const float phase = hg_phase_func(dot(normalize(pointLight.pos - pos), -dir));
+	const vec3 pointLighting = pointLight.color * pointLight.strength * transmittance * phase;
+	return pointLighting;
+}
+
+vec3 TraceScene(const vec3 pos, const vec3 dir)
+{
+	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir);
+	return totalLight;
+}
+
 #define TRUE_TRACE_SAMPLE_COUNT 128
 void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 {
@@ -877,14 +905,17 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 			const float sampleSigmaE = density * SIGMA_E;
 
 			// Incoming light directly from sun
-			const float sunPhase = hg_phase_func(dot(dir_light.dir, -currentDir));
-			const vec3 sunLight = vec3(get_self_shadowing(currentPoint)) * sunPhase;
+			//const float sunPhase = hg_phase_func(dot(dir_light.dir, -currentDir));
+			//const vec3 sunLight = vec3(get_self_shadowing(currentPoint)) * sunPhase;
+
+			// Get scene lighting
+			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
 
 			// Phase factor
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 
 			// Transmittance calculation
-			const vec3 s = sampleSigmaS * sunLight * dirPhase; // Importance Sampling phase
+			const vec3 s = sampleSigmaS * sceneLighting * dirPhase; // Importance Sampling phase
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 16);
 			const vec3 s_int = (s * (1.0 - t_r)) / sampleSigmaE; // TODO: sampleSigmeE not representative
 

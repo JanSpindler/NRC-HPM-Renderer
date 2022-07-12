@@ -354,6 +354,7 @@ namespace en
 		}
 
 		m_ConfigUniformBuffer.Destroy();
+		m_StatsBuffer.Destroy();
 	}
 
 	void NeuralRadianceCache::ResetStats()
@@ -404,6 +405,8 @@ namespace en
 			}
 			str += "]";
 			Log::Info(str);
+
+			stagingBuffer.Destroy();
 
 			free(data);
 		}

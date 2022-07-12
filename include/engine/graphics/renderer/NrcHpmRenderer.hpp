@@ -35,15 +35,12 @@ namespace en
 
 		void ResizeFrame(uint32_t width, uint32_t height);
 
-//		void UpdateNnData(KomputeManager& manager, NeuralNetwork& nn);
-
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 		size_t GetImageDataSize() const;
 
 	private:
 		static VkDescriptorSetLayout m_DescriptorSetLayout;
-//		static VkDescriptorSetLayout m_NnDSL;
 		static VkDescriptorPool m_DescriptorPool;
 
 		uint32_t m_FrameWidth;
@@ -57,10 +54,6 @@ namespace en
 		const DirLight& m_DirLight;
 		const PointLight& m_PointLight;
 		const NeuralRadianceCache& m_Nrc;
-
-		// NN buffers
-//		std::array<vk::Buffer*, 12> m_NrcForwardBuffers;
-//		VkDescriptorSet m_NrcForwardDS;
 
 		VkPipelineLayout m_PipelineLayout;
 
@@ -89,8 +82,6 @@ namespace en
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
 		
-//		void CreateNrcForwardResources(VkDevice device);
-
 		void CreatePipelineLayout(VkDevice device);
 
 		void CreateRenderRenderPass(VkDevice device);

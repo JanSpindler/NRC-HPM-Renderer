@@ -569,8 +569,6 @@ vec3 TracePointLight(const vec3 pos, const vec3 dir)
 	const float phase = hg_phase_func(dot(normalize(pointLight.pos - pos), -dir));
 	const vec3 pointLighting = pointLight.color * pointLight.strength * transmittance * phase;
 	return pointLighting;
-	//return vec3(1.0);
-	//return pointLight.color;
 }
 
 vec3 TraceScene(const vec3 pos, const vec3 dir)

@@ -74,4 +74,28 @@ namespace en
 
 		return density3D;
 	}
+
+	std::vector<float> ReadFileHdr4f(const std::string& fileName, int& width, int& height)
+	{
+		int channel;
+		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, 4);
+		
+		if (data == nullptr)
+		{
+			Log::Error("Failed to load Hdr4f from File: " + fileName, true);
+		}
+
+		if (channel != 4)
+		{
+			Log::Error("Failed to load 4 channels from File: " + fileName, true);
+		}
+
+		const size_t floatCount = width * height * channel;
+		const size_t rawSize = floatCount * sizeof(float);
+
+		std::vector<float> hdr4fData(floatCount);
+		memcpy(hdr4fData.data(), data, rawSize);
+
+		return hdr4fData;
+	}
 }
