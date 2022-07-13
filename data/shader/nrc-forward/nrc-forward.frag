@@ -75,6 +75,8 @@ layout(set = 5, binding = 0) uniform PointLight
 	vec3 color;
 } pointLight;
 
+layout(set = 6, binding = 0) uniform sampler2D hdrEnvMap;
+
 // Output
 layout(location = 0) out vec4 outColor;
 
@@ -551,6 +553,11 @@ float GetTransmittance(const vec3 start, const vec3 end, const uint count)
 
 vec3 TraceDirLight(const vec3 pos, const vec3 dir)
 {
+	if (dir_light.strength == 0.0)
+	{
+		return vec3(0.0);
+	}
+
 	const float phase = hg_phase_func(dot(dir_light.dir, -dir));
 	const vec3 dirLighting = vec3(get_self_shadowing(pos)) * dir_light.strength * phase;
 	return dirLighting;
@@ -558,10 +565,33 @@ vec3 TraceDirLight(const vec3 pos, const vec3 dir)
 
 vec3 TracePointLight(const vec3 pos, const vec3 dir)
 {
+	if (pointLight.strength == 0.0)
+	{
+		return vec3(0.0);
+	}
+
 	const float transmittance = GetTransmittance(pointLight.pos, pos, 16);
 	const float phase = hg_phase_func(dot(normalize(pointLight.pos - pos), -dir));
 	const vec3 pointLighting = pointLight.color * pointLight.strength * transmittance * phase;
 	return pointLighting;
+}
+
+vec3 SampleHdrEnvMap(const vec3 dir)
+{
+	// Assert: dir is normalized
+
+	const vec2 invAtan = vec2(0.1591, 0.3183);
+
+	vec2 uv = vec2(atan(dir.z, dir.x), asin(dir.y));
+    uv *= invAtan;
+    uv += 0.5;
+
+	return texture(hdrEnvMap, uv).xyz;
+}
+
+vec3 SampleHdrEnvMap(uint sampleCount)
+{
+	return vec3(0.0);
 }
 
 vec3 TraceScene(const vec3 pos, const vec3 dir)
@@ -571,7 +601,7 @@ vec3 TraceScene(const vec3 pos, const vec3 dir)
 }
 
 #define TRUE_TRACE_SAMPLE_COUNT 128
-vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
+vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 {	
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
@@ -598,7 +628,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 				{
 					const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
 					scatteredLight += transmittance * Forward(currentPoint, currentDir) * dirPhase;
-					return scatteredLight;
+					return vec4(scatteredLight, transmittance);
 				}
 				totalTermProb *= 0.5;
 			}
@@ -642,12 +672,7 @@ vec3 TrueTracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 
-	return scatteredLight;
-}
-
-vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
-{
-	return TrueTracePath(rayOrigin, rayDir, useNN) * exp(volumeData.brightness);
+	return vec4(scatteredLight, transmittance);
 }
 
 // Main
@@ -664,14 +689,23 @@ void main()
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		outColor = vec4(vec3(0.0), 1.0);
+		//outColor = vec4(vec3(0.0), 1.0);
+		outColor = vec4(SampleHdrEnvMap(rd), 1.0);
 		return;
 	}
 
 	// Render
-	float lowPassIndex = float(volumeData.lowPassIndex);
-	float alpha = lowPassIndex / (lowPassIndex + 1.0);
-	vec4 oldColor = texture(lowPassTex, fragUV);
-	vec4 newColor = vec4(TracePath(ro, rd, volumeData.useNN == 1), 1.0);
-	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
+	const vec4 oldColor = texture(lowPassTex, fragUV);
+	const vec4 traceResult = TracePath(ro, rd, volumeData.useNN == 1);
+	const float transmittance = traceResult.w;
+
+	if (transmittance == 1.0 && oldColor.w == 1.0)
+	{
+		outColor = vec4(SampleHdrEnvMap(rd), 1.0);
+		return;
+	}
+
+	const float lowPassIndex = float(volumeData.lowPassIndex);
+	const float alpha = lowPassIndex / (lowPassIndex + 1.0);
+	outColor = ((1.0 - alpha) * traceResult) + (alpha * oldColor);
 }

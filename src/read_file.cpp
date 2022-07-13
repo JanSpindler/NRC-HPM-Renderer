@@ -77,32 +77,11 @@ namespace en
 		return density3D;
 	}
 
-	struct Hdr3To4Info
-	{
-		float* src;
-		float* dst;
-		size_t startPixel;
-		size_t endPixel;
-		size_t threadIndex;
-	};
-
-	void ConvertHdr3To4(Hdr3To4Info* info)
-	{
-		for (size_t i = info->startPixel; i < info->endPixel; i++)
-		{
-			info->dst[i * 4 + 0] = info->src[i * 3 + 0];
-			info->dst[i * 4 + 1] = info->src[i * 3 + 1];
-			info->dst[i * 4 + 2] = info->src[i * 3 + 2];
-			info->dst[i * 4 + 3] = 1.0f;
-		}
-
-		Log::Info("Thread " + std::to_string(info->threadIndex) + " finished");
-	}
-
 	std::vector<float> ReadFileHdr4f(const std::string& fileName, int& width, int& height)
 	{
 		int channel;
-		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, STBI_rgb_alpha);
+		stbi_set_flip_vertically_on_load(true);
+		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, 0);
 		
 		if (data == nullptr)
 		{
@@ -124,25 +103,13 @@ namespace en
 			}
 			std::vector<float> hdr4fData(newSize);
 
-			std::array<Hdr3To4Info, 16> convertInfos;
-			std::array<std::thread, 16> threads;
-			size_t pixelPerThread = newSize / 64;
-			for (size_t i = 0; i < 16; i++)
+			const size_t pixelCount = width * height;
+			for (size_t i = 0; i < pixelCount; i++)
 			{
-				Hdr3To4Info info;
-				info.src = hdrData.data();
-				info.dst = hdr4fData.data();
-				info.startPixel = pixelPerThread * i;
-				info.endPixel = info.startPixel + pixelPerThread;
-				info.threadIndex = i;
-				convertInfos[i] = info;
-			
-				threads[i] = std::thread(ConvertHdr3To4, &convertInfos[i]);
-			}
-			
-			for (size_t i = 0; i < 16; i++)
-			{
-				threads[i].join();
+				hdr4fData[(i * 4) + 0] = hdrData[(i * 3) + 0];
+				hdr4fData[(i * 4) + 1] = hdrData[(i * 3) + 1];
+				hdr4fData[(i * 4) + 2] = hdrData[(i * 3) + 2];
+				hdr4fData[(i * 4) + 3] = 1.0f;
 			}
 
 			return hdr4fData;

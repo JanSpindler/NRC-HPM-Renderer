@@ -5,6 +5,7 @@
 #include <stb_image_write.h>
 #include <engine/util/openexr_helper.hpp>
 #include <engine/compute/LinearLayer.hpp>
+#include <engine/util/Log.hpp>
 
 namespace en
 {
@@ -67,6 +68,7 @@ namespace en
 		const VolumeData& volumeData,
 		const DirLight& dirLight,
 		const PointLight& pointLight,
+		const HdrEnvMap& hdrEnvMap,
 		const NeuralRadianceCache& nrc)
 		:
 		m_FrameWidth(width),
@@ -82,6 +84,7 @@ namespace en
 		m_VolumeData(volumeData),
 		m_DirLight(dirLight),
 		m_PointLight(pointLight),
+		m_HdrEnvMap(hdrEnvMap),
 		m_Nrc(nrc)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
@@ -208,8 +211,8 @@ namespace en
 			DirLight::GetDescriptorSetLayout(),
 			m_DescriptorSetLayout,
 			NeuralRadianceCache::GetDescSetLayout(),
-			PointLight::GetDescriptorSetLayout() };
-//			m_NnDSL };
+			PointLight::GetDescriptorSetLayout(),
+			HdrEnvMap::GetDescriptorSetLayout() };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -792,7 +795,8 @@ namespace en
 			m_DirLight.GetDescriptorSet(),
 			m_DescriptorSet,
 			m_Nrc.GetDescSet(),
-			m_PointLight.GetDescriptorSet() };
+			m_PointLight.GetDescriptorSet(),
+			m_HdrEnvMap.GetDescriptorSet() };
 
 		// Use train width as batch size
 		for (uint32_t y = 0; y < m_TrainHeight; y++)

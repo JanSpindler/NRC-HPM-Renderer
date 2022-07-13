@@ -7,6 +7,57 @@
 
 namespace en
 {
+	VkDescriptorSetLayout HdrEnvMap::m_DescSetLayout;
+	VkDescriptorPool HdrEnvMap::m_DescPool;
+
+	void HdrEnvMap::Init(VkDevice device)
+	{
+		// Create descriptor set layout
+		VkDescriptorSetLayoutBinding hdrTexBinding;
+		hdrTexBinding.binding = 0;
+		hdrTexBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		hdrTexBinding.descriptorCount = 1;
+		hdrTexBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		hdrTexBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo layoutCI;
+		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutCI.pNext = nullptr;
+		layoutCI.flags = 0;
+		layoutCI.bindingCount = 1;
+		layoutCI.pBindings = &hdrTexBinding;
+
+		VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_DescSetLayout);
+		ASSERT_VULKAN(result);
+
+		// Create descriptor pool
+		VkDescriptorPoolSize imagePoolSize;
+		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		imagePoolSize.descriptorCount = 1;
+
+		VkDescriptorPoolCreateInfo poolCI;
+		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolCI.pNext = nullptr;
+		poolCI.flags = 0;
+		poolCI.maxSets = 1;
+		poolCI.poolSizeCount = 1;
+		poolCI.pPoolSizes = &imagePoolSize;
+
+		result = vkCreateDescriptorPool(device, &poolCI, nullptr, &m_DescPool);
+		ASSERT_VULKAN(result);
+	}
+
+	void HdrEnvMap::Shutdown(VkDevice device)
+	{
+		vkDestroyDescriptorPool(device, m_DescPool, nullptr);
+		vkDestroyDescriptorSetLayout(device, m_DescSetLayout, nullptr);
+	}
+
+	VkDescriptorSetLayout HdrEnvMap::GetDescriptorSetLayout()
+	{
+		return m_DescSetLayout;
+	}
+
 	HdrEnvMap::HdrEnvMap(const std::vector<float>& hdr4f, uint32_t width, uint32_t height) :
 		m_Width(width),
 		m_Height(height),
@@ -100,7 +151,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Create Sampler
-		VkFilter filter = VK_FILTER_NEAREST;
+		VkFilter filter = VK_FILTER_LINEAR;
 		VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 
 		VkSamplerCreateInfo samplerCreateInfo;
@@ -125,6 +176,37 @@ namespace en
 
 		result = vkCreateSampler(device, &samplerCreateInfo, nullptr, &m_Sampler);
 		ASSERT_VULKAN(result);
+
+		// Allocate desc set
+		VkDescriptorSetAllocateInfo descSetAI;
+		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descSetAI.pNext = nullptr;
+		descSetAI.descriptorPool = m_DescPool;
+		descSetAI.descriptorSetCount = 1;
+		descSetAI.pSetLayouts = &m_DescSetLayout;
+
+		result = vkAllocateDescriptorSets(device, &descSetAI, &m_DescSet);
+		ASSERT_VULKAN(result);
+
+		// Upload to desc set
+		VkDescriptorImageInfo hdrImageInfo;
+		hdrImageInfo.sampler = m_Sampler;
+		hdrImageInfo.imageView = m_ImageView;
+		hdrImageInfo.imageLayout = m_ImageLayout;
+
+		VkWriteDescriptorSet hdrTexWrite;
+		hdrTexWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		hdrTexWrite.pNext = nullptr;
+		hdrTexWrite.dstSet = m_DescSet;
+		hdrTexWrite.dstBinding = 0;
+		hdrTexWrite.dstArrayElement = 0;
+		hdrTexWrite.descriptorCount = 1;
+		hdrTexWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		hdrTexWrite.pImageInfo = &hdrImageInfo;
+		hdrTexWrite.pBufferInfo = nullptr;
+		hdrTexWrite.pTexelBufferView = nullptr;
+
+		vkUpdateDescriptorSets(device, 1, &hdrTexWrite, 0, nullptr);
 	}
 
 	void HdrEnvMap::Destroy()
@@ -135,6 +217,11 @@ namespace en
 		vkFreeMemory(device, m_DeviceMemory, nullptr);
 		vkDestroyImageView(device, m_ImageView, nullptr);
 		vkDestroyImage(device, m_Image, nullptr);
+	}
+
+	VkDescriptorSet HdrEnvMap::GetDescriptorSet() const
+	{
+		return m_DescSet;
 	}
 
 	void HdrEnvMap::ChangeLayout(VkImageLayout layout, VkCommandBuffer commandBuffer, VkQueue queue)

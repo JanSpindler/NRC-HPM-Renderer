@@ -133,7 +133,7 @@ void RunNrcHpm()
 	en::VolumeData volumeData(&density3DTex);
 
 	int hdrWidth, hdrHeight;
-	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
+	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/photostudio_4k.hdr", hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(hdr4fData, hdrWidth, hdrHeight);
 
 	// Setup rendering
@@ -158,7 +158,7 @@ void RunNrcHpm()
 		100, 100,
 		camera,
 		volumeData,
-		dirLight, pointLight,
+		dirLight, pointLight, hdrEnvMap,
 		nrc);
 
 	en::ImGuiRenderer::Init(width, height);
