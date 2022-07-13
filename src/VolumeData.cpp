@@ -82,11 +82,8 @@ namespace en
 		m_UniformData({ 
 			.random = glm::vec4(0.0f),
 			.useNN = 0,
-			.densityFactor = 2.0f,
-			.g = 0.8f,
-			.sigmaS = 0.7f,
-			.sigmaE = 0.05f,
-			.brightness = 0.0f,
+			.densityFactor = 0.3f,
+			.g = 0.6f,
 			.lowPassIndex = 0 })
 	{
 		// Create and update descriptor set
@@ -126,11 +123,8 @@ namespace en
 		ImGui::Begin("HPM Volume");
 
 		ImGui::Checkbox("Use NN", reinterpret_cast<bool*>(&m_UniformData.useNN));
-		ImGui::SliderFloat("Density Factor", &m_UniformData.densityFactor, 0.0f, 16.0f);
-		ImGui::SliderFloat("G", &m_UniformData.g, 0.001f, 0.999f);
-		ImGui::SliderFloat("Sigma S", &m_UniformData.sigmaS, 0.001f, 1.0f);
-		ImGui::SliderFloat("Sigma E", &m_UniformData.sigmaE, 0.001f, 1.0f);
-		ImGui::DragFloat("Brightness Exponent", &m_UniformData.brightness, 0.001f);
+		ImGui::SliderFloat("Density Factor", &m_UniformData.densityFactor, 0.0f, 1.0f);
+		ImGui::SliderFloat("G", &m_UniformData.g, 0.0f, 1.0f);
 		if (ImGui::Button("Reset Low Pass Filter"))
 			m_UniformData.lowPassIndex = 0;
 		ImGui::Text(std::string("Low Pass Index: " + std::to_string(m_UniformData.lowPassIndex)).c_str());

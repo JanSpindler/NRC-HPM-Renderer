@@ -13,9 +13,6 @@ namespace en
 		uint32_t useNN;
 		float densityFactor;
 		float g;
-		float sigmaS;
-		float sigmaE;
-		float brightness;
 		uint32_t lowPassIndex;
 	};
 

@@ -81,39 +81,29 @@ namespace en
 	{
 		int channel;
 		stbi_set_flip_vertically_on_load(true);
-		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, 0);
+		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, 4);
 		
 		if (data == nullptr)
 		{
 			Log::Error("Failed to load Hdr4f from File: " + fileName, true);
 		}
 
-		const size_t floatCount = width * height * channel;
+		const size_t floatCount = width * height * 4;
 		const size_t rawSize = floatCount * sizeof(float);
 
 		std::vector<float> hdrData(floatCount);
 		memcpy(hdrData.data(), data, rawSize);
 
-		if (channel == 3)
+		float max = 0.0f;
+		for (size_t i = 0; i < floatCount; i++)
 		{
-			size_t newSize = width * height * 4;
-			if (newSize % 16 != 0)
+			const float current = hdrData[i];
+			if (current > max)
 			{
-				Log::Error("Hdr4f pixel count not dividable by 16", true);
+				max = current;
 			}
-			std::vector<float> hdr4fData(newSize);
-
-			const size_t pixelCount = width * height;
-			for (size_t i = 0; i < pixelCount; i++)
-			{
-				hdr4fData[(i * 4) + 0] = hdrData[(i * 3) + 0];
-				hdr4fData[(i * 4) + 1] = hdrData[(i * 3) + 1];
-				hdr4fData[(i * 4) + 2] = hdrData[(i * 3) + 2];
-				hdr4fData[(i * 4) + 3] = 1.0f;
-			}
-
-			return hdr4fData;
 		}
+		en::Log::Info(fileName + " max float: " + std::to_string(max));
 
 		return hdrData;
 	}

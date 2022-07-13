@@ -2,41 +2,6 @@
 #extension GL_EXT_debug_printf : enable
 #extension GL_EXT_shader_atomic_float : enable
 
-// Uniforms
-layout(set = 0, binding = 0) uniform camMat_t
-{
-	mat4 projView;
-	mat4 invProjView;
-} camMat;
-
-layout(set = 0, binding = 1) uniform camera_t
-{
-	vec3 pos;
-} camera;
-
-layout(set = 1, binding = 0) uniform sampler3D densityTex;
-
-layout(set = 1, binding = 1) uniform volumeData_t
-{
-	vec4 random;
-	uint useNN;
-	float densityFactor;
-	float g;
-	float sigmaS;
-	float sigmaE;
-	float brightness;
-	uint lowPassIndex;
-} volumeData;
-
-layout(set = 2, binding = 0) uniform dir_light_t
-{
-	vec3 color;
-	float zenith;
-	vec3 dir;
-	float azimuth;
-	float strength;
-} dir_light;
-
 // NN buffers
 layout(std430, set = 4, binding = 0) buffer Weights0
 {
@@ -138,7 +103,7 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 		deltaWeight = border * sign(deltaWeight);
 	}
 
-	deltaWeight = clamp(deltaWeight, -border, border);
+	//deltaWeight = clamp(deltaWeight, -border, border);
 
 	// Weight decay
 	deltaWeight += -sign(weight) * (weight * weight) * nrcConfig.weightDecay;
