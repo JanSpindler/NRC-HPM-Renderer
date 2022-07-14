@@ -11,6 +11,7 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
+#include <engine/graphics/MRHE.hpp>
 
 namespace en
 {
@@ -30,7 +31,8 @@ namespace en
 			const DirLight& dirLight,
 			const PointLight& pointLight,
 			const HdrEnvMap& hdrEnvMap,
-			const NeuralRadianceCache& nrc);
+			const NeuralRadianceCache& nrc,
+			const MRHE& mrhe);
 
 		void Render(VkQueue queue) const;
 		void Destroy();
@@ -57,6 +59,7 @@ namespace en
 		const PointLight& m_PointLight;
 		const HdrEnvMap& m_HdrEnvMap;
 		const NeuralRadianceCache& m_Nrc;
+		const MRHE& m_Mrhe;
 
 		VkPipelineLayout m_PipelineLayout;
 

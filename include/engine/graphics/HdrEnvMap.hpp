@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <engine/graphics/common.hpp>
+#include <engine/graphics/vulkan/Buffer.hpp>
 
 namespace en
 {
@@ -16,9 +16,17 @@ namespace en
 
 		void Destroy();
 
+		void RenderImGui();
+
 		VkDescriptorSet GetDescriptorSet() const;
 
 	private:
+		struct UniformData
+		{
+			float directStrength;
+			float hpmStrength;
+		};
+
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
 
@@ -31,6 +39,9 @@ namespace en
 		VkDeviceMemory m_DeviceMemory;
 		VkImageLayout m_ImageLayout;
 		VkSampler m_Sampler;
+
+		UniformData m_UniformData;
+		vk::Buffer m_UniformBuffer;
 
 		VkDescriptorSet m_DescSet;
 

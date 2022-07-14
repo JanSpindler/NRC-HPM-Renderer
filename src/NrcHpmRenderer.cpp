@@ -69,7 +69,8 @@ namespace en
 		const DirLight& dirLight,
 		const PointLight& pointLight,
 		const HdrEnvMap& hdrEnvMap,
-		const NeuralRadianceCache& nrc)
+		const NeuralRadianceCache& nrc,
+		const MRHE& mrhe)
 		:
 		m_FrameWidth(width),
 		m_FrameHeight(height),
@@ -85,7 +86,8 @@ namespace en
 		m_DirLight(dirLight),
 		m_PointLight(pointLight),
 		m_HdrEnvMap(hdrEnvMap),
-		m_Nrc(nrc)
+		m_Nrc(nrc),
+		m_Mrhe(mrhe)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
@@ -212,7 +214,8 @@ namespace en
 			m_DescriptorSetLayout,
 			NeuralRadianceCache::GetDescSetLayout(),
 			PointLight::GetDescriptorSetLayout(),
-			HdrEnvMap::GetDescriptorSetLayout() };
+			HdrEnvMap::GetDescriptorSetLayout(),
+			MRHE::GetDescriptorSetLayout() };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -796,7 +799,8 @@ namespace en
 			m_DescriptorSet,
 			m_Nrc.GetDescSet(),
 			m_PointLight.GetDescriptorSet(),
-			m_HdrEnvMap.GetDescriptorSet() };
+			m_HdrEnvMap.GetDescriptorSet(),
+			m_Mrhe.GetDescriptorSet() };
 
 		// Use train width as batch size
 		for (uint32_t y = 0; y < m_TrainHeight; y++)

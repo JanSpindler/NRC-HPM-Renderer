@@ -109,6 +109,12 @@ layout(set = 5, binding = 0) uniform PointLight
 
 layout(set = 6, binding = 0) uniform sampler2D hdrEnvMap;
 
+layout(set = 6, binding = 1) uniform HdrEnvMapData
+{
+	float directStrength;
+	float hpmStrength;
+} hdrEnvMapData;
+
 // Constants
 layout(constant_id = 0) const float WIDTH_FACTOR = 0.1;
 layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
@@ -125,7 +131,7 @@ const vec3 skyPos = vec3(0.0);
 
 #define SAMPLE_COUNT 40
 
-//#define IMPORTANCE_SAMPLING
+#define IMPORTANCE_SAMPLING
 
 // Random
 float preRand;// = volumeData.random.x * fragUV.x;
@@ -803,13 +809,13 @@ vec3 TracePointLight(const vec3 pos, const vec3 dir)
 		return vec3(0.0);
 	}
 
-	const float transmittance = GetTransmittance(pointLight.pos, pos, 16);
+	const float transmittance = GetTransmittance(pointLight.pos, pos, 32);
 	const float phase = hg_phase_func(dot(normalize(pointLight.pos - pos), -dir));
 	const vec3 pointLighting = pointLight.color * pointLight.strength * transmittance * phase;
 	return pointLighting;
 }
 
-vec3 SampleHdrEnvMap(const vec3 dir)
+vec3 SampleHdrEnvMap(const vec3 dir, const bool hpm)
 {
 	// Assert: dir is normalized
 
@@ -819,35 +825,40 @@ vec3 SampleHdrEnvMap(const vec3 dir)
     uv *= invAtan;
     uv += 0.5;
 
-	return texture(hdrEnvMap, uv).xyz;
+	const float strength = hpm ? hdrEnvMapData.hpmStrength : hdrEnvMapData.directStrength;
+
+	return texture(hdrEnvMap, uv).xyz * strength;
 }
 
-vec3 SampleHdrEnvMap(const vec3 pos, const vec3 outDir, uint sampleCount)
+vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 {
 	vec3 light = vec3(0.0);
 
 	for (uint i = 0; i < sampleCount; i++)
 	{
-		const vec3 randomDir = NewRayDir(outDir);
-		const float phase = hg_phase_func(dot(randomDir, -outDir));
+		const vec3 randomDir = NewRayDir(dir);
+		const float phase = hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 32);
-		const vec3 sampleLight = SampleHdrEnvMap(randomDir) * phase;
+		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase;
+
 		light += sampleLight;
 	}
 
-	return light / float(sampleCount);
+	light /= float(sampleCount);
+
+	return light;
 }
 
 vec3 TraceScene(const vec3 pos, const vec3 dir)
 {
-	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) * SampleHdrEnvMap(pos, dir, 32);
+	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) * SampleHdrEnvMap(pos, dir, 16);
 	return totalLight;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 128
-void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
-{
+#define TRUE_TRACE_SAMPLE_COUNT 64
+vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
+{	
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
 
@@ -859,33 +870,6 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
-	float totalTermProb = 1.0;
-
-	// Trace path and terminate at random
-	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
-	{
-		if (RandFloat(1.0) > totalTermProb)
-		{
-			break;
-		}
-		totalTermProb *= 0.5;
-
-		// Generate new ray
-		if (getDensity(currentPoint) > 0.0)
-		{
-			currentDir = NewRayDir(currentDir);
-		}
-
-		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint);
-		const float nextDistance = maxDistance * exp(-RandFloat(1.0));
-		currentPoint = currentPoint + (currentDir * nextDistance);
-	}
-
-	const vec3 ro = currentPoint;
-	const vec3 rd = currentDir;
-
-	// Calculate lighting
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
@@ -921,13 +905,67 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint);
+		const float maxDistance = distance(exit, currentPoint) * 0.1;
 		const float nextDistance = RandFloat(maxDistance);
-		//const float nextDistance = maxDistance * exp(-RandFloat(1.0));
 		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 
-	Backprop(scatteredLight, ro, rd);
+	return scatteredLight;
+}
+
+void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
+{
+	const vec3[2] entryExit = find_entry_exit(rayOrigin, rayDir);
+	const vec3 entry = entryExit[0];
+	const vec3 exit = entryExit[1];
+
+	vec3 currentPoint = entry;
+	vec3 lastPoint = entry;
+	
+	vec3 currentDir = rayDir;
+	vec3 lastDir = vec3(0.0);
+
+	float totalTermProb = 1.0;
+
+	bool didScatter = false;
+
+	// Trace path and terminate at random
+	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	{
+		if (RandFloat(1.0) > totalTermProb)
+		{
+			break;
+		}
+		totalTermProb *= 0.75;
+
+		// Generate new ray
+		if (getDensity(currentPoint) > 0.0)
+		{
+			didScatter = true;
+			currentDir = NewRayDir(currentDir);
+		}
+
+		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
+		const float maxDistance = distance(exit, currentPoint) * 0.1;
+		const float nextDistance = maxDistance * RandFloat(1.0);
+		currentPoint = currentPoint + (currentDir * nextDistance);
+	}
+
+	if (!didScatter)
+	{
+		currentPoint = exit;
+		currentDir = -normalize(currentPoint);
+	}
+
+	const uint sampleCount = 4;
+	vec3 tracedLight = vec3(0.0);
+	for (uint i = 0; i < sampleCount; i++)
+	{
+		tracedLight += TracePath(currentPoint, currentDir);
+	}
+	tracedLight /= float(sampleCount);
+
+	Backprop(tracedLight, currentPoint, currentDir);
 }
 
 void main()

@@ -82,8 +82,8 @@ namespace en
 		m_UniformData({ 
 			.random = glm::vec4(0.0f),
 			.useNN = 0,
-			.densityFactor = 0.3f,
-			.g = 0.6f,
+			.densityFactor = 0.2f,
+			.g = 0.9f,
 			.lowPassIndex = 0 })
 	{
 		// Create and update descriptor set

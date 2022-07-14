@@ -95,15 +95,27 @@ namespace en
 		memcpy(hdrData.data(), data, rawSize);
 
 		float max = 0.0f;
-		for (size_t i = 0; i < floatCount; i++)
+		size_t maxX = 0;
+		size_t maxY = 0;
+		for (size_t x = 0; x < width; x++)
 		{
-			const float current = hdrData[i];
-			if (current > max)
+			for (size_t y = 0; y < height; y++)
 			{
-				max = current;
+				for (size_t c = 0; c < 4; c++)
+				{
+					const size_t linearIndex = (y * width * 4) + (x * 4) + c;
+					const float current = hdrData[linearIndex];
+					if (current > max)
+					{
+						max = current;
+						maxX = x;
+						maxY = y;
+					}
+				}
 			}
 		}
-		en::Log::Info(fileName + " max float: " + std::to_string(max));
+		
+		en::Log::Info(fileName + " at (" + std::to_string(maxX) + "," + std::to_string(maxY) + ") max float: " + std::to_string(max));
 
 		return hdrData;
 	}

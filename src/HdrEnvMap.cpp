@@ -4,6 +4,7 @@
 #include <engine/graphics/vulkan/Buffer.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
+#include <imgui.h>
 
 namespace en
 {
@@ -20,12 +21,21 @@ namespace en
 		hdrTexBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		hdrTexBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding uniformBinding;
+		uniformBinding.binding = 1;
+		uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBinding.descriptorCount = 1;
+		uniformBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		uniformBinding.pImmutableSamplers = nullptr;
+
+		std::vector<VkDescriptorSetLayoutBinding> bindings = { hdrTexBinding, uniformBinding };
+
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutCI.pNext = nullptr;
 		layoutCI.flags = 0;
-		layoutCI.bindingCount = 1;
-		layoutCI.pBindings = &hdrTexBinding;
+		layoutCI.bindingCount = bindings.size();
+		layoutCI.pBindings = bindings.data();
 
 		VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_DescSetLayout);
 		ASSERT_VULKAN(result);
@@ -35,13 +45,19 @@ namespace en
 		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		imagePoolSize.descriptorCount = 1;
 
+		VkDescriptorPoolSize uniformPoolSize;
+		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformPoolSize.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { imagePoolSize, uniformPoolSize };
+
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolCI.pNext = nullptr;
 		poolCI.flags = 0;
 		poolCI.maxSets = 1;
-		poolCI.poolSizeCount = 1;
-		poolCI.pPoolSizes = &imagePoolSize;
+		poolCI.poolSizeCount = poolSizes.size();
+		poolCI.pPoolSizes = poolSizes.data();
 
 		result = vkCreateDescriptorPool(device, &poolCI, nullptr, &m_DescPool);
 		ASSERT_VULKAN(result);
@@ -62,11 +78,20 @@ namespace en
 		m_Width(width),
 		m_Height(height),
 		m_RawSize(width * height * 4 * sizeof(float)),
-		m_ImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED)
+		m_ImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
+		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 1.0f }),
+		m_UniformBuffer(
+			sizeof(UniformData), 
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			{})
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 		VkQueue queue = VulkanAPI::GetGraphicsQueue();
 		
+		// Uniform
+		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
+
 		// Staging Buffer
 		vk::Buffer stagingBuffer(
 			m_RawSize,
@@ -206,17 +231,60 @@ namespace en
 		hdrTexWrite.pBufferInfo = nullptr;
 		hdrTexWrite.pTexelBufferView = nullptr;
 
-		vkUpdateDescriptorSets(device, 1, &hdrTexWrite, 0, nullptr);
+		VkDescriptorBufferInfo uniformBufferInfo;
+		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
+		uniformBufferInfo.offset = 0;
+		uniformBufferInfo.range = sizeof(UniformData);
+
+		VkWriteDescriptorSet uniformWrite;
+		uniformWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		uniformWrite.pNext = nullptr;
+		uniformWrite.dstSet = m_DescSet;
+		uniformWrite.dstBinding = 1;
+		uniformWrite.dstArrayElement = 0;
+		uniformWrite.descriptorCount = 1;
+		uniformWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformWrite.pImageInfo = nullptr;
+		uniformWrite.pBufferInfo = &uniformBufferInfo;
+		uniformWrite.pTexelBufferView = nullptr;
+
+		std::vector<VkWriteDescriptorSet> writes = { hdrTexWrite, uniformWrite };
+
+		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
 
 	void HdrEnvMap::Destroy()
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
+		m_UniformBuffer.Destroy();
+
 		vkDestroySampler(device, m_Sampler, nullptr);
 		vkFreeMemory(device, m_DeviceMemory, nullptr);
 		vkDestroyImageView(device, m_ImageView, nullptr);
 		vkDestroyImage(device, m_Image, nullptr);
+	}
+
+	void HdrEnvMap::RenderImGui()
+	{
+		ImGui::Begin("Hdr Env Map");
+		
+		ImGui::DragFloat("Direct Strength", &m_UniformData.directStrength, 0.01f);
+		ImGui::DragFloat("HPM Strength", &m_UniformData.hpmStrength, 0.01f);
+
+		if (m_UniformData.directStrength < 0.0f)
+		{
+			m_UniformData.directStrength = 0.0f;
+		}
+
+		if (m_UniformData.hpmStrength < 0.0f)
+		{
+			m_UniformData.hpmStrength = 0.0f;
+		}
+
+		ImGui::End();
+
+		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 	}
 
 	VkDescriptorSet HdrEnvMap::GetDescriptorSet() const

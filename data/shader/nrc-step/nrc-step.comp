@@ -108,11 +108,9 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 		deltaWeight = border * sign(deltaWeight);
 	}
 
-	//deltaWeight = clamp(deltaWeight, -border, border);
-
 	// Weight decay
-	deltaWeight += -sign(weight) * (weight * weight) * nrcConfig.weightDecay;
-	//deltaWeight += -weight * nrcConfig.weightDecay;
+	//deltaWeight += -sign(weight) * (weight * weight) * nrcConfig.weightDecay;
+	deltaWeight += -weight * nrcConfig.weightDecay;
 
 	return deltaWeight;
 }

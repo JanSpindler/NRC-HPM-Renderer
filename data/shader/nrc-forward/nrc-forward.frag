@@ -74,6 +74,12 @@ layout(set = 5, binding = 0) uniform PointLight
 
 layout(set = 6, binding = 0) uniform sampler2D hdrEnvMap;
 
+layout(set = 6, binding = 1) uniform HdrEnvMapData
+{
+	float directStrength;
+	float hpmStrength;
+} hdrEnvMapData;
+
 // Output
 layout(location = 0) out vec4 outColor;
 
@@ -88,7 +94,7 @@ const vec3 skyPos = vec3(0.0);
 
 #define SAMPLE_COUNT 40
 
-//#define IMPORTANCE_SAMPLING
+#define IMPORTANCE_SAMPLING
 
 // Random
 float preRand = volumeData.random.x * fragUV.x;
@@ -366,7 +372,7 @@ vec3 Forward(vec3 ro, const vec3 rd)
 	outputCol.y = max(0.0, nr6[1]);
 	outputCol.z = max(0.0, nr6[2]);
 
-	debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
+	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 
 	return outputCol;
 }
@@ -527,13 +533,13 @@ vec3 TracePointLight(const vec3 pos, const vec3 dir)
 		return vec3(0.0);
 	}
 
-	const float transmittance = GetTransmittance(pointLight.pos, pos, 16);
+	const float transmittance = GetTransmittance(pointLight.pos, pos, 32);
 	const float phase = hg_phase_func(dot(normalize(pointLight.pos - pos), -dir));
 	const vec3 pointLighting = pointLight.color * pointLight.strength * transmittance * phase;
 	return pointLighting;
 }
 
-vec3 SampleHdrEnvMap(const vec3 dir)
+vec3 SampleHdrEnvMap(const vec3 dir, const bool hpm)
 {
 	// Assert: dir is normalized
 
@@ -543,7 +549,9 @@ vec3 SampleHdrEnvMap(const vec3 dir)
     uv *= invAtan;
     uv += 0.5;
 
-	return texture(hdrEnvMap, uv).xyz;
+	const float strength = hpm ? hdrEnvMapData.hpmStrength : hdrEnvMapData.directStrength;
+
+	return texture(hdrEnvMap, uv).xyz * strength;
 }
 
 vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
@@ -556,20 +564,23 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 		const float phase = hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 32);
-		const vec3 sampleLight = SampleHdrEnvMap(randomDir) * phase;
+		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase;
+
 		light += sampleLight;
 	}
 
-	return light / float(sampleCount);
+	light /= float(sampleCount);
+
+	return light;
 }
 
 vec3 TraceScene(const vec3 pos, const vec3 dir)
 {
-	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) * SampleHdrEnvMap(pos, dir, 32);
+	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) * SampleHdrEnvMap(pos, dir, 16);
 	return totalLight;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 128
+#define TRUE_TRACE_SAMPLE_COUNT 64
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 {	
 	vec3 scatteredLight = vec3(0.0);
@@ -618,7 +629,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 			// Low transmittance early exit
 			if (transmittance < 0.01)
 			{
-				//break;
+				break;
 			}
 
 			// Update last
@@ -631,9 +642,8 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint);
+		const float maxDistance = distance(exit, currentPoint) * 0.1;
 		const float nextDistance = RandFloat(maxDistance);
-		//const float nextDistance = maxDistance * exp(-RandFloat(1.0));
 		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 
@@ -652,7 +662,7 @@ void main()
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
-	const vec3 envMapColor = SampleHdrEnvMap(rd);
+	vec3 envMapColor = SampleHdrEnvMap(rd, false);
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
@@ -670,6 +680,8 @@ void main()
 		outColor = vec4(envMapColor, 1.0);
 		return;
 	}
+
+	envMapColor = SampleHdrEnvMap(rd, false);
 
 	const float primaryRayTransmittance = GetTransmittance(entry, exit, 64);
 

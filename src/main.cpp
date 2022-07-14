@@ -31,6 +31,7 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
+#include <engine/graphics/MRHE.hpp>
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 
@@ -146,12 +147,13 @@ void RunNrcHpm()
 		0.1f,
 		100.0f);
 
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 64.0f);
-	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 1.0f), 2.0f);
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 1.5f);
+	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.001f, 0.001f);
+	en::NeuralRadianceCache nrc(0.0002f, 0.00001f);
+	en::MRHE mrhe;
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
@@ -159,7 +161,8 @@ void RunNrcHpm()
 		camera,
 		volumeData,
 		dirLight, pointLight, hdrEnvMap,
-		nrc);
+		nrc,
+		mrhe);
 
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
@@ -212,6 +215,7 @@ void RunNrcHpm()
 		volumeData.Update(camera.HasChanged());
 		dirLight.RenderImgui();
 		pointLight.RenderImGui();
+		hdrEnvMap.RenderImGui();
 
 		en::ImGuiRenderer::EndFrame(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
@@ -234,6 +238,7 @@ void RunNrcHpm()
 	nrcHpmRenderer->Destroy();
 	delete nrcHpmRenderer;
 
+	mrhe.Destroy();
 	nrc.Destroy();
 
 	swapchain.Destroy(true);

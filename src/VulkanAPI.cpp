@@ -11,6 +11,7 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
+#include <engine/graphics/MRHE.hpp>
 
 namespace en
 {
@@ -48,12 +49,14 @@ namespace en
 		NeuralRadianceCache::Init(m_Device);
 		PointLight::Init(m_Device);
 		HdrEnvMap::Init(m_Device);
+		MRHE::Init(m_Device);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
+		MRHE::Shutdown(m_Device);
 		HdrEnvMap::Shutdown(m_Device);
 		PointLight::Shutdown(m_Device);
 		NeuralRadianceCache::Shutdown(m_Device);
