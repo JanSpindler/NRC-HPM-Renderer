@@ -145,8 +145,9 @@ float GetMrheFeature(const uint level, const uint entryIndex, const uint feature
 
 uint HashFunc(const uvec3 pos)
 {
-	uvec3 primes = uvec3(11, 13, 17);
+	const uvec3 primes = uvec3(7919, 6491, 4099);
 	uint hash = (pos.x * primes.x) + (pos.y * primes.y) + (pos.z * primes.z);
+	hash %= mrhe.hashTableSize;
 	return hash;
 }
 

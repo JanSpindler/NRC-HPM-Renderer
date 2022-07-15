@@ -17,6 +17,8 @@ namespace en
 
 		VkDescriptorSet GetDescriptorSet() const;
 
+		size_t GetHashTableSize() const;
+
 	private:
 		struct UniformData
 		{
@@ -37,5 +39,6 @@ namespace en
 
 		size_t m_HashTablesSize;
 		vk::Buffer m_HashTablesBuffer;
+		vk::Buffer m_DeltaHashTablesBuffer;
 	};
 }

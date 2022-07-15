@@ -23,7 +23,14 @@ namespace en
 		hashTablesBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		hashTablesBinding.pImmutableSamplers = nullptr;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings = { uniformBinding, hashTablesBinding };
+		VkDescriptorSetLayoutBinding deltaHashTablesBinding;
+		deltaHashTablesBinding.binding = 2;
+		deltaHashTablesBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltaHashTablesBinding.descriptorCount = 1;
+		deltaHashTablesBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		deltaHashTablesBinding.pImmutableSamplers = nullptr;
+
+		std::vector<VkDescriptorSetLayoutBinding> bindings = { uniformBinding, hashTablesBinding, deltaHashTablesBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -42,7 +49,7 @@ namespace en
 
 		VkDescriptorPoolSize storagePoolSize;
 		storagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		storagePoolSize.descriptorCount = 1;
+		storagePoolSize.descriptorCount = 2;
 
 		std::vector<VkDescriptorPoolSize> poolSizes = { uniformPoolSize, storagePoolSize };
 
@@ -86,6 +93,11 @@ namespace en
 			m_HashTablesSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			{}),
+		m_DeltaHashTablesBuffer(
+			m_HashTablesSize,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{})
 	{
 		VkDevice device = VulkanAPI::GetDevice();
@@ -124,6 +136,17 @@ namespace en
 
 		stagingBuffer.SetData(m_HashTablesSize, hashTablesData, 0, 0);
 		vk::Buffer::Copy(&stagingBuffer, &m_HashTablesBuffer, m_HashTablesSize);
+
+		// Setup delta hash tables buffer
+		float* deltaHashTablesData = reinterpret_cast<float*>(malloc(m_HashTablesSize));
+
+		for (size_t i = 0; i < m_HashTablesSize / sizeof(float); i++)
+		{
+			hashTablesData[i] = 0.0f;
+		}
+
+		stagingBuffer.SetData(m_HashTablesSize, deltaHashTablesData, 0, 0);
+		vk::Buffer::Copy(&stagingBuffer, &m_DeltaHashTablesBuffer, m_HashTablesSize);
 
 		stagingBuffer.Destroy();
 
@@ -173,18 +196,42 @@ namespace en
 		hashTablesWrite.pBufferInfo = &hashTablesBufferInfo;
 		hashTablesWrite.pTexelBufferView = nullptr;
 
-		std::vector<VkWriteDescriptorSet> writes = { uniformWrite, hashTablesWrite };
+		VkDescriptorBufferInfo deltaHashTablesBufferInfo;
+		deltaHashTablesBufferInfo.buffer = m_DeltaHashTablesBuffer.GetVulkanHandle();
+		deltaHashTablesBufferInfo.offset = 0;
+		deltaHashTablesBufferInfo.range = m_HashTablesSize;
+
+		VkWriteDescriptorSet deltaHashTablesWrite;
+		deltaHashTablesWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		deltaHashTablesWrite.pNext = nullptr;
+		deltaHashTablesWrite.dstSet = m_DescSet;
+		deltaHashTablesWrite.dstBinding = 2;
+		deltaHashTablesWrite.dstArrayElement = 0;
+		deltaHashTablesWrite.descriptorCount = 1;
+		deltaHashTablesWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltaHashTablesWrite.pImageInfo = nullptr;
+		deltaHashTablesWrite.pBufferInfo = &deltaHashTablesBufferInfo;
+		deltaHashTablesWrite.pTexelBufferView = nullptr;
+
+		std::vector<VkWriteDescriptorSet> writes = { uniformWrite, hashTablesWrite, deltaHashTablesWrite };
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
 
 	void MRHE::Destroy()
 	{
+		m_DeltaHashTablesBuffer.Destroy();
+		m_HashTablesBuffer.Destroy();
 		m_UniformBuffer.Destroy();
 	}
 
 	VkDescriptorSet MRHE::GetDescriptorSet() const
 	{
 		return m_DescSet;
+	}
+
+	size_t MRHE::GetHashTableSize() const
+	{
+		return m_HashTablesSize;
 	}
 }

@@ -80,6 +80,7 @@ namespace en
 		m_RenderFragShader("nrc-forward/nrc-forward.frag", false),
 		m_TrainShader("nrc-train/nrc-train.comp", false),
 		m_StepShader("nrc-step/nrc-step.comp", false),
+		m_MrheStepShader("mrhe-step/mrhe-step.comp", false),
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
@@ -99,6 +100,8 @@ namespace en
 		CreateTrainPipeline(device);
 		
 		CreateStepPipeline(device);
+
+		CreateMrheStepPipeline(device);
 
 		CreateColorImage(device);
 		CreateLowPassResources(device);
@@ -143,6 +146,9 @@ namespace en
 		vkDestroyImageView(device, m_ColorImageView, nullptr);
 		vkFreeMemory(device, m_ColorImageMemory, nullptr);
 		vkDestroyImage(device, m_ColorImage, nullptr);
+
+		vkDestroyPipeline(device, m_MrheStepPipeline, nullptr);
+		m_MrheStepShader.Destroy();
 
 		vkDestroyPipeline(device, m_StepPipeline, nullptr);
 		m_StepShader.Destroy();
@@ -527,6 +533,30 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
+	void NrcHpmRenderer::CreateMrheStepPipeline(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.pNext = nullptr;
+		shaderStage.flags = 0;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_MrheStepShader.GetVulkanModule();
+		shaderStage.pName = "main";
+		shaderStage.pSpecializationInfo = nullptr;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStage;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_MrheStepPipeline);
+		ASSERT_VULKAN(result);
+	}
+
 	void NrcHpmRenderer::CreateColorImage(VkDevice device)
 	{
 		// Create Image
@@ -823,11 +853,23 @@ namespace en
 				0, descSets.size(), descSets.data(),
 				0, nullptr);
 
-			// Bind step pipeline
+			// Bind nrc step pipeline
 			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_StepPipeline);
 
-			// Dispatch gradient step
+			// Dispatch nrc gradient step
 			vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
+
+			// Bind pipeline layout
+			vkCmdBindDescriptorSets(
+				m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+				0, descSets.size(), descSets.data(),
+				0, nullptr);
+
+			// Bind mrhe step pipeline
+			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_MrheStepPipeline);
+
+			// Dispatch mrhe gradient step
+			vkCmdDispatch(m_CommandBuffer, m_Mrhe.GetHashTableSize() / sizeof(float), 1, 1);
 		}
 
 		// Begin render pass
