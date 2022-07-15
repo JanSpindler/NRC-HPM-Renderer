@@ -1,4 +1,5 @@
 #include <engine/graphics/MRHE.hpp>
+#include <random>
 
 namespace en
 {
@@ -89,10 +90,42 @@ namespace en
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
+		// Init mrhe resolutions
+		float b = std::exp(
+			(std::log(static_cast<float>(m_UniformData.maxRes)) - std::log(static_cast<float>(m_UniformData.minRes))) /
+			static_cast<float>(m_UniformData.levelCount - 1));
+		for (size_t i = 0; i < m_UniformData.levelCount; i++)
+		{
+			float resF = 
+				static_cast<float>(m_UniformData.minRes) * 
+				std::pow(b, static_cast<float>(i));
+			m_UniformData.resolutions[i] = static_cast<uint32_t>(resF);
+		}
+
 		// Push uniform data to buffer
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 	
 		// Setup hash tables buffer
+		std::default_random_engine generator((std::random_device()()));
+		std::normal_distribution<float> distribution(0.0f, 0.5);
+
+		float* hashTablesData = reinterpret_cast<float*>(malloc(m_HashTablesSize));
+
+		for (size_t i = 0; i < m_HashTablesSize / sizeof(float); i++)
+		{
+			hashTablesData[i] = distribution(generator);
+		}
+
+		vk::Buffer stagingBuffer(
+			m_HashTablesSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		stagingBuffer.SetData(m_HashTablesSize, hashTablesData, 0, 0);
+		vk::Buffer::Copy(&stagingBuffer, &m_HashTablesBuffer, m_HashTablesSize);
+
+		stagingBuffer.Destroy();
 
 		// Allocate descriptor set
 		VkDescriptorSetAllocateInfo descSetAI;

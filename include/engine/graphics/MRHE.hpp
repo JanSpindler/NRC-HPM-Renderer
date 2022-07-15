@@ -25,6 +25,7 @@ namespace en
 			uint32_t featureCount;
 			uint32_t minRes;
 			uint32_t maxRes;
+			uint32_t resolutions[16];
 		};
 		
 		static VkDescriptorSetLayout m_DescSetLayout;

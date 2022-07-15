@@ -80,6 +80,21 @@ layout(set = 6, binding = 1) uniform HdrEnvMapData
 	float hpmStrength;
 } hdrEnvMapData;
 
+layout(set = 7, binding = 0) uniform MrheData
+{
+	uint levelCount;
+	uint hashTableSize;
+	uint featureCount;
+	uint minRes;
+	uint maxRes;
+	uint resolutions[16];
+} mrhe;
+
+layout(std430, set = 7, binding = 1) readonly buffer MRHashTable
+{
+	float mrHashTable[];
+};
+
 // Output
 layout(location = 0) out vec4 outColor;
 
@@ -117,6 +132,87 @@ float RandFloat(float maxVal)
 {
 	float f = myRand();
 	return f * maxVal;
+}
+
+// MRHE helper
+
+float GetMrheFeature(const uint level, const uint entryIndex, const uint featureIndex)
+{
+	const uint linearIndex = (mrhe.hashTableSize * mrhe.featureCount * level) + (entryIndex * mrhe.featureCount) + featureIndex;
+	const float feature = mrHashTable[linearIndex];
+	return feature;
+}
+
+uint HashFunc(const uvec3 pos)
+{
+	uvec3 primes = uvec3(11, 13, 17);
+	uint hash = (pos.x * primes.x) + (pos.y * primes.y) + (pos.z * primes.z);
+	return hash;
+}
+
+float mrheFeatures[32]; // 16 * 2
+
+void EncodePosMrhe(const vec3 pos)
+{
+	const vec3 normPos = (pos / skySize) + vec3(0.5);
+
+	for (uint level = 0; level < mrhe.levelCount; level++)
+	{
+		// Get level resolution
+		const uint res = mrhe.resolutions[level];
+		const vec3 resPos = normPos * float(res);
+
+		// Get all 8 neighbours
+		const vec3 floorPos = floor(resPos);
+
+		vec3 neighbours[8]; // 2^3
+		for (uint x = 0; x < 2; x++)
+		{
+			for (uint y = 0; y < 2; y++)
+			{
+				for (uint z = 0; z < 2; z++)
+				{
+					uint linearIndex = (x * 4) + (y * 2) + z;
+					neighbours[linearIndex] = floorPos + vec3(uvec3(x, y, z));
+				}
+			}
+		}
+
+		// Extract neighbour features
+		vec2 neighbourFeatures[8];
+		for (uint neigh = 0; neigh < 8; neigh++)
+		{
+			const uint entryIndex = HashFunc(uvec3(neighbours[neigh]));
+			neighbourFeatures[neigh] = vec2(GetMrheFeature(level, entryIndex, 0), GetMrheFeature(level, entryIndex, 1));
+		}
+
+		// Linearly interpolate neightbour features
+		vec3 lerpFactors = pos - neighbours[0];
+
+		vec2 zLerpFeatures[4];
+		for (uint i = 0; i < 4; i++)
+		{
+			zLerpFeatures[i] = 
+				(neighbourFeatures[i] * lerpFactors.z) + 
+				(neighbourFeatures[4 + i] * (1.0 - lerpFactors.z));
+		}
+
+		vec2 yLerpFeatures[2];
+		for (uint i = 0; i < 2; i++)
+		{
+			yLerpFeatures[i] =
+				(zLerpFeatures[i] * lerpFactors.y) +
+				(zLerpFeatures[2 + i] * (1.0 - lerpFactors.y));
+		}
+
+		vec2 xLerpFeatures =
+			(yLerpFeatures[0] * lerpFactors.x) +
+			(yLerpFeatures[1] * (1.0 - lerpFactors.x));
+
+		// Store in feature array
+		mrheFeatures[(level * mrhe.featureCount) + 0] = xLerpFeatures.x;
+		mrheFeatures[(level * mrhe.featureCount) + 1] = xLerpFeatures.y;
+	}
 }
 
 // NN helper
@@ -345,6 +441,7 @@ void EncodeRay(vec3 pos, const vec3 dir)
 
 vec3 Forward(vec3 ro, const vec3 rd)
 {
+	EncodePosMrhe(ro);
 	EncodeRay(ro, rd);
 
 	//debugPrintfEXT("%f, %f, %f, %f, %f\n", nr0[0], nr0[1], nr0[2], nr0[3], nr0[4]);
