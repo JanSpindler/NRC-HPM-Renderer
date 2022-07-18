@@ -37,7 +37,7 @@ layout(set = 2, binding = 0) uniform dir_light_t
 // NN buffers
 layout(std430, set = 4, binding = 0) buffer Weights0
 {
-	float matWeights0[320]; // 5 x 64
+	float matWeights0[2176]; // 34 x 64
 };
 
 layout(std430, set = 4, binding = 1) buffer Weights1
@@ -67,7 +67,7 @@ layout(std430, set = 4, binding = 5) buffer Weights5
 
 layout(std430, set = 4, binding = 6) buffer DeltaWeights0
 {
-	float matDeltaWeights0[320]; // 5 x 64
+	float matDeltaWeights0[2176]; // 34 x 64
 };
 
 layout(std430, set = 4, binding = 7) buffer DeltaWeights1
@@ -95,7 +95,67 @@ layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 	float matDeltaWeights5[192]; // 64 x 3
 };
 
-layout(std430, set = 4, binding = 13) buffer NrcStats
+layout(std430, set = 4, binding = 12) buffer Biases0
+{
+	float matBiases0[64];
+};
+
+layout(std430, set = 4, binding = 13) buffer Biases1
+{
+	float matBiases1[64];
+};
+
+layout(std430, set = 4, binding = 14) buffer Biases2
+{
+	float matBiases2[64];
+};
+
+layout(std430, set = 4, binding = 15) buffer Biases3
+{
+	float matBiases3[64];
+};
+
+layout(std430, set = 4, binding = 16) buffer Biases4
+{
+	float matBiases4[64];
+};
+
+layout(std430, set = 4, binding = 17) buffer Biases5
+{
+	float matBiases5[3];
+};
+
+layout(std430, set = 4, binding = 18) buffer DeltaBiases0
+{
+	float matDeltaBiases0[64];
+};
+
+layout(std430, set = 4, binding = 19) buffer DeltaBiases1
+{
+	float matDeltaBiases1[64];
+};
+
+layout(std430, set = 4, binding = 20) buffer DeltaBiases2
+{
+	float matDeltaBiases2[64];
+};
+
+layout(std430, set = 4, binding = 21) buffer DeltaBiases3
+{
+	float matDeltaBiases3[64];
+};
+
+layout(std430, set = 4, binding = 22) buffer DeltaBiases4
+{
+	float matDeltaBiases4[64];
+};
+
+layout(std430, set = 4, binding = 23) buffer DeltaBiases5
+{
+	float matDeltaBiases5[3];
+};
+
+layout(std430, set = 4, binding = 25) buffer NrcStats
 {
 	float mseLoss;
 } nrcStats;
@@ -117,6 +177,8 @@ layout(set = 6, binding = 1) uniform HdrEnvMapData
 
 layout(set = 7, binding = 0) uniform MrheData
 {
+	float learningRate;
+	float weightDecay;
 	uint levelCount;
 	uint hashTableSize;
 	uint featureCount;
@@ -187,13 +249,15 @@ float GetMrheFeature(const uint level, const uint entryIndex, const uint feature
 
 uint HashFunc(const uvec3 pos)
 {
-	const uvec3 primes = uvec3(7919, 6491, 4099);
+	const uvec3 primes = uvec3(1, 19349663, 83492791);
 	uint hash = (pos.x * primes.x) + (pos.y * primes.y) + (pos.z * primes.z);
 	hash %= mrhe.hashTableSize;
 	return hash;
 }
 
 float mrheFeatures[32]; // 16 * 2
+uint allNeighbourIndices[128]; // 16 * (2^3)
+vec3 allLerpFactors[16];
 
 void EncodePosMrhe(const vec3 pos)
 {
@@ -221,36 +285,48 @@ void EncodePosMrhe(const vec3 pos)
 			}
 		}
 
+		// Get neighbour indices and store
+		uint neighbourIndices[8];
+		for (uint neigh = 0; neigh < 8; neigh++)
+		{
+			const uint index = HashFunc(uvec3(neighbours[neigh]));
+			neighbourIndices[neigh] = index;
+			
+			const uint linearIndex = (level * 8) + neigh;
+			allNeighbourIndices[linearIndex] = index;
+		}
+
 		// Extract neighbour features
 		vec2 neighbourFeatures[8];
 		for (uint neigh = 0; neigh < 8; neigh++)
 		{
-			const uint entryIndex = HashFunc(uvec3(neighbours[neigh]));
+			const uint entryIndex = neighbourIndices[neigh];
 			neighbourFeatures[neigh] = vec2(GetMrheFeature(level, entryIndex, 0), GetMrheFeature(level, entryIndex, 1));
 		}
 
 		// Linearly interpolate neightbour features
 		vec3 lerpFactors = pos - neighbours[0];
+		allLerpFactors[level] = lerpFactors;
 
 		vec2 zLerpFeatures[4];
 		for (uint i = 0; i < 4; i++)
 		{
 			zLerpFeatures[i] = 
-				(neighbourFeatures[i] * lerpFactors.z) + 
-				(neighbourFeatures[4 + i] * (1.0 - lerpFactors.z));
+				(neighbourFeatures[i] * (1.0 - lerpFactors.z)) + 
+				(neighbourFeatures[4 + i] * lerpFactors.z);
 		}
 
 		vec2 yLerpFeatures[2];
 		for (uint i = 0; i < 2; i++)
 		{
 			yLerpFeatures[i] =
-				(zLerpFeatures[i] * lerpFactors.y) +
-				(zLerpFeatures[2 + i] * (1.0 - lerpFactors.y));
+				(zLerpFeatures[i] * (1.0 - lerpFactors.y)) +
+				(zLerpFeatures[2 + i] * lerpFactors.y);
 		}
 
 		vec2 xLerpFeatures =
-			(yLerpFeatures[0] * lerpFactors.x) +
-			(yLerpFeatures[1] * (1.0 - lerpFactors.x));
+			(yLerpFeatures[0] * (1.0 - lerpFactors.x)) +
+			(yLerpFeatures[1] * lerpFactors.x);
 
 		// Store in feature array
 		mrheFeatures[(level * mrhe.featureCount) + 0] = xLerpFeatures.x;
@@ -373,7 +449,7 @@ vec3 NewRayDir(vec3 oldRayDir)
 
 // Start: NN
 
-float nr0[5];
+float nr0[34];
 float nr1[64];
 float nr2[64];
 float nr3[64];
@@ -411,7 +487,7 @@ float ReluDeriv(float x)
 
 float GetWeight0(uint row, uint col)
 {
-	uint linearIndex = row * 5 + col;
+	uint linearIndex = row * 34 + col;
 	return matWeights0[linearIndex];
 }
 
@@ -451,14 +527,14 @@ void ApplyWeights0()
 	{
 		float sum = 0;
 		
-		for (uint inCol = 0; inCol < 5; inCol++)
+		for (uint inCol = 0; inCol < 34; inCol++)
 		{
 			float inVal = nr0[inCol];
 			float weightVal = GetWeight0(outRow, inCol);
 			sum += inVal * weightVal;
 		}
 
-		nr1[outRow] = sum;
+		nr1[outRow] = sum + matBiases0[outRow];
 	}
 }
 
@@ -475,7 +551,7 @@ void ApplyWeights1()
 			sum += inVal * weightVal;
 		}
 
-		nr2[outRow] = sum;
+		nr2[outRow] = sum + matBiases1[outRow];
 	}
 }
 
@@ -492,7 +568,7 @@ void ApplyWeights2()
 			sum += inVal * weightVal;
 		}
 
-		nr3[outRow] = sum;
+		nr3[outRow] = sum + matBiases2[outRow];
 	}
 }
 
@@ -509,7 +585,7 @@ void ApplyWeights3()
 			sum += inVal * weightVal;
 		}
 
-		nr4[outRow] = sum;
+		nr4[outRow] = sum + matBiases3[outRow];
 	}
 }
 
@@ -526,7 +602,7 @@ void ApplyWeights4()
 			sum += inVal * weightVal;
 		}
 
-		nr5[outRow] = sum;
+		nr5[outRow] = sum + matBiases4[outRow];
 	}
 }
 
@@ -543,7 +619,7 @@ void ApplyWeights5()
 			sum += inVal * weightVal;
 		}
 
-		nr6[outRow] = sum;
+		nr6[outRow] = sum + matBiases5[outRow];
 	}
 }
 
@@ -605,17 +681,20 @@ void EncodeRay(vec3 pos, const vec3 dir)
 {
 	//debugPrintfEXT("%f, %f, %f\n", pos.x, pos.y, pos.z);
 
-	pos /= skySize.y;
+	//pos /= skySize.y;
 	const float theta = atan(dir.y, dir.x);
 	const float phi = atan(length(dir.xy), dir.z);
 	
 	//debugPrintfEXT("%f, %f, %f, %f, %f\n", pos.x, pos.y, pos.z, theta, phi);
 
-	nr0[0] = pos.x;
-	nr0[1] = pos.y;
-	nr0[2] = pos.z;
-	nr0[3] = theta;
-	nr0[4] = phi;
+	EncodePosMrhe(pos);
+
+	for (uint i = 0; i < 32; i++)
+	{
+		nr0[i] = mrheFeatures[i];
+	}
+	nr0[32] = theta;
+	nr0[33] = phi;
 }
 
 void Forward()
@@ -661,8 +740,10 @@ void Backprop5()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr5[col] * nr6[row];
-			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight * WIDTH_FACTOR);
+			atomicAdd(matDeltaWeights5[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
+
+		atomicAdd(matDeltaBiases5[row], -nr6[row] * ONE_OVER_PIXEL_COUNT);
 	}
 
 	// Backprop weights5
@@ -693,8 +774,10 @@ void Backprop4()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr4[col] * nr5[row];
-			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight * WIDTH_FACTOR);
+			atomicAdd(matDeltaWeights4[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
+		
+		atomicAdd(matDeltaBiases4[row], -nr5[row] * ONE_OVER_PIXEL_COUNT);
 	}
 
 	// Backprop weights5
@@ -725,8 +808,10 @@ void Backprop3()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr3[col] * nr4[row];
-			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight * WIDTH_FACTOR);
+			atomicAdd(matDeltaWeights3[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
+		
+		atomicAdd(matDeltaBiases3[row], -nr4[row] * ONE_OVER_PIXEL_COUNT);
 	}
 
 	// Backprop weights5
@@ -757,8 +842,10 @@ void Backprop2()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr2[col] * nr3[row];
-			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight * WIDTH_FACTOR);
+			atomicAdd(matDeltaWeights2[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
+		
+		atomicAdd(matDeltaBiases2[row], -nr3[row] * ONE_OVER_PIXEL_COUNT);
 	}
 
 	// Backprop weights5
@@ -789,8 +876,10 @@ void Backprop1()
 		{
 			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr1[col] * nr2[row];
-			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight * WIDTH_FACTOR);
+			atomicAdd(matDeltaWeights1[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
+		
+		atomicAdd(matDeltaBiases1[row], -nr2[row] * ONE_OVER_PIXEL_COUNT);
 	}
 
 	// Backprop weights5
@@ -817,11 +906,63 @@ void Backprop0()
 	// Calc delta Weights5
 	for (uint row = 0; row < 64; row++)
 	{
-		for (uint col = 0; col < 5; col++)
+		for (uint col = 0; col < 34; col++)
 		{
-			uint linearIndex = (row * 5) + col;
+			uint linearIndex = (row * 34) + col;
 			float deltaWeight = -nr0[col] * nr1[row];
-			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight * WIDTH_FACTOR);
+			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
+		}
+		
+		atomicAdd(matDeltaBiases0[row], -nr1[row] * ONE_OVER_PIXEL_COUNT);
+	}
+
+	// Backprop to mrhe
+	for (uint col = 0; col < 34; col++)
+	{
+		float error = 0.0;
+		for (uint row = 0; row < 64; row++)
+		{
+			uint linearIndex = (row * 34) + col;
+			error += matWeights0[linearIndex] * nr1[row];
+		}
+		nr0[col] = error;
+	}
+}
+
+void BackpropMrhe()
+{
+	for (uint level = 0; level < 16; level++)
+	{
+		const vec3 lerpFactors = allLerpFactors[level];
+
+		uint neighbourIndices[8];
+		for (uint neigh = 0; neigh < 8; neigh++)
+		{
+			const uint linearIndex = (level * 8) + neigh;
+			neighbourIndices[neigh] = allNeighbourIndices[linearIndex];
+		}
+
+		const vec2 error = vec2(nr0[(level * 2) + 0], nr0[(level * 2) + 0]);
+
+		for (uint x = 0; x < 2; x++)
+		{
+			for (uint y = 0; y < 2; y++)
+			{
+				for (uint z = 0; z < 2; z++)
+				{
+					const uint linearIndex = (x * 4) + (y * 2) + z;
+					const uint tableEntryIndex = neighbourIndices[linearIndex];
+
+					const float xFactor = x == 1 ? lerpFactors.x : (1.0 - lerpFactors.x);
+					const float yFactor = y == 1 ? lerpFactors.y : (1.0 - lerpFactors.y);
+					const float zFactor = z == 1 ? lerpFactors.z : (1.0 - lerpFactors.z);
+					const float errorWeight = xFactor * yFactor * zFactor;
+					const vec2 delta = -error * errorWeight * ONE_OVER_PIXEL_COUNT;
+
+					atomicAdd(mrDeltaHashTable[(2 * tableEntryIndex) + 0], delta.x);
+					atomicAdd(mrDeltaHashTable[(2 * tableEntryIndex) + 1], delta.y);
+				}
+			}
 		}
 	}
 }
@@ -864,6 +1005,7 @@ void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 	Backprop2();
 	Backprop1();
 	Backprop0();
+	BackpropMrhe();
 }
 
 // End: NN
@@ -1038,7 +1180,7 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 		{
 			break;
 		}
-		totalTermProb *= 0.75;
+		totalTermProb *= 0.5;
 
 		// Generate new ray
 		if (getDensity(currentPoint) > 0.0)
@@ -1055,11 +1197,12 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 
 	if (!didScatter)
 	{
-		currentPoint = exit;
-		currentDir = -normalize(currentPoint);
+		return;
+		//currentPoint = exit;
+		//currentDir = -normalize(currentPoint);
 	}
 
-	const uint sampleCount = 4;
+	const uint sampleCount = 3;
 	vec3 tracedLight = vec3(0.0);
 	for (uint i = 0; i < sampleCount; i++)
 	{
@@ -1096,7 +1239,8 @@ void main()
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		rd = -normalize(ro);
+		return;
+		//rd = -normalize(ro);
 	}
 
 	// Learn

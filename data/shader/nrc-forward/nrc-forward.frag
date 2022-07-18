@@ -37,7 +37,7 @@ layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
 // NN buffers
 layout(std430, set = 4, binding = 0) readonly buffer Weights0
 {
-	float matWeights0[320]; // 5 x 64
+	float matWeights0[2176]; // 34 x 64
 };
 
 layout(std430, set = 4, binding = 1) readonly buffer Weights1
@@ -65,6 +65,36 @@ layout(std430, set = 4, binding = 5) readonly buffer Weights5
 	float matWeights5[192]; // 64 x 3
 };
 
+layout(std430, set = 4, binding = 12) readonly buffer Biases0
+{
+	float matBiases0[64];
+};
+
+layout(std430, set = 4, binding = 13) readonly buffer Biases1
+{
+	float matBiases1[64];
+};
+
+layout(std430, set = 4, binding = 14) readonly buffer Biases2
+{
+	float matBiases2[64];
+};
+
+layout(std430, set = 4, binding = 15) readonly buffer Biases3
+{
+	float matBiases3[64];
+};
+
+layout(std430, set = 4, binding = 16) readonly buffer Biases4
+{
+	float matBiases4[64];
+};
+
+layout(std430, set = 4, binding = 17) readonly buffer Biases5
+{
+	float matBiases5[3];
+};
+
 layout(set = 5, binding = 0) uniform PointLight
 {
 	vec3 pos;
@@ -82,6 +112,8 @@ layout(set = 6, binding = 1) uniform HdrEnvMapData
 
 layout(set = 7, binding = 0) uniform MrheData
 {
+	float learningRate;
+	float weightDecay;
 	uint levelCount;
 	uint hashTableSize;
 	uint featureCount;
@@ -145,7 +177,7 @@ float GetMrheFeature(const uint level, const uint entryIndex, const uint feature
 
 uint HashFunc(const uvec3 pos)
 {
-	const uvec3 primes = uvec3(7919, 6491, 4099);
+	const uvec3 primes = uvec3(1, 19349663, 83492791);
 	uint hash = (pos.x * primes.x) + (pos.y * primes.y) + (pos.z * primes.z);
 	hash %= mrhe.hashTableSize;
 	return hash;
@@ -194,21 +226,21 @@ void EncodePosMrhe(const vec3 pos)
 		for (uint i = 0; i < 4; i++)
 		{
 			zLerpFeatures[i] = 
-				(neighbourFeatures[i] * lerpFactors.z) + 
-				(neighbourFeatures[4 + i] * (1.0 - lerpFactors.z));
+				(neighbourFeatures[i] * (1.0 - lerpFactors.z)) + 
+				(neighbourFeatures[4 + i] * lerpFactors.z);
 		}
 
 		vec2 yLerpFeatures[2];
 		for (uint i = 0; i < 2; i++)
 		{
 			yLerpFeatures[i] =
-				(zLerpFeatures[i] * lerpFactors.y) +
-				(zLerpFeatures[2 + i] * (1.0 - lerpFactors.y));
+				(zLerpFeatures[i] * (1.0 - lerpFactors.y)) +
+				(zLerpFeatures[2 + i] * lerpFactors.y);
 		}
 
 		vec2 xLerpFeatures =
-			(yLerpFeatures[0] * lerpFactors.x) +
-			(yLerpFeatures[1] * (1.0 - lerpFactors.x));
+			(yLerpFeatures[0] * (1.0 - lerpFactors.x)) +
+			(yLerpFeatures[1] * lerpFactors.x);
 
 		// Store in feature array
 		mrheFeatures[(level * mrhe.featureCount) + 0] = xLerpFeatures.x;
@@ -227,7 +259,7 @@ float Relu(float x)
 	return max(0.0, x);
 }
 
-float nr0[5];
+float nr0[34];
 float nr1[64];
 float nr2[64];
 float nr3[64];
@@ -237,7 +269,7 @@ float nr6[3];
 
 float GetWeight0(uint row, uint col)
 {
-	uint linearIndex = row * 5 + col;
+	uint linearIndex = row * 34 + col;
 	return matWeights0[linearIndex];
 }
 
@@ -277,14 +309,14 @@ void ApplyWeights0()
 	{
 		float sum = 0.0;
 		
-		for (uint inCol = 0; inCol < 5; inCol++)
+		for (uint inCol = 0; inCol < 34; inCol++)
 		{
 			float inVal = nr0[inCol];
 			float weightVal = GetWeight0(outRow, inCol);
 			sum += inVal * weightVal;
 		}
 
-		nr1[outRow] = sum;
+		nr1[outRow] = sum + matBiases0[outRow];
 	}
 }
 
@@ -301,7 +333,7 @@ void ApplyWeights1()
 			sum += inVal * weightVal;
 		}
 
-		nr2[outRow] = sum;
+		nr2[outRow] = sum + matBiases1[outRow];
 	}
 }
 
@@ -318,7 +350,7 @@ void ApplyWeights2()
 			sum += inVal * weightVal;
 		}
 
-		nr3[outRow] = sum;
+		nr3[outRow] = sum + matBiases2[outRow];
 	}
 }
 
@@ -335,7 +367,7 @@ void ApplyWeights3()
 			sum += inVal * weightVal;
 		}
 
-		nr4[outRow] = sum;
+		nr4[outRow] = sum + matBiases3[outRow];
 	}
 }
 
@@ -352,7 +384,7 @@ void ApplyWeights4()
 			sum += inVal * weightVal;
 		}
 
-		nr5[outRow] = sum;
+		nr5[outRow] = sum + matBiases4[outRow];
 	}
 }
 
@@ -369,7 +401,7 @@ void ApplyWeights5()
 			sum += inVal * weightVal;
 		}
 
-		nr6[outRow] = sum;
+		nr6[outRow] = sum + matBiases5[outRow];
 	}
 }
 
@@ -429,20 +461,21 @@ void ActivateNr6()
 
 void EncodeRay(vec3 pos, const vec3 dir)
 {
-	pos /= skySize.y;
 	const float theta = atan(dir.y, dir.x);
 	const float phi = atan(length(dir.xy), dir.z);
 
-	nr0[0] = pos.x;
-	nr0[1] = pos.y;
-	nr0[2] = pos.z;
-	nr0[3] = theta;
-	nr0[4] = phi;
+	EncodePosMrhe(pos);
+
+	for (uint i = 0; i < 32; i++)
+	{
+		nr0[i] = mrheFeatures[i];
+	}
+	nr0[32] = theta;
+	nr0[33] = phi;
 }
 
 vec3 Forward(vec3 ro, const vec3 rd)
 {
-	EncodePosMrhe(ro);
 	EncodeRay(ro, rd);
 
 	//debugPrintfEXT("%f, %f, %f, %f, %f\n", nr0[0], nr0[1], nr0[2], nr0[3], nr0[4]);
@@ -470,7 +503,7 @@ vec3 Forward(vec3 ro, const vec3 rd)
 	outputCol.y = max(0.0, nr6[1]);
 	outputCol.z = max(0.0, nr6[2]);
 
-	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
+	debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 
 	return outputCol;
 }
@@ -708,7 +741,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 					scatteredLight += transmittance * Forward(currentPoint, currentDir) * dirPhase;
 					return vec4(scatteredLight, transmittance);
 				}
-				totalTermProb *= 0.25;
+				totalTermProb *= 0.5;
 			}
 
 			// Get scene lighting

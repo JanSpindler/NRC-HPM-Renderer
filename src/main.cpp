@@ -152,8 +152,8 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.0002f, 0.00001f);
-	en::MRHE mrhe;
+	en::NeuralRadianceCache nrc(0.1f, 0.00001f);
+	en::MRHE mrhe(0.1f, 0.00001f);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
@@ -179,6 +179,7 @@ void RunNrcHpm()
 		if (counter % 100 == 0)
 		{
 			nrc.PrintWeights();
+			//mrhe.PrintHashTables();
 		}
 
 		// Update
@@ -203,7 +204,7 @@ void RunNrcHpm()
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
 
-		if (counter % 100 == 0)
+		if (counter % 25 == 0)
 		{
 			const en::NeuralRadianceCache::StatsData& nrcStats = nrc.GetStats();
 			en::Log::Info("NRC MSE Loss: " + std::to_string(nrcStats.mseLoss));

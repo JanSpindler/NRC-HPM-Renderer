@@ -832,45 +832,73 @@ namespace en
 			m_HdrEnvMap.GetDescriptorSet(),
 			m_Mrhe.GetDescriptorSet() };
 
-		// Use train width as batch size
-		for (uint32_t y = 0; y < m_TrainHeight; y++)
-		{
-			// Bind descriptor sets
-			vkCmdBindDescriptorSets(
-				m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
-				0, descSets.size(), descSets.data(),
-				0, nullptr);
+		
+		// Bind descriptor sets
+		vkCmdBindDescriptorSets(
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			0, descSets.size(), descSets.data(),
+			0, nullptr);
 
-			// Bind train pipeline
-			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TrainPipeline);
+		// Bind train pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TrainPipeline);
 
-			// Dispatch training
-			vkCmdDispatchBase(m_CommandBuffer, 0, y, 0, m_TrainWidth, 1, 1);
+		// Dispatch training
+		vkCmdDispatch(m_CommandBuffer, 100, 100, 1);
 
-			// Bind pipeline layout
-			vkCmdBindDescriptorSets(
-				m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
-				0, descSets.size(), descSets.data(),
-				0, nullptr);
+		// Bind pipeline layout
+		vkCmdBindDescriptorSets(
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			0, descSets.size(), descSets.data(),
+			0, nullptr);
 
-			// Bind nrc step pipeline
-			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_StepPipeline);
+		// Bind nrc step pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_StepPipeline);
 
-			// Dispatch nrc gradient step
-			vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
+		// Dispatch nrc gradient step
+		vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
 
-			// Bind pipeline layout
-			vkCmdBindDescriptorSets(
-				m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
-				0, descSets.size(), descSets.data(),
-				0, nullptr);
+		// Pipeline barrier
+		VkMemoryBarrier memoryBarrier;
+		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		memoryBarrier.pNext = nullptr;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
 
-			// Bind mrhe step pipeline
-			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_MrheStepPipeline);
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			0,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
 
-			// Dispatch mrhe gradient step
-			vkCmdDispatch(m_CommandBuffer, m_Mrhe.GetHashTableSize() / sizeof(float), 1, 1);
-		}
+		// Bind pipeline layout
+		vkCmdBindDescriptorSets(
+			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			0, descSets.size(), descSets.data(),
+			0, nullptr);
+
+		// Bind mrhe step pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_MrheStepPipeline);
+
+		// Dispatch mrhe gradient step
+		vkCmdDispatch(m_CommandBuffer, m_Mrhe.GetHashTableSize() / sizeof(float), 1, 1);
+
+		// Pipeline barrier
+		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		memoryBarrier.pNext = nullptr;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			0, 
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
 
 		// Begin render pass
 		std::vector<VkClearValue> clearValues = {

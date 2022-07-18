@@ -2,14 +2,10 @@
 #extension GL_EXT_debug_printf : enable
 #extension GL_EXT_shader_atomic_float : enable
 
-layout(set = 4, binding = 12) uniform NrcConfig
+layout(set = 7, binding = 0) uniform MrheData
 {
 	float learningRate;
 	float weightDecay;
-} nrcConfig;
-
-layout(set = 7, binding = 0) uniform MrheData
-{
 	uint levelCount;
 	uint hashTableSize;
 	uint featureCount;
@@ -30,7 +26,7 @@ layout(std430, set = 7, binding = 2) buffer MRDeltaHashTable
 
 bool IsNanOrInf(float x)
 {
-	return isnan(x) || isinf(x);
+	return isnan(x) || isinf(x) || abs(x) > 1000.0;
 }
 
 float ModifyDeltaWeight(float deltaWeight, const float weight)
@@ -43,8 +39,7 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 	}
 
 	// Weight decay
-	//deltaWeight += -sign(weight) * (weight * weight) * nrcConfig.weightDecay;
-	deltaWeight += -weight * nrcConfig.weightDecay;
+	deltaWeight += -weight * mrhe.weightDecay;
 
 	return deltaWeight;
 }
@@ -52,7 +47,7 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 void StepMrhe(const uint index)
 {
 	float deltaMrhe = ModifyDeltaWeight(mrDeltaHashTable[index], mrHashTable[index]);
-	mrHashTable[index] += deltaMrhe;
+	mrHashTable[index] += deltaMrhe * mrhe.learningRate;
 	
 	if (IsNanOrInf(mrHashTable[index]))
 	{

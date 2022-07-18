@@ -5,7 +5,7 @@
 // NN buffers
 layout(std430, set = 4, binding = 0) buffer Weights0
 {
-	float matWeights0[320]; // 5 x 64
+	float matWeights0[2176]; // 34 x 64
 };
 
 layout(std430, set = 4, binding = 1) buffer Weights1
@@ -35,7 +35,7 @@ layout(std430, set = 4, binding = 5) buffer Weights5
 
 layout(std430, set = 4, binding = 6) buffer DeltaWeights0
 {
-	float matDeltaWeights0[320]; // 5 x 64
+	float matDeltaWeights0[2176]; // 34 x 64
 };
 
 layout(std430, set = 4, binding = 7) buffer DeltaWeights1
@@ -63,7 +63,67 @@ layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 	float matDeltaWeights5[192]; // 64 x 3
 };
 
-layout(set = 4, binding = 12) uniform NrcConfig
+layout(std430, set = 4, binding = 12) buffer Biases0
+{
+	float matBiases0[64];
+};
+
+layout(std430, set = 4, binding = 13) buffer Biases1
+{
+	float matBiases1[64];
+};
+
+layout(std430, set = 4, binding = 14) buffer Biases2
+{
+	float matBiases2[64];
+};
+
+layout(std430, set = 4, binding = 15) buffer Biases3
+{
+	float matBiases3[64];
+};
+
+layout(std430, set = 4, binding = 16) buffer Biases4
+{
+	float matBiases4[64];
+};
+
+layout(std430, set = 4, binding = 17) buffer Biases5
+{
+	float matBiases5[3];
+};
+
+layout(std430, set = 4, binding = 18) buffer DeltaBiases0
+{
+	float matDeltaBiases0[64];
+};
+
+layout(std430, set = 4, binding = 19) buffer DeltaBiases1
+{
+	float matDeltaBiases1[64];
+};
+
+layout(std430, set = 4, binding = 20) buffer DeltaBiases2
+{
+	float matDeltaBiases2[64];
+};
+
+layout(std430, set = 4, binding = 21) buffer DeltaBiases3
+{
+	float matDeltaBiases3[64];
+};
+
+layout(std430, set = 4, binding = 22) buffer DeltaBiases4
+{
+	float matDeltaBiases4[64];
+};
+
+layout(std430, set = 4, binding = 23) buffer DeltaBiases5
+{
+	float matDeltaBiases5[3];
+};
+
+layout(set = 4, binding = 24) uniform NrcConfig
 {
 	float learningRate;
 	float weightDecay;
@@ -96,12 +156,12 @@ const vec3 skyPos = vec3(0.0);
 
 bool IsNanOrInf(float x)
 {
-	return isnan(x) || isinf(x);
+	return isnan(x) || isinf(x) || abs(x) > 1000.0;
 }
 
 float ModifyDeltaWeight(float deltaWeight, const float weight)
 {
-	const float border = 100.0;
+	const float border = 1000.0;
 
 	if (IsNanOrInf(deltaWeight))
 	{
@@ -109,7 +169,6 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 	}
 
 	// Weight decay
-	//deltaWeight += -sign(weight) * (weight * weight) * nrcConfig.weightDecay;
 	deltaWeight += -weight * nrcConfig.weightDecay;
 
 	return deltaWeight;
@@ -117,7 +176,7 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 
 void StepWeights0(const uint index)
 {
-	if (index < 320)
+	if (index < 2176)
 	{
 		float weight = matWeights0[index];
 		float deltaWeight = ModifyDeltaWeight(matDeltaWeights0[index], weight);
@@ -205,9 +264,40 @@ void StepWeights5(const uint index)
 	}
 }
 
+void StepBiases(const uint index)
+{
+	if (index < 3)
+	{
+		matBiases5[index] += ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index]) * nrcConfig.learningRate;
+	}
+
+	if (index < 64)
+	{
+		matBiases0[index] += ModifyDeltaWeight(matDeltaBiases0[index], matBiases0[index]) * nrcConfig.learningRate;
+		matBiases1[index] += ModifyDeltaWeight(matDeltaBiases1[index], matBiases1[index]) * nrcConfig.learningRate;
+		matBiases2[index] += ModifyDeltaWeight(matDeltaBiases2[index], matBiases2[index]) * nrcConfig.learningRate;
+		matBiases3[index] += ModifyDeltaWeight(matDeltaBiases3[index], matBiases3[index]) * nrcConfig.learningRate;
+		matBiases4[index] += ModifyDeltaWeight(matDeltaBiases4[index], matBiases4[index]) * nrcConfig.learningRate;
+	}
+}
+
 void ClearDeltaWeights(const uint index)
 {
-	if (index < 320)
+	if (index < 3)
+	{
+		matDeltaBiases5[index] = 0.0;
+	}
+
+	if (index < 64)
+	{
+		matDeltaBiases0[index] = 0.0;
+		matDeltaBiases1[index] = 0.0;
+		matDeltaBiases2[index] = 0.0;
+		matDeltaBiases3[index] = 0.0;
+		matDeltaBiases4[index] = 0.0;
+	}
+
+	if (index < 2176)
 	{
 		matDeltaWeights0[index] = 0.0;
 	}
@@ -236,5 +326,6 @@ void main()
 	StepWeights3(index);
 	StepWeights4(index);
 	StepWeights5(index);
+	StepBiases(index);
 	ClearDeltaWeights(index);
 }

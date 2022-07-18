@@ -79,7 +79,7 @@ namespace en
 		m_Height(height),
 		m_RawSize(width * height * 4 * sizeof(float)),
 		m_ImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
-		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 1.0f }),
+		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 0.0f }),
 		m_UniformBuffer(
 			sizeof(UniformData), 
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 

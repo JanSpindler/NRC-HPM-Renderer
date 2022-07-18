@@ -95,9 +95,95 @@ namespace en
 		deltaWeights5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		deltaWeights5Binding.pImmutableSamplers = nullptr;
 
+		// Biases
+		VkDescriptorSetLayoutBinding biases0Binding;
+		biases0Binding.binding = 12;
+		biases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases0Binding.descriptorCount = 1;
+		biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		biases0Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases1Binding;
+		biases1Binding.binding = 13;
+		biases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases1Binding.descriptorCount = 1;
+		biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		biases1Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases2Binding;
+		biases2Binding.binding = 14;
+		biases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases2Binding.descriptorCount = 1;
+		biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		biases2Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases3Binding;
+		biases3Binding.binding = 15;
+		biases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases3Binding.descriptorCount = 1;
+		biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		biases3Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases4Binding;
+		biases4Binding.binding = 16;
+		biases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases4Binding.descriptorCount = 1;
+		biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		biases4Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding biases5Binding;
+		biases5Binding.binding = 17;
+		biases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		biases5Binding.descriptorCount = 1;
+		biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		biases5Binding.pImmutableSamplers = nullptr;
+
+		// Delta biases
+		VkDescriptorSetLayoutBinding deltabiases0Binding;
+		deltabiases0Binding.binding = 18;
+		deltabiases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltabiases0Binding.descriptorCount = 1;
+		deltabiases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		deltabiases0Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding deltabiases1Binding;
+		deltabiases1Binding.binding = 19;
+		deltabiases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltabiases1Binding.descriptorCount = 1;
+		deltabiases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		deltabiases1Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding deltabiases2Binding;
+		deltabiases2Binding.binding = 20;
+		deltabiases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltabiases2Binding.descriptorCount = 1;
+		deltabiases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		deltabiases2Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding deltabiases3Binding;
+		deltabiases3Binding.binding = 21;
+		deltabiases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltabiases3Binding.descriptorCount = 1;
+		deltabiases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		deltabiases3Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding deltabiases4Binding;
+		deltabiases4Binding.binding = 22;
+		deltabiases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltabiases4Binding.descriptorCount = 1;
+		deltabiases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		deltabiases4Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding deltabiases5Binding;
+		deltabiases5Binding.binding = 23;
+		deltabiases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		deltabiases5Binding.descriptorCount = 1;
+		deltabiases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		deltabiases5Binding.pImmutableSamplers = nullptr;
+
 		// Config uniform buffer
 		VkDescriptorSetLayoutBinding configBinding;
-		configBinding.binding = 12;
+		configBinding.binding = 24;
 		configBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		configBinding.descriptorCount = 1;
 		configBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -105,7 +191,7 @@ namespace en
 
 		// Stats buffer
 		VkDescriptorSetLayoutBinding statsBinding;
-		statsBinding.binding = 13;
+		statsBinding.binding = 25;
 		statsBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		statsBinding.descriptorCount = 1;
 		statsBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -124,6 +210,18 @@ namespace en
 			deltaWeights3Binding,
 			deltaWeights4Binding,
 			deltaWeights5Binding,
+			biases0Binding,
+			biases1Binding,
+			biases2Binding,
+			biases3Binding,
+			biases4Binding,
+			biases5Binding,
+			deltabiases0Binding,
+			deltabiases1Binding,
+			deltabiases2Binding,
+			deltabiases3Binding,
+			deltabiases4Binding,
+			deltabiases5Binding,
 			configBinding,
 			statsBinding };
 
@@ -140,7 +238,7 @@ namespace en
 		// Create desc pool
 		VkDescriptorPoolSize bufferPoolSize;
 		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bufferPoolSize.descriptorCount = 13;
+		bufferPoolSize.descriptorCount = 25;
 
 		VkDescriptorPoolSize uniformPoolSize;
 		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -198,68 +296,8 @@ namespace en
 		// Set stats
 		m_StatsBuffer.SetData(sizeof(StatsData), &m_StatsData, 0, 0);
 
-		// Init sizes
-		std::array<size_t, 6> sizes = {
-			5 * 64 * sizeof(float),
-			64 * 64 * sizeof(float),
-			64 * 64 * sizeof(float),
-			64 * 64 * sizeof(float),
-			64 * 64 * sizeof(float),
-			64 * 3 * sizeof(float) };
-
-		// Init weights and delta weights buffer
-		for (size_t i = 0; i < m_Weights.size(); i++)
-		{
-			m_Weights[i] = new vk::Buffer(
-				sizes[i],
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				{});
-
-			m_DeltaWeights[i] = new vk::Buffer(
-				sizes[i],
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				{});
-		}
-
-		// Set weights and delta weights
-		std::default_random_engine generator((std::random_device()()));
-		std::normal_distribution<float> distribution(0.0f, 1.0);
-		
-		for (size_t i = 0; i < m_Weights.size(); i++)
-		{
-			stagingBuffer = vk::Buffer(
-				sizes[i],
-				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				{});
-
-			float norm = 512.0f / static_cast<float>(sizes[i]);
-			
-			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
-
-			// Weights
-			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
-			{
-				data[weight] = distribution(generator) * norm;
-			}
-
-			stagingBuffer.SetData(sizes[i], data, 0, 0);
-			vk::Buffer::Copy(&stagingBuffer, m_Weights[i], sizes[i]);
-
-			// Delta weights
-			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
-			{
-				data[weight] = 0.0;
-			}
-
-			stagingBuffer.SetData(sizes[i], data, 0, 0);
-			vk::Buffer::Copy(&stagingBuffer, m_DeltaWeights[i], sizes[i]);
-
-			free(data);
-			stagingBuffer.Destroy();
-		}
+		InitWeightBuffers();
+		InitBiasBuffers();
 
 		// Allocate desc set
 		VkDescriptorSetAllocateInfo descSetAI;
@@ -272,22 +310,47 @@ namespace en
 		VkResult result = vkAllocateDescriptorSets(VulkanAPI::GetDevice(), &descSetAI, &m_DescSet);
 		ASSERT_VULKAN(result);
 
+		// Sizes
+		std::array<size_t, 6> weightsSizes = {
+			34 * 64 * sizeof(float), // 32 mrhe + 2 dir
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 3 * sizeof(float) };
+
+		std::array<size_t, 6> biasesSizes = {
+			64 * sizeof(float), // 32 mrhe + 2 dir
+			64 * sizeof(float),
+			64 * sizeof(float),
+			64 * sizeof(float),
+			64 * sizeof(float),
+			3 * sizeof(float) };
+
 		// Update descriptor set
 		// Set buffer infos
-		std::vector<VkDescriptorBufferInfo> bufferInfos(12);
+		std::vector<VkDescriptorBufferInfo> bufferInfos(24);
 		for (size_t i = 0; i < m_Weights.size(); i++)
 		{
 			bufferInfos[i].buffer = m_Weights[i]->GetVulkanHandle();
 			bufferInfos[i].offset = 0;
-			bufferInfos[i].range = sizes[i];
+			bufferInfos[i].range = weightsSizes[i];
 
-			bufferInfos[i + m_Weights.size()].buffer = m_DeltaWeights[i]->GetVulkanHandle();
-			bufferInfos[i + m_Weights.size()].offset = 0;
-			bufferInfos[i + m_Weights.size()].range = sizes[i];
+			bufferInfos[i + 6].buffer = m_DeltaWeights[i]->GetVulkanHandle();
+			bufferInfos[i + 6].offset = 0;
+			bufferInfos[i + 6].range = weightsSizes[i];
+
+			bufferInfos[i + 12].buffer = m_Biases[i]->GetVulkanHandle();
+			bufferInfos[i + 12].offset = 0;
+			bufferInfos[i + 12].range = biasesSizes[i];
+
+			bufferInfos[i + 18].buffer = m_DeltaBiases[i]->GetVulkanHandle();
+			bufferInfos[i + 18].offset = 0;
+			bufferInfos[i + 18].range = biasesSizes[i];
 		}
 
 		// Set writes
-		std::vector<VkWriteDescriptorSet> writes(12);
+		std::vector<VkWriteDescriptorSet> writes(24);
 		for (size_t i = 0; i < writes.size(); i++)
 		{
 			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -311,7 +374,7 @@ namespace en
 		configWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		configWrite.pNext = nullptr;
 		configWrite.dstSet = m_DescSet;
-		configWrite.dstBinding = 12;
+		configWrite.dstBinding = 24;
 		configWrite.dstArrayElement = 0;
 		configWrite.descriptorCount = 1;
 		configWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -328,7 +391,7 @@ namespace en
 		statsWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		statsWrite.pNext = nullptr;
 		statsWrite.dstSet = m_DescSet;
-		statsWrite.dstBinding = 13;
+		statsWrite.dstBinding = 25;
 		statsWrite.dstArrayElement = 0;
 		statsWrite.descriptorCount = 1;
 		statsWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -351,6 +414,12 @@ namespace en
 
 			m_DeltaWeights[i]->Destroy();
 			delete m_DeltaWeights[i];
+
+			m_Biases[i]->Destroy();
+			delete m_Biases[i];
+
+			m_DeltaBiases[i]->Destroy();
+			delete m_DeltaBiases[i];
 		}
 
 		m_ConfigUniformBuffer.Destroy();
@@ -377,7 +446,7 @@ namespace en
 	void NeuralRadianceCache::PrintWeights() const
 	{
 		std::array<size_t, 6> sizes = {
-			5 * 64 * sizeof(float),
+			34 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
@@ -410,5 +479,99 @@ namespace en
 
 			free(data);
 		}
+	}
+
+	void NeuralRadianceCache::InitWeightBuffers()
+	{
+		// Init weight sizes
+		std::array<size_t, 6> sizes = {
+			34 * 64 * sizeof(float), // 32 mrhe + 2 dir
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
+			64 * 3 * sizeof(float) };
+
+		// Init weights and delta weights buffer
+		for (size_t i = 0; i < m_Weights.size(); i++)
+		{
+			m_Weights[i] = new vk::Buffer(
+				sizes[i],
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+
+			m_DeltaWeights[i] = new vk::Buffer(
+				sizes[i],
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+		}
+
+		// Set weights and delta weights
+		std::default_random_engine generator((std::random_device()()));
+		std::normal_distribution<float> distribution(0.0f, 1.0);
+
+		for (size_t i = 0; i < m_Weights.size(); i++)
+		{
+			vk::Buffer stagingBuffer = vk::Buffer(
+				sizes[i],
+				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+
+			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
+
+			// Weights
+			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
+			{
+				data[weight] = distribution(generator) * 0.01f;
+			}
+
+			stagingBuffer.SetData(sizes[i], data, 0, 0);
+			vk::Buffer::Copy(&stagingBuffer, m_Weights[i], sizes[i]);
+
+			// Delta weights
+			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
+			{
+				data[weight] = 0.0;
+			}
+
+			stagingBuffer.SetData(sizes[i], data, 0, 0);
+			vk::Buffer::Copy(&stagingBuffer, m_DeltaWeights[i], sizes[i]);
+
+			free(data);
+			stagingBuffer.Destroy();
+		}
+	}
+
+	void NeuralRadianceCache::InitBiasBuffers()
+	{
+		// Init biases sizes
+		std::array<size_t, 6> biasesSizes = {
+			64 * sizeof(float), // 32 mrhe + 2 dir
+			64 * sizeof(float),
+			64 * sizeof(float),
+			64 * sizeof(float),
+			64 * sizeof(float),
+			3 * sizeof(float) };
+
+		// Init biases and delta biases buffer
+		for (size_t i = 0; i < m_Biases.size(); i++)
+		{
+			m_Biases[i] = new vk::Buffer(
+				biasesSizes[i],
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+
+			m_DeltaBiases[i] = new vk::Buffer(
+				biasesSizes[i],
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+		}
+
+		// TODO: init biases
 	}
 }

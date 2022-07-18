@@ -76,8 +76,10 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	MRHE::MRHE() :
+	MRHE::MRHE(float learningRate, float weightDecay) :
 		m_UniformData({
+			.learningRate = learningRate,
+			.weightDecay = weightDecay,
 			.levelCount = 16,
 			.hashTableSize = 16384,
 			.featureCount = 2,
@@ -88,11 +90,15 @@ namespace en
 				VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				{}),
-		m_HashTablesSize(m_UniformData.levelCount* m_UniformData.hashTableSize* m_UniformData.featureCount * sizeof(float)),
+		m_HashTablesSize(
+			m_UniformData.levelCount * 
+			m_UniformData.hashTableSize * 
+			m_UniformData.featureCount * 
+			sizeof(float)),
 		m_HashTablesBuffer(
 			m_HashTablesSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			{}),
 		m_DeltaHashTablesBuffer(
 			m_HashTablesSize,
@@ -119,13 +125,13 @@ namespace en
 	
 		// Setup hash tables buffer
 		std::default_random_engine generator((std::random_device()()));
-		std::normal_distribution<float> distribution(0.0f, 0.5);
+		std::normal_distribution<float> distribution(0.0f, 1.0);
 
 		float* hashTablesData = reinterpret_cast<float*>(malloc(m_HashTablesSize));
 
 		for (size_t i = 0; i < m_HashTablesSize / sizeof(float); i++)
 		{
-			hashTablesData[i] = distribution(generator);
+			hashTablesData[i] = distribution(generator) * 0.1f;
 		}
 
 		vk::Buffer stagingBuffer(
@@ -223,6 +229,34 @@ namespace en
 		m_DeltaHashTablesBuffer.Destroy();
 		m_HashTablesBuffer.Destroy();
 		m_UniformBuffer.Destroy();
+	}
+
+	void MRHE::PrintHashTables() const
+	{
+		vk::Buffer stagingBuffer(
+			m_HashTablesSize, 
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			{});
+
+		vk::Buffer::Copy(&m_HashTablesBuffer, &stagingBuffer, m_HashTablesSize);
+
+		float* hashTablesData = reinterpret_cast<float*>(malloc(m_HashTablesSize));
+
+		stagingBuffer.GetData(m_HashTablesSize, hashTablesData, 0, 0);
+
+		stagingBuffer.Destroy();
+
+		std::string str = "[";
+		for (size_t i = 0; i < (m_HashTablesSize / sizeof(float)); i++)
+		{
+			str += std::to_string(hashTablesData[i]) + ", ";
+		}
+		str += "]";
+
+		Log::Info(str);
+
+		free(hashTablesData);
 	}
 
 	VkDescriptorSet MRHE::GetDescriptorSet() const

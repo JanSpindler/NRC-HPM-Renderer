@@ -42,6 +42,9 @@ namespace en
 		std::array<vk::Buffer*, 6> m_Weights;
 		std::array<vk::Buffer*, 6> m_DeltaWeights;
 		
+		std::array<vk::Buffer*, 6> m_Biases;
+		std::array<vk::Buffer*, 6> m_DeltaBiases;
+
 		ConfigData m_ConfigData;
 		vk::Buffer m_ConfigUniformBuffer;
 
@@ -49,5 +52,8 @@ namespace en
 		vk::Buffer m_StatsBuffer;
 
 		VkDescriptorSet m_DescSet;
+
+		void InitWeightBuffers();
+		void InitBiasBuffers();
 	};
 }
