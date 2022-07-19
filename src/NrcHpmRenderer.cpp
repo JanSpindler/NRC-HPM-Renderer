@@ -845,6 +845,22 @@ namespace en
 		// Dispatch training
 		vkCmdDispatch(m_CommandBuffer, 100, 100, 1);
 
+		// Pipeline barrier
+		VkMemoryBarrier memoryBarrier;
+		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		memoryBarrier.pNext = nullptr;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
+		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
+
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			0,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
+
 		// Bind pipeline layout
 		vkCmdBindDescriptorSets(
 			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
@@ -858,11 +874,10 @@ namespace en
 		vkCmdDispatch(m_CommandBuffer, 4096, 1, 1);
 
 		// Pipeline barrier
-		VkMemoryBarrier memoryBarrier;
 		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 		memoryBarrier.pNext = nullptr;
-		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
+		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
 
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,
@@ -888,7 +903,7 @@ namespace en
 		// Pipeline barrier
 		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
 		memoryBarrier.pNext = nullptr;
-		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT;
 		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
 		vkCmdPipelineBarrier(

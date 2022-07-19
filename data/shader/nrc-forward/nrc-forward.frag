@@ -65,32 +65,32 @@ layout(std430, set = 4, binding = 5) readonly buffer Weights5
 	float matWeights5[192]; // 64 x 3
 };
 
-layout(std430, set = 4, binding = 12) readonly buffer Biases0
+layout(std430, set = 4, binding = 18) readonly buffer Biases0
 {
 	float matBiases0[64];
 };
 
-layout(std430, set = 4, binding = 13) readonly buffer Biases1
+layout(std430, set = 4, binding = 19) readonly buffer Biases1
 {
 	float matBiases1[64];
 };
 
-layout(std430, set = 4, binding = 14) readonly buffer Biases2
+layout(std430, set = 4, binding = 20) readonly buffer Biases2
 {
 	float matBiases2[64];
 };
 
-layout(std430, set = 4, binding = 15) readonly buffer Biases3
+layout(std430, set = 4, binding = 21) readonly buffer Biases3
 {
 	float matBiases3[64];
 };
 
-layout(std430, set = 4, binding = 16) readonly buffer Biases4
+layout(std430, set = 4, binding = 22) readonly buffer Biases4
 {
 	float matBiases4[64];
 };
 
-layout(std430, set = 4, binding = 17) readonly buffer Biases5
+layout(std430, set = 4, binding = 23) readonly buffer Biases5
 {
 	float matBiases5[3];
 };
@@ -756,12 +756,6 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 
 			scatteredLight += transmittance * s_int;
 			transmittance *= t_r;
-
-			// Low transmittance early exit
-			if (transmittance < 0.01)
-			{
-				break;
-			}
 
 			// Update last
 			lastPoint = currentPoint;

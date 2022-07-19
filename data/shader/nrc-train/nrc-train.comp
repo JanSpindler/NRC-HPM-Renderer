@@ -95,67 +95,97 @@ layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 	float matDeltaWeights5[192]; // 64 x 3
 };
 
-layout(std430, set = 4, binding = 12) buffer Biases0
+layout(std430, set = 4, binding = 12) buffer Momentum1Weights0
+{
+	float matMomentum1Weights0[2176]; // 34 x 64
+};
+
+layout(std430, set = 4, binding = 13) buffer Momentum1Weights1
+{
+	float matMomentum1Weights1[4096]; // 64 x 64
+};
+
+layout(std430, set = 4, binding = 14) buffer Momentum1Weights2
+{
+	float matMomentum1Weights2[4096]; // 64 x 64
+};
+
+layout(std430, set = 4, binding = 15) buffer Momentum1Weights3
+{
+	float matMomentum1Weights3[4096]; // 64 x 64
+};
+
+layout(std430, set = 4, binding = 16) buffer Momentum1Weights4
+{
+	float matMomentum1Weights4[4096]; // 64 x 64
+};
+
+layout(std430, set = 4, binding = 17) buffer Momentum1Weights5
+{
+	float matMomentum1Weights5[192]; // 64 x 3
+};
+
+layout(std430, set = 4, binding = 18) buffer Biases0
 {
 	float matBiases0[64];
 };
 
-layout(std430, set = 4, binding = 13) buffer Biases1
+layout(std430, set = 4, binding = 19) buffer Biases1
 {
 	float matBiases1[64];
 };
 
-layout(std430, set = 4, binding = 14) buffer Biases2
+layout(std430, set = 4, binding = 20) buffer Biases2
 {
 	float matBiases2[64];
 };
 
-layout(std430, set = 4, binding = 15) buffer Biases3
+layout(std430, set = 4, binding = 21) buffer Biases3
 {
 	float matBiases3[64];
 };
 
-layout(std430, set = 4, binding = 16) buffer Biases4
+layout(std430, set = 4, binding = 22) buffer Biases4
 {
 	float matBiases4[64];
 };
 
-layout(std430, set = 4, binding = 17) buffer Biases5
+layout(std430, set = 4, binding = 23) buffer Biases5
 {
 	float matBiases5[3];
 };
 
-layout(std430, set = 4, binding = 18) buffer DeltaBiases0
+layout(std430, set = 4, binding = 24) buffer DeltaBiases0
 {
 	float matDeltaBiases0[64];
 };
 
-layout(std430, set = 4, binding = 19) buffer DeltaBiases1
+layout(std430, set = 4, binding = 25) buffer DeltaBiases1
 {
 	float matDeltaBiases1[64];
 };
 
-layout(std430, set = 4, binding = 20) buffer DeltaBiases2
+layout(std430, set = 4, binding = 26) buffer DeltaBiases2
 {
 	float matDeltaBiases2[64];
 };
 
-layout(std430, set = 4, binding = 21) buffer DeltaBiases3
+layout(std430, set = 4, binding = 27) buffer DeltaBiases3
 {
 	float matDeltaBiases3[64];
 };
 
-layout(std430, set = 4, binding = 22) buffer DeltaBiases4
+layout(std430, set = 4, binding = 28) buffer DeltaBiases4
 {
 	float matDeltaBiases4[64];
 };
 
-layout(std430, set = 4, binding = 23) buffer DeltaBiases5
+layout(std430, set = 4, binding = 29) buffer DeltaBiases5
 {
 	float matDeltaBiases5[3];
 };
 
-layout(std430, set = 4, binding = 25) buffer NrcStats
+layout(std430, set = 4, binding = 31) buffer NrcStats
 {
 	float mseLoss;
 } nrcStats;
@@ -213,7 +243,7 @@ const vec3 skyPos = vec3(0.0);
 
 #define SAMPLE_COUNT 40
 
-#define IMPORTANCE_SAMPLING
+//#define IMPORTANCE_SAMPLING
 
 // Random
 float preRand;// = volumeData.random.x * fragUV.x;
@@ -990,11 +1020,11 @@ void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 	// Backprop
 	const vec3 error = pred - target;
 	const float mseLoss = ((error.x * error.x) + (error.y * error.y) + (error.z * error.z)) / 3.0;
-	atomicAdd(nrcStats.mseLoss, mseLoss * WIDTH_FACTOR * HEIGHT_FACTOR);
+	atomicAdd(nrcStats.mseLoss, mseLoss * ONE_OVER_PIXEL_COUNT);
 
-	nr6[0] = 2.0 * error.x;
-	nr6[1] = 2.0 * error.y;
-	nr6[2] = 2.0 * error.z;
+	nr6[0] = error.x;
+	nr6[1] = error.y;
+	nr6[2] = error.z;
 
 	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	//debugPrintfEXT("%f, %f, %f\n", target.x, target.y, target.z);
@@ -1133,12 +1163,6 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 			scatteredLight += transmittance * s_int;
 			transmittance *= t_r;
 
-			// Low transmittance early exit
-			if (transmittance < 0.01)
-			{
-				break;
-			}
-
 			// Update last
 			lastPoint = currentPoint;
 			lastDir = currentDir;
@@ -1202,7 +1226,7 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 		//currentDir = -normalize(currentPoint);
 	}
 
-	const uint sampleCount = 3;
+	const uint sampleCount = 8;
 	vec3 tracedLight = vec3(0.0);
 	for (uint i = 0; i < sampleCount; i++)
 	{

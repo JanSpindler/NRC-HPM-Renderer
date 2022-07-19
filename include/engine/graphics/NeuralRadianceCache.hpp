@@ -17,7 +17,7 @@ namespace en
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescSetLayout();
 
-		NeuralRadianceCache(float learningRate, float weightDecay);
+		NeuralRadianceCache(float learningRate, float weightDecay, float beta1);
 
 		void Destroy();
 
@@ -34,6 +34,7 @@ namespace en
 		{
 			float learningRate;
 			float weightDecay;
+			float beta1;
 		};
 		
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -41,7 +42,8 @@ namespace en
 
 		std::array<vk::Buffer*, 6> m_Weights;
 		std::array<vk::Buffer*, 6> m_DeltaWeights;
-		
+		std::array<vk::Buffer*, 6> m_Momentum1Weights;
+
 		std::array<vk::Buffer*, 6> m_Biases;
 		std::array<vk::Buffer*, 6> m_DeltaBiases;
 
