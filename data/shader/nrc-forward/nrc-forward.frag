@@ -37,7 +37,7 @@ layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
 // NN buffers
 layout(std430, set = 4, binding = 0) readonly buffer Weights0
 {
-	float matWeights0[2176]; // 34 x 64
+	float matWeights0[4096]; // 64 x 64
 };
 
 layout(std430, set = 4, binding = 1) readonly buffer Weights1
@@ -185,6 +185,7 @@ uint HashFunc(const uvec3 pos)
 
 float mrheFeatures[32]; // 16 * 2
 
+// Encode pos
 void EncodePosMrhe(const vec3 pos)
 {
 	const vec3 normPos = (pos / skySize) + vec3(0.5);
@@ -248,6 +249,32 @@ void EncodePosMrhe(const vec3 pos)
 	}
 }
 
+// Encode dir
+float oneBlobFeatures[32];
+
+float NormGauss(const float x, const float m, const float sigma)
+{
+	const float term1 = 1.0 / (sigma * sqrt(2.0 * PI));
+	const float term2 = ((x - m) / sigma);
+	const float result = term1 * exp(-0.5 * term2 * term2);
+	return result;
+}
+
+void EncodeDirOneBlob(const vec3 dir)
+{
+	// Theta and phi in [0, 1]
+	const float theta = (atan(dir.z, dir.x) / PI) + 0.5;
+	const float phi = (atan(length(dir.xz), dir.y) / PI) + 0.5;
+
+	const float sigma = 1.0 / 16.0;
+	for (uint i = 0; i < 16; i++)
+	{
+		const float fI = float(i);
+		oneBlobFeatures[i] = NormGauss(fI, theta, sigma);
+		oneBlobFeatures[i + 16] = NormGauss(fI, phi, sigma);
+	}
+}
+
 // NN helper
 float Sigmoid(float x)
 {
@@ -259,7 +286,7 @@ float Relu(float x)
 	return max(0.0, x);
 }
 
-float nr0[34];
+float nr0[64];
 float nr1[64];
 float nr2[64];
 float nr3[64];
@@ -269,7 +296,7 @@ float nr6[3];
 
 float GetWeight0(uint row, uint col)
 {
-	uint linearIndex = row * 34 + col;
+	uint linearIndex = row * 64 + col;
 	return matWeights0[linearIndex];
 }
 
@@ -309,7 +336,7 @@ void ApplyWeights0()
 	{
 		float sum = 0.0;
 		
-		for (uint inCol = 0; inCol < 34; inCol++)
+		for (uint inCol = 0; inCol < 64; inCol++)
 		{
 			float inVal = nr0[inCol];
 			float weightVal = GetWeight0(outRow, inCol);
@@ -461,17 +488,14 @@ void ActivateNr6()
 
 void EncodeRay(vec3 pos, const vec3 dir)
 {
-	const float theta = atan(dir.y, dir.x);
-	const float phi = atan(length(dir.xy), dir.z);
-
 	EncodePosMrhe(pos);
+	EncodeDirOneBlob(dir);
 
 	for (uint i = 0; i < 32; i++)
 	{
 		nr0[i] = mrheFeatures[i];
+		nr0[i + 32] = oneBlobFeatures[i];
 	}
-	nr0[32] = theta;
-	nr0[33] = phi;
 }
 
 vec3 Forward(vec3 ro, const vec3 rd)

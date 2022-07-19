@@ -37,7 +37,7 @@ layout(set = 2, binding = 0) uniform dir_light_t
 // NN buffers
 layout(std430, set = 4, binding = 0) buffer Weights0
 {
-	float matWeights0[2176]; // 34 x 64
+	float matWeights0[4096]; // 64 x 64
 };
 
 layout(std430, set = 4, binding = 1) buffer Weights1
@@ -67,7 +67,7 @@ layout(std430, set = 4, binding = 5) buffer Weights5
 
 layout(std430, set = 4, binding = 6) buffer DeltaWeights0
 {
-	float matDeltaWeights0[2176]; // 34 x 64
+	float matDeltaWeights0[4096]; // 64 x 64
 };
 
 layout(std430, set = 4, binding = 7) buffer DeltaWeights1
@@ -93,36 +93,6 @@ layout(std430, set = 4, binding = 10) buffer DeltaWeights4
 layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 {
 	float matDeltaWeights5[192]; // 64 x 3
-};
-
-layout(std430, set = 4, binding = 12) buffer Momentum1Weights0
-{
-	float matMomentum1Weights0[2176]; // 34 x 64
-};
-
-layout(std430, set = 4, binding = 13) buffer Momentum1Weights1
-{
-	float matMomentum1Weights1[4096]; // 64 x 64
-};
-
-layout(std430, set = 4, binding = 14) buffer Momentum1Weights2
-{
-	float matMomentum1Weights2[4096]; // 64 x 64
-};
-
-layout(std430, set = 4, binding = 15) buffer Momentum1Weights3
-{
-	float matMomentum1Weights3[4096]; // 64 x 64
-};
-
-layout(std430, set = 4, binding = 16) buffer Momentum1Weights4
-{
-	float matMomentum1Weights4[4096]; // 64 x 64
-};
-
-layout(std430, set = 4, binding = 17) buffer Momentum1Weights5
-{
-	float matMomentum1Weights5[192]; // 64 x 3
 };
 
 layout(std430, set = 4, binding = 18) buffer Biases0
@@ -364,6 +334,32 @@ void EncodePosMrhe(const vec3 pos)
 	}
 }
 
+// Encode dir
+float oneBlobFeatures[32];
+
+float NormGauss(const float x, const float m, const float sigma)
+{
+	const float term1 = 1.0 / (sigma * sqrt(2.0 * PI));
+	const float term2 = ((x - m) / sigma);
+	const float result = term1 * exp(-0.5 * term2 * term2);
+	return result;
+}
+
+void EncodeDirOneBlob(const vec3 dir)
+{
+	// Theta and phi in [0, 1]
+	const float theta = (atan(dir.z, dir.x) / PI) + 0.5;
+	const float phi = (atan(length(dir.xz), dir.y) / PI) + 0.5;
+
+	const float sigma = 1.0 / 16.0;
+	for (uint i = 0; i < 16; i++)
+	{
+		const float fI = float(i);
+		oneBlobFeatures[i] = NormGauss(fI, theta, sigma);
+		oneBlobFeatures[i + 16] = NormGauss(fI, phi, sigma);
+	}
+}
+
 // Path trace helper
 float sky_sdf(vec3 pos)
 {
@@ -479,7 +475,7 @@ vec3 NewRayDir(vec3 oldRayDir)
 
 // Start: NN
 
-float nr0[34];
+float nr0[64];
 float nr1[64];
 float nr2[64];
 float nr3[64];
@@ -517,7 +513,7 @@ float ReluDeriv(float x)
 
 float GetWeight0(uint row, uint col)
 {
-	uint linearIndex = row * 34 + col;
+	uint linearIndex = row * 64 + col;
 	return matWeights0[linearIndex];
 }
 
@@ -557,7 +553,7 @@ void ApplyWeights0()
 	{
 		float sum = 0;
 		
-		for (uint inCol = 0; inCol < 34; inCol++)
+		for (uint inCol = 0; inCol < 64; inCol++)
 		{
 			float inVal = nr0[inCol];
 			float weightVal = GetWeight0(outRow, inCol);
@@ -709,22 +705,14 @@ void ActivateNr6()
 
 void EncodeRay(vec3 pos, const vec3 dir)
 {
-	//debugPrintfEXT("%f, %f, %f\n", pos.x, pos.y, pos.z);
-
-	//pos /= skySize.y;
-	const float theta = atan(dir.y, dir.x);
-	const float phi = atan(length(dir.xy), dir.z);
-	
-	//debugPrintfEXT("%f, %f, %f, %f, %f\n", pos.x, pos.y, pos.z, theta, phi);
-
 	EncodePosMrhe(pos);
+	EncodeDirOneBlob(dir);
 
 	for (uint i = 0; i < 32; i++)
 	{
 		nr0[i] = mrheFeatures[i];
+		nr0[i + 32] = oneBlobFeatures[i];
 	}
-	nr0[32] = theta;
-	nr0[33] = phi;
 }
 
 void Forward()
@@ -936,9 +924,9 @@ void Backprop0()
 	// Calc delta Weights5
 	for (uint row = 0; row < 64; row++)
 	{
-		for (uint col = 0; col < 34; col++)
+		for (uint col = 0; col < 64; col++)
 		{
-			uint linearIndex = (row * 34) + col;
+			uint linearIndex = (row * 64) + col;
 			float deltaWeight = -nr0[col] * nr1[row];
 			atomicAdd(matDeltaWeights0[linearIndex], deltaWeight * ONE_OVER_PIXEL_COUNT);
 		}
@@ -947,12 +935,12 @@ void Backprop0()
 	}
 
 	// Backprop to mrhe
-	for (uint col = 0; col < 34; col++)
+	for (uint col = 0; col < 64; col++)
 	{
 		float error = 0.0;
 		for (uint row = 0; row < 64; row++)
 		{
-			uint linearIndex = (row * 34) + col;
+			uint linearIndex = (row * 64) + col;
 			error += matWeights0[linearIndex] * nr1[row];
 		}
 		nr0[col] = error;

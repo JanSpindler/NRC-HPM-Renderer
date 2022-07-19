@@ -361,7 +361,7 @@ namespace en
 
 		// Sizes
 		std::array<size_t, 6> weightsSizes = {
-			34 * 64 * sizeof(float), // 32 mrhe + 2 dir
+			64 * 64 * sizeof(float), // 32 mrhe + 2 dir
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
@@ -502,7 +502,7 @@ namespace en
 	void NeuralRadianceCache::PrintWeights() const
 	{
 		std::array<size_t, 6> sizes = {
-			34 * 64 * sizeof(float),
+			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
@@ -541,7 +541,7 @@ namespace en
 	{
 		// Init weight sizes
 		std::array<size_t, 6> sizes = {
-			34 * 64 * sizeof(float), // 32 mrhe + 2 dir
+			64 * 64 * sizeof(float), // 32 mrhe + 2 dir
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),
 			64 * 64 * sizeof(float),

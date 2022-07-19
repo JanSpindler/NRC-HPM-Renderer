@@ -5,7 +5,7 @@
 // NN buffers
 layout(std430, set = 4, binding = 0) buffer Weights0
 {
-	float matWeights0[2176]; // 34 x 64
+	float matWeights0[64]; // 64 x 64
 };
 
 layout(std430, set = 4, binding = 1) buffer Weights1
@@ -35,7 +35,7 @@ layout(std430, set = 4, binding = 5) buffer Weights5
 
 layout(std430, set = 4, binding = 6) buffer DeltaWeights0
 {
-	float matDeltaWeights0[2176]; // 34 x 64
+	float matDeltaWeights0[4096]; // 64 x 64
 };
 
 layout(std430, set = 4, binding = 7) buffer DeltaWeights1
@@ -65,7 +65,7 @@ layout(std430, set = 4, binding = 11) buffer DeltaWeights5
 
 layout(std430, set = 4, binding = 12) buffer Momentum1Weights0
 {
-	float matMomentum1Weights0[2176]; // 34 x 64
+	float matMomentum1Weights0[4096]; // 64 x 64
 };
 
 layout(std430, set = 4, binding = 13) buffer Momentum1Weights1
@@ -207,7 +207,7 @@ float ModifyDeltaWeight(float deltaWeight, const float weight)
 
 void StepWeights0(const uint index)
 {
-	if (index < 2176)
+	if (index < 4096)
 	{
 		float weight = matWeights0[index];
 		float deltaWeight = 
@@ -346,13 +346,9 @@ void ClearDeltaWeights(const uint index)
 		matDeltaBiases4[index] = 0.0;
 	}
 
-	if (index < 2176)
-	{
-		matDeltaWeights0[index] = 0.0;
-	}
-
 	if (index < 4096)
 	{
+		matDeltaWeights0[index] = 0.0;
 		matDeltaWeights1[index] = 0.0;
 		matDeltaWeights2[index] = 0.0;
 		matDeltaWeights3[index] = 0.0;
