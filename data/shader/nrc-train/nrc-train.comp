@@ -213,7 +213,7 @@ const vec3 skyPos = vec3(0.0);
 
 #define SAMPLE_COUNT 40
 
-//#define IMPORTANCE_SAMPLING
+#define IMPORTANCE_SAMPLING
 
 // Random
 float preRand;// = volumeData.random.x * fragUV.x;
@@ -433,7 +433,7 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
-vec3 NewRayDir(vec3 oldRayDir)
+vec3 NewRayDir(vec3 oldRayDir, const bool importanceSample)
 {
 	// Assert: length(oldRayDir) == 1.0
 	// Assert: rand's are in [0.0, 1.0]
@@ -446,22 +446,27 @@ vec3 NewRayDir(vec3 oldRayDir)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-#ifdef IMPORTANCE_SAMPLING
-	float g = volumeData.g;
-	float cosTheta;
-	if (abs(g) < 0.001)
-    {
-		cosTheta = 1 - 2 * RandFloat(1.0);
+	float angle;
+	if (importanceSample)
+	{
+		float g = volumeData.g;
+		float cosTheta;
+		if (abs(g) < 0.001)
+		{
+			cosTheta = 1 - 2 * RandFloat(1.0);
+		}
+		else
+		{
+			float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
+			cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+		}
+		angle = acos(cosTheta);
 	}
 	else
 	{
-		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
-		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+		float angle = RandFloat(PI);
 	}
-	float angle = acos(cosTheta);
-#else
-	float angle = RandFloat(PI);
-#endif
+
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
@@ -1098,7 +1103,7 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 
 	for (uint i = 0; i < sampleCount; i++)
 	{
-		const vec3 randomDir = NewRayDir(dir);
+		const vec3 randomDir = NewRayDir(dir, true);
 		const float phase = hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 32);
@@ -1114,7 +1119,7 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 
 vec3 TraceScene(const vec3 pos, const vec3 dir)
 {
-	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) * SampleHdrEnvMap(pos, dir, 16);
+	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir);// * SampleHdrEnvMap(pos, dir, 16);
 	return totalLight;
 }
 
@@ -1132,6 +1137,8 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
+	float totalPhase = 1.0;
+
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
@@ -1143,9 +1150,10 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 			// Phase factor
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
+			totalPhase *= dirPhase;
 
 			// Transmittance calculation
-			const vec3 s_int = density * sceneLighting * dirPhase;
+			const vec3 s_int = density * sceneLighting * totalPhase;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
 
 			scatteredLight += transmittance * s_int;
@@ -1156,7 +1164,7 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 			lastDir = currentDir;
 
 			// Generate new direction
-			currentDir = NewRayDir(currentDir);
+			currentDir = NewRayDir(currentDir, true);
 		}
 
 		// Generate new point
@@ -1198,7 +1206,7 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 		if (getDensity(currentPoint) > 0.0)
 		{
 			didScatter = true;
-			currentDir = NewRayDir(currentDir);
+			currentDir = NewRayDir(currentDir, false);
 		}
 
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];

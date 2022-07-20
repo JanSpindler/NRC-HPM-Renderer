@@ -520,14 +520,13 @@ vec3 Forward(vec3 ro, const vec3 rd)
 	ActivateNr5();
 	
 	ApplyWeights5();
+	debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	ActivateNr6();
 
 	vec3 outputCol;
 	outputCol.x = max(0.0, nr6[0]);
 	outputCol.y = max(0.0, nr6[1]);
 	outputCol.z = max(0.0, nr6[2]);
-
-	debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 
 	return outputCol;
 }
@@ -751,6 +750,8 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 
 	float totalTermProb = 1.0;
 
+	float totalPhase = 1.0;
+
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
@@ -773,9 +774,10 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 
 			// Phase factor
 			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
+			totalPhase *= dirPhase;
 
 			// Transmittance calculation
-			const vec3 s_int = density * sceneLighting * dirPhase;
+			const vec3 s_int = density * sceneLighting * totalPhase;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
 
 			scatteredLight += transmittance * s_int;
