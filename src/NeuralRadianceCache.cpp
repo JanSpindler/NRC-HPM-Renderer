@@ -403,7 +403,7 @@ namespace en
 		}
 
 		// Set writes
-		std::vector<VkWriteDescriptorSet> writes(24);
+		std::vector<VkWriteDescriptorSet> writes(30);
 		for (size_t i = 0; i < writes.size(); i++)
 		{
 			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

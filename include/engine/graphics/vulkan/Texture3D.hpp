@@ -9,8 +9,16 @@ namespace en::vk
 	class Texture3D
 	{
 	public:
-		Texture3D(const std::vector<std::vector<std::vector<float>>>& data, VkFilter filter, VkSamplerAddressMode addressMode);
-		Texture3D(const std::array<std::vector<std::vector<std::vector<float>>>, 4>& data, VkFilter filter, VkSamplerAddressMode addressMode);
+		Texture3D(
+			const std::vector<std::vector<std::vector<float>>>& data, 
+			VkFilter filter, 
+			VkSamplerAddressMode addressMode,
+			VkBorderColor borderColor);
+		Texture3D(
+			const std::array<std::vector<std::vector<std::vector<float>>>, 4>& data, 
+			VkFilter filter, 
+			VkSamplerAddressMode addressMode,
+			VkBorderColor borderColor);
 
 		void Destroy();
 
@@ -35,7 +43,7 @@ namespace en::vk
 		VkImageLayout m_ImageLayout;
 		VkSampler m_Sampler;
 
-		void LoadToDevice(void* data, VkFilter filter, VkSamplerAddressMode addressMode);
+		void LoadToDevice(void* data, VkFilter filter, VkSamplerAddressMode addressMode, VkBorderColor borderColor);
 		void ChangeLayout(VkImageLayout layout, VkCommandBuffer commandBuffer, VkQueue queue);
 		void WriteBufferToImage(VkCommandBuffer commandBuffer, VkQueue queue, VkBuffer buffer);
 	};

@@ -7,7 +7,12 @@
 
 namespace en::vk
 {
-	Texture3D::Texture3D(const std::vector<std::vector<std::vector<float>>>& data, VkFilter filter, VkSamplerAddressMode addressMode) :
+	Texture3D::Texture3D(
+		const std::vector<std::vector<std::vector<float>>>& data, 
+		VkFilter filter, 
+		VkSamplerAddressMode addressMode,
+		VkBorderColor borderColor)
+		:
 		m_Width(data.size()),
 		m_Height(data[0].size()),
 		m_Depth(data[0][0].size()),
@@ -34,10 +39,15 @@ namespace en::vk
 			}
 		}
 
-		LoadToDevice(dataArray.data(), filter, addressMode);
+		LoadToDevice(dataArray.data(), filter, addressMode, borderColor);
 	}
 
-	Texture3D::Texture3D(const std::array<std::vector<std::vector<std::vector<float>>>, 4>& data, VkFilter filter, VkSamplerAddressMode addressMode) :
+	Texture3D::Texture3D(
+		const std::array<std::vector<std::vector<std::vector<float>>>, 4>& data, 
+		VkFilter filter, 
+		VkSamplerAddressMode addressMode,
+		VkBorderColor borderColor)
+		:
 		m_Width(data[0].size()),
 		m_Height(data[0][0].size()),
 		m_Depth(data[0][0][0].size()),
@@ -64,7 +74,7 @@ namespace en::vk
 			}
 		}
 
-		LoadToDevice(dataArray.data(), filter, addressMode);
+		LoadToDevice(dataArray.data(), filter, addressMode, borderColor);
 	}
 
 	void Texture3D::Destroy()
@@ -112,7 +122,7 @@ namespace en::vk
 		return m_Sampler;
 	}
 
-	void Texture3D::LoadToDevice(void* data, VkFilter filter, VkSamplerAddressMode addressMode)
+	void Texture3D::LoadToDevice(void* data, VkFilter filter, VkSamplerAddressMode addressMode, VkBorderColor borderColor)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 		VkDeviceSize size = static_cast<VkDeviceSize>(GetRealSizeInBytes());
@@ -226,7 +236,7 @@ namespace en::vk
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 		samplerCreateInfo.minLod = 0.0f;
 		samplerCreateInfo.maxLod = 0.0f;
-		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerCreateInfo.borderColor = borderColor;
 		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
 		result = vkCreateSampler(device, &samplerCreateInfo, nullptr, &m_Sampler);

@@ -130,7 +130,11 @@ void RunNrcHpm()
 
 	// Load data
 	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
-	en::vk::Texture3D density3DTex(density3D, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
+	en::vk::Texture3D density3DTex(
+		density3D, 
+		VK_FILTER_LINEAR, 
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 
+		VK_BORDER_COLOR_INT_OPAQUE_BLACK);
 	en::VolumeData volumeData(&density3DTex);
 
 	int hdrWidth, hdrHeight;
@@ -152,8 +156,8 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.05, 0.0f, 0.8f);
-	en::MRHE mrhe(0.01f, 1e-8f);
+	en::NeuralRadianceCache nrc(0.001f, 0.0f, 0.8f);
+	en::MRHE mrhe(0.001f, 1e-8f);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
