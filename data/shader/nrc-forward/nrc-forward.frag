@@ -32,85 +32,83 @@ layout(set = 2, binding = 0) uniform dir_light_t
 	float strength;
 } dir_light;
 
-layout(set = 3, binding = 0) uniform sampler2D lowPassTex;
-
 // NN buffers
-layout(std430, set = 4, binding = 0) readonly buffer Weights0
+layout(std430, set = 3, binding = 0) readonly buffer Weights0
 {
 	float matWeights0[4096]; // 64 x 64
 };
 
-layout(std430, set = 4, binding = 1) readonly buffer Weights1
+layout(std430, set = 3, binding = 1) readonly buffer Weights1
 {
 	float matWeights1[4096]; // 64 x 64
 };
 
-layout(std430, set = 4, binding = 2) readonly buffer Weights2
+layout(std430, set = 3, binding = 2) readonly buffer Weights2
 {
 	float matWeights2[4096]; // 64 x 64
 };
 
-layout(std430, set = 4, binding = 3) readonly buffer Weights3
+layout(std430, set = 3, binding = 3) readonly buffer Weights3
 {
 	float matWeights3[4096]; // 64 x 64
 };
 
-layout(std430, set = 4, binding = 4) readonly buffer Weights4
+layout(std430, set = 3, binding = 4) readonly buffer Weights4
 {
 	float matWeights4[4096]; // 64 x 64
 };
 
-layout(std430, set = 4, binding = 5) readonly buffer Weights5
+layout(std430, set = 3, binding = 5) readonly buffer Weights5
 {
 	float matWeights5[192]; // 64 x 3
 };
 
-layout(std430, set = 4, binding = 18) readonly buffer Biases0
+layout(std430, set = 3, binding = 18) readonly buffer Biases0
 {
 	float matBiases0[64];
 };
 
-layout(std430, set = 4, binding = 19) readonly buffer Biases1
+layout(std430, set = 3, binding = 19) readonly buffer Biases1
 {
 	float matBiases1[64];
 };
 
-layout(std430, set = 4, binding = 20) readonly buffer Biases2
+layout(std430, set = 3, binding = 20) readonly buffer Biases2
 {
 	float matBiases2[64];
 };
 
-layout(std430, set = 4, binding = 21) readonly buffer Biases3
+layout(std430, set = 3, binding = 21) readonly buffer Biases3
 {
 	float matBiases3[64];
 };
 
-layout(std430, set = 4, binding = 22) readonly buffer Biases4
+layout(std430, set = 3, binding = 22) readonly buffer Biases4
 {
 	float matBiases4[64];
 };
 
-layout(std430, set = 4, binding = 23) readonly buffer Biases5
+layout(std430, set = 3, binding = 23) readonly buffer Biases5
 {
 	float matBiases5[3];
 };
 
-layout(set = 5, binding = 0) uniform PointLight
+layout(set = 4, binding = 0) uniform PointLight
 {
 	vec3 pos;
 	float strength;
 	vec3 color;
 } pointLight;
 
-layout(set = 6, binding = 0) uniform sampler2D hdrEnvMap;
+layout(set = 5, binding = 0) uniform sampler2D hdrEnvMap;
 
-layout(set = 6, binding = 1) uniform HdrEnvMapData
+layout(set = 5, binding = 1) uniform HdrEnvMapData
 {
 	float directStrength;
 	float hpmStrength;
 } hdrEnvMapData;
 
-layout(set = 7, binding = 0) uniform MrheData
+layout(set = 6, binding = 0) uniform MrheData
 {
 	float learningRate;
 	float weightDecay;
@@ -122,7 +120,7 @@ layout(set = 7, binding = 0) uniform MrheData
 	uint resolutions[16];
 } mrhe;
 
-layout(std430, set = 7, binding = 1) readonly buffer MRHashTable
+layout(std430, set = 6, binding = 1) readonly buffer MRHashTable
 {
 	float mrHashTable[];
 };
@@ -822,11 +820,10 @@ void main()
 	}
 
 	// Render
-	const vec4 oldColor = texture(lowPassTex, fragUV);
 	const vec4 traceResult = TracePath(ro, rd, volumeData.useNN == 1);
 	const float transmittance = traceResult.w;
 
-	if (transmittance == 1.0 && oldColor.w == 1.0)
+	if (transmittance == 1.0)
 	{
 		outColor = vec4(envMapColor, 1.0);
 		return;
@@ -836,9 +833,5 @@ void main()
 
 	const float primaryRayTransmittance = GetTransmittance(entry, exit, 64);
 
-	const vec4 newColor = vec4(traceResult.xyz + (envMapColor * primaryRayTransmittance), transmittance);
-
-	const float lowPassIndex = float(volumeData.lowPassIndex);
-	const float alpha = lowPassIndex / (lowPassIndex + 1.0);
-	outColor = ((1.0 - alpha) * newColor) + (alpha * oldColor);
+	outColor = vec4(traceResult.xyz + (envMapColor * primaryRayTransmittance), transmittance);
 }

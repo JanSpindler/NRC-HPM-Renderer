@@ -1,64 +1,8 @@
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
-#include <engine/graphics/VulkanAPI.hpp>
-#include <engine/graphics/vulkan/CommandRecorder.hpp>
-//#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-#include <engine/util/openexr_helper.hpp>
-#include <engine/compute/LinearLayer.hpp>
 #include <engine/util/Log.hpp>
 
 namespace en
 {
-	VkDescriptorSetLayout NrcHpmRenderer::m_DescriptorSetLayout;
-	VkDescriptorPool NrcHpmRenderer::m_DescriptorPool;
-
-	void NrcHpmRenderer::Init(VkDevice device)
-	{
-		// Create descriptor set layout;
-		VkDescriptorSetLayoutBinding lowPassImageBinding;
-		lowPassImageBinding.binding = 0;
-		lowPassImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		lowPassImageBinding.descriptorCount = 1;
-		lowPassImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		lowPassImageBinding.pImmutableSamplers = nullptr;
-
-		std::vector<VkDescriptorSetLayoutBinding> bindings = { lowPassImageBinding };
-
-		VkDescriptorSetLayoutCreateInfo layoutCI;
-		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutCI.pNext = nullptr;
-		layoutCI.flags = 0;
-		layoutCI.bindingCount = bindings.size();
-		layoutCI.pBindings = bindings.data();
-
-		VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_DescriptorSetLayout);
-		ASSERT_VULKAN(result);
-
-		// Create descriptor pool
-		VkDescriptorPoolSize lowPassImagePoolSize;
-		lowPassImagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		lowPassImagePoolSize.descriptorCount = 1;
-
-		std::vector<VkDescriptorPoolSize> poolSizes = { lowPassImagePoolSize };
-
-		VkDescriptorPoolCreateInfo poolCI;
-		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolCI.pNext = nullptr;
-		poolCI.flags = 0;
-		poolCI.maxSets = 10;
-		poolCI.poolSizeCount = poolSizes.size();
-		poolCI.pPoolSizes = poolSizes.data();
-
-		result = vkCreateDescriptorPool(device, &poolCI, nullptr, &m_DescriptorPool);
-		ASSERT_VULKAN(result);
-	}
-
-	void NrcHpmRenderer::Shutdown(VkDevice device)
-	{
-		vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr);
-	}
-
 	NrcHpmRenderer::NrcHpmRenderer(
 		uint32_t width,
 		uint32_t height,
@@ -98,14 +42,10 @@ namespace en
 		CreateRenderPipeline(device);
 		
 		CreateTrainPipeline(device);
-		
 		CreateStepPipeline(device);
-
 		CreateMrheStepPipeline(device);
 
 		CreateColorImage(device);
-		CreateLowPassResources(device);
-		CreateLowPassImage(device);
 		CreateFramebuffer(device);
 
 		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -137,11 +77,6 @@ namespace en
 
 		m_CommandPool.Destroy();
 		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
-
-		vkDestroySampler(device, m_LowPassSampler, nullptr);
-		vkDestroyImageView(device, m_LowPassImageView, nullptr);
-		vkFreeMemory(device, m_LowPassImageMemory, nullptr);
-		vkDestroyImage(device, m_LowPassImage, nullptr);
 		
 		vkDestroyImageView(device, m_ColorImageView, nullptr);
 		vkFreeMemory(device, m_ColorImageMemory, nullptr);
@@ -176,17 +111,12 @@ namespace en
 		m_CommandPool.FreeBuffers();
 		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
 
-		vkDestroyImageView(device, m_LowPassImageView, nullptr);
-		vkFreeMemory(device, m_LowPassImageMemory, nullptr);
-		vkDestroyImage(device, m_LowPassImage, nullptr);
-
 		vkDestroyImageView(device, m_ColorImageView, nullptr);
 		vkFreeMemory(device, m_ColorImageMemory, nullptr);
 		vkDestroyImage(device, m_ColorImage, nullptr);
 
 		// Create
 		CreateColorImage(device);
-		CreateLowPassImage(device);
 		CreateFramebuffer(device);
 
 		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -217,7 +147,6 @@ namespace en
 			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
 			DirLight::GetDescriptorSetLayout(),
-			m_DescriptorSetLayout,
 			NeuralRadianceCache::GetDescSetLayout(),
 			PointLight::GetDescriptorSetLayout(),
 			HdrEnvMap::GetDescriptorSetLayout(),
@@ -620,175 +549,6 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void NrcHpmRenderer::CreateLowPassResources(VkDevice device)
-	{
-		// Create sampler
-		VkSamplerCreateInfo samplerCI;
-		samplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerCI.pNext = nullptr;
-		samplerCI.flags = 0;
-		samplerCI.magFilter = VK_FILTER_LINEAR;
-		samplerCI.minFilter = VK_FILTER_LINEAR;
-		samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-		samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-		samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-		samplerCI.mipLodBias = 0.0f;
-		samplerCI.anisotropyEnable = VK_FALSE;
-		samplerCI.maxAnisotropy = 0.0f;
-		samplerCI.compareEnable = VK_FALSE;
-		samplerCI.compareOp = VK_COMPARE_OP_LESS;
-		samplerCI.minLod = 0.0f;
-		samplerCI.maxLod = 0.0f;
-		samplerCI.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerCI.unnormalizedCoordinates = VK_FALSE;
-
-		VkResult result = vkCreateSampler(device, &samplerCI, nullptr, &m_LowPassSampler);
-		ASSERT_VULKAN(result);
-
-		// Allocate descriptor set
-		VkDescriptorSetAllocateInfo descAI;
-		descAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descAI.pNext = nullptr;
-		descAI.descriptorPool = m_DescriptorPool;
-		descAI.descriptorSetCount = 1;
-		descAI.pSetLayouts = &m_DescriptorSetLayout;
-
-		result = vkAllocateDescriptorSets(device, &descAI, &m_DescriptorSet);
-		ASSERT_VULKAN(result);
-	}
-
-	void NrcHpmRenderer::CreateLowPassImage(VkDevice device)
-	{
-		// Create Image
-		VkImageCreateInfo imageCI;
-		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCI.pNext = nullptr;
-		imageCI.flags = 0;
-		imageCI.imageType = VK_IMAGE_TYPE_2D;
-		imageCI.format = VulkanAPI::GetSurfaceFormat().format;
-		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
-		imageCI.mipLevels = 1;
-		imageCI.arrayLayers = 1;
-		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCI.queueFamilyIndexCount = 0;
-		imageCI.pQueueFamilyIndices = nullptr;
-		imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_LowPassImage);
-		ASSERT_VULKAN(result);
-
-		// Image Memory
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device, m_LowPassImage, &memoryRequirements);
-
-		VkMemoryAllocateInfo allocateInfo;
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.pNext = nullptr;
-		allocateInfo.allocationSize = memoryRequirements.size;
-		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
-			memoryRequirements.memoryTypeBits,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_LowPassImageMemory);
-		ASSERT_VULKAN(result);
-
-		result = vkBindImageMemory(device, m_LowPassImage, m_LowPassImageMemory, 0);
-		ASSERT_VULKAN(result);
-
-		// Create image view
-		VkImageViewCreateInfo imageViewCI;
-		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCI.pNext = nullptr;
-		imageViewCI.flags = 0;
-		imageViewCI.image = m_LowPassImage;
-		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCI.format = VulkanAPI::GetSurfaceFormat().format;
-		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCI.subresourceRange.baseMipLevel = 0;
-		imageViewCI.subresourceRange.levelCount = 1;
-		imageViewCI.subresourceRange.baseArrayLayer = 0;
-		imageViewCI.subresourceRange.layerCount = 1;
-
-		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_LowPassImageView);
-		ASSERT_VULKAN(result);
-
-		// Update descriptor set
-		VkDescriptorImageInfo lowPassImageInfo;
-		lowPassImageInfo.sampler = m_LowPassSampler;
-		lowPassImageInfo.imageView = m_LowPassImageView;
-		lowPassImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		VkWriteDescriptorSet lowPassImageWrite;
-		lowPassImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		lowPassImageWrite.pNext = nullptr;
-		lowPassImageWrite.dstSet = m_DescriptorSet;
-		lowPassImageWrite.dstBinding = 0;
-		lowPassImageWrite.dstArrayElement = 0;
-		lowPassImageWrite.descriptorCount = 1;
-		lowPassImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		lowPassImageWrite.pImageInfo = &lowPassImageInfo;
-		lowPassImageWrite.pBufferInfo = nullptr;
-		lowPassImageWrite.pTexelBufferView = nullptr;
-
-		vkUpdateDescriptorSets(device, 1, &lowPassImageWrite, 0, nullptr);
-
-		// Change image layout to general
-		vk::CommandPool commandPool(0, VulkanAPI::GetGraphicsQFI());
-		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
-
-		VkCommandBufferBeginInfo beginInfo;
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pNext = nullptr;
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-		ASSERT_VULKAN(result);
-
-		vk::CommandRecorder::ImageLayoutTransfer(
-			commandBuffer,
-			m_LowPassImage,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_ACCESS_NONE,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-		result = vkEndCommandBuffer(commandBuffer);
-		ASSERT_VULKAN(result);
-
-		VkSubmitInfo submitInfo;
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = nullptr;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		VkQueue queue = VulkanAPI::GetGraphicsQueue();
-
-		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-		ASSERT_VULKAN(result);
-
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-
-		commandPool.Destroy();
-	}
-
 	void NrcHpmRenderer::CreateFramebuffer(VkDevice device)
 	{
 		std::vector<VkImageView> attachments = { m_ColorImageView };
@@ -826,13 +586,11 @@ namespace en
 			m_Camera.GetDescriptorSet(),
 			m_VolumeData.GetDescriptorSet(),
 			m_DirLight.GetDescriptorSet(),
-			m_DescriptorSet,
 			m_Nrc.GetDescSet(),
 			m_PointLight.GetDescriptorSet(),
 			m_HdrEnvMap.GetDescriptorSet(),
 			m_Mrhe.GetDescriptorSet() };
 
-		
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
 			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
@@ -964,29 +722,6 @@ namespace en
 
 		// End render pass
 		vkCmdEndRenderPass(m_CommandBuffer);
-
-		// Copy result to low pass image
-		VkImageCopy imageCopy;
-		imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageCopy.srcSubresource.mipLevel = 0;
-		imageCopy.srcSubresource.baseArrayLayer = 0;
-		imageCopy.srcSubresource.layerCount = 1;
-		imageCopy.srcOffset = { 0, 0, 0 };
-		imageCopy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageCopy.dstSubresource.mipLevel = 0;
-		imageCopy.dstSubresource.baseArrayLayer = 0;
-		imageCopy.dstSubresource.layerCount = 1;
-		imageCopy.dstOffset = { 0, 0, 0 };
-		imageCopy.extent = { m_FrameWidth, m_FrameHeight, 1 };
-
-		vkCmdCopyImage(
-			m_CommandBuffer,
-			m_ColorImage,
-			VK_IMAGE_LAYOUT_GENERAL,
-			m_LowPassImage,
-			VK_IMAGE_LAYOUT_GENERAL,
-			1,
-			&imageCopy);
 
 		// End
 		result = vkEndCommandBuffer(m_CommandBuffer);

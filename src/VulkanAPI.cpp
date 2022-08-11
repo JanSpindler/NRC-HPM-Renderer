@@ -45,7 +45,6 @@ namespace en
 		vk::Texture2D::Init();
 		VolumeData::Init(m_Device);
 		DirLight::Init();
-		NrcHpmRenderer::Init(m_Device);
 		NeuralRadianceCache::Init(m_Device);
 		PointLight::Init(m_Device);
 		HdrEnvMap::Init(m_Device);
@@ -60,7 +59,6 @@ namespace en
 		HdrEnvMap::Shutdown(m_Device);
 		PointLight::Shutdown(m_Device);
 		NeuralRadianceCache::Shutdown(m_Device);
-		NrcHpmRenderer::Shutdown(m_Device);
 		DirLight::Shutdown();
 		VolumeData::Shutdown(m_Device);
 		vk::Texture2D::Shutdown();

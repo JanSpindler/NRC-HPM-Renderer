@@ -6,7 +6,6 @@
 #include <engine/graphics/Camera.hpp>
 #include <engine/graphics/DirLight.hpp>
 #include <string>
-#include <engine/compute/NeuralNetwork.hpp>
 #include <array>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
@@ -18,9 +17,6 @@ namespace en
 	class NrcHpmRenderer
 	{
 	public:
-		static void Init(VkDevice device);
-		static void Shutdown(VkDevice device);
-
 		NrcHpmRenderer(
 			uint32_t width,
 			uint32_t height,
@@ -44,9 +40,6 @@ namespace en
 		size_t GetImageDataSize() const;
 
 	private:
-		static VkDescriptorSetLayout m_DescriptorSetLayout;
-		static VkDescriptorPool m_DescriptorPool;
-
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
 
@@ -81,12 +74,6 @@ namespace en
 		VkDeviceMemory m_ColorImageMemory;
 		VkImageView m_ColorImageView;
 
-		VkImage m_LowPassImage;
-		VkDeviceMemory m_LowPassImageMemory;
-		VkImageView m_LowPassImageView;
-		VkSampler m_LowPassSampler;
-		VkDescriptorSet m_DescriptorSet;
-
 		VkFramebuffer m_Framebuffer;
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
@@ -103,8 +90,6 @@ namespace en
 		void CreateMrheStepPipeline(VkDevice device);
 
 		void CreateColorImage(VkDevice device);
-		void CreateLowPassResources(VkDevice device);
-		void CreateLowPassImage(VkDevice device);
 		void CreateFramebuffer(VkDevice device);
 		
 		void RecordCommandBuffer();

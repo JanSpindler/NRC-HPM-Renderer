@@ -6,27 +6,17 @@
 #include <engine/graphics/Camera.hpp>
 #include <engine/graphics/renderer/ImGuiRenderer.hpp>
 #include <imgui.h>
-#include <engine/graphics/renderer/DensityPathTracer.hpp>
 #include <engine/util/read_file.hpp>
 #include <engine/graphics/vulkan/Texture3D.hpp>
 #include <engine/objects/VolumeData.hpp>
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
 #include <engine/graphics/DirLight.hpp>
-#include <engine/compute/Matrix.hpp>
 #include <mnist/mnist_reader.hpp>
-#include <kompute/Kompute.hpp>
-#include <engine/compute/MatmulOp.hpp>
-#include <engine/compute/NeuralNetwork.hpp>
-#include <engine/compute/SigmoidLayer.hpp>
-#include <engine/compute/LinearLayer.hpp>
-#include <engine/compute/KomputeManager.hpp>
-#include <engine/compute/ReluLayer.hpp>
 #include <filesystem>
 #include <set>
 #include <engine/util/openexr_helper.hpp>
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
-#include <engine/compute/NrcDataset.hpp>
 #include <thread>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
@@ -34,9 +24,6 @@
 #include <engine/graphics/MRHE.hpp>
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
-
-std::vector<en::NrcInput> trainInputs;
-std::vector<en::NrcTarget> trainTargets;
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {

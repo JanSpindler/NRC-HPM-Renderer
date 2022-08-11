@@ -2,7 +2,7 @@
 #extension GL_EXT_debug_printf : enable
 #extension GL_EXT_shader_atomic_float : enable
 
-layout(set = 7, binding = 0) uniform MrheData
+layout(set = 6, binding = 0) uniform MrheData
 {
 	float learningRate;
 	float weightDecay;
@@ -14,12 +14,12 @@ layout(set = 7, binding = 0) uniform MrheData
 	uint resolutions[16];
 } mrhe;
 
-layout(std430, set = 7, binding = 1) buffer MRHashTable
+layout(std430, set = 6, binding = 1) buffer MRHashTable
 {
 	float mrHashTable[];
 };
 
-layout(std430, set = 7, binding = 2) buffer MRDeltaHashTable
+layout(std430, set = 6, binding = 2) buffer MRDeltaHashTable
 {
 	float mrDeltaHashTable[];
 };
