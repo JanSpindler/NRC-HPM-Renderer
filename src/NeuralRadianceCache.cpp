@@ -224,9 +224,52 @@ namespace en
 		deltabiases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		deltabiases5Binding.pImmutableSamplers = nullptr;
 
+		// Momentum 1 biases
+		VkDescriptorSetLayoutBinding momentum1Biases0Binding;
+		momentum1Biases0Binding.binding = 30;
+		momentum1Biases0Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		momentum1Biases0Binding.descriptorCount = 1;
+		momentum1Biases0Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		momentum1Biases0Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding momentum1Biases1Binding;
+		momentum1Biases1Binding.binding = 31;
+		momentum1Biases1Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		momentum1Biases1Binding.descriptorCount = 1;
+		momentum1Biases1Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		momentum1Biases1Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding momentum1Biases2Binding;
+		momentum1Biases2Binding.binding = 32;
+		momentum1Biases2Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		momentum1Biases2Binding.descriptorCount = 1;
+		momentum1Biases2Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		momentum1Biases2Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding momentum1Biases3Binding;
+		momentum1Biases3Binding.binding = 33;
+		momentum1Biases3Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		momentum1Biases3Binding.descriptorCount = 1;
+		momentum1Biases3Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		momentum1Biases3Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding momentum1Biases4Binding;
+		momentum1Biases4Binding.binding = 34;
+		momentum1Biases4Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		momentum1Biases4Binding.descriptorCount = 1;
+		momentum1Biases4Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		momentum1Biases4Binding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding momentum1Biases5Binding;
+		momentum1Biases5Binding.binding = 35;
+		momentum1Biases5Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		momentum1Biases5Binding.descriptorCount = 1;
+		momentum1Biases5Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+		momentum1Biases5Binding.pImmutableSamplers = nullptr;
+
 		// Config uniform buffer
 		VkDescriptorSetLayoutBinding configBinding;
-		configBinding.binding = 30;
+		configBinding.binding = 36;
 		configBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		configBinding.descriptorCount = 1;
 		configBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -234,7 +277,7 @@ namespace en
 
 		// Stats buffer
 		VkDescriptorSetLayoutBinding statsBinding;
-		statsBinding.binding = 31;
+		statsBinding.binding = 37;
 		statsBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		statsBinding.descriptorCount = 1;
 		statsBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -271,6 +314,12 @@ namespace en
 			deltabiases3Binding,
 			deltabiases4Binding,
 			deltabiases5Binding,
+			momentum1Biases0Binding,
+			momentum1Biases1Binding,
+			momentum1Biases2Binding,
+			momentum1Biases3Binding,
+			momentum1Biases4Binding,
+			momentum1Biases5Binding,
 			configBinding,
 			statsBinding };
 
@@ -287,7 +336,7 @@ namespace en
 		// Create desc pool
 		VkDescriptorPoolSize bufferPoolSize;
 		bufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bufferPoolSize.descriptorCount = 31;
+		bufferPoolSize.descriptorCount = 37;
 
 		VkDescriptorPoolSize uniformPoolSize;
 		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -378,7 +427,7 @@ namespace en
 
 		// Update descriptor set
 		// Set buffer infos
-		std::vector<VkDescriptorBufferInfo> bufferInfos(30);
+		std::vector<VkDescriptorBufferInfo> bufferInfos(36);
 		for (size_t i = 0; i < m_Weights.size(); i++)
 		{
 			bufferInfos[i].buffer = m_Weights[i]->GetVulkanHandle();
@@ -400,10 +449,14 @@ namespace en
 			bufferInfos[i + 24].buffer = m_DeltaBiases[i]->GetVulkanHandle();
 			bufferInfos[i + 24].offset = 0;
 			bufferInfos[i + 24].range = biasesSizes[i];
+			
+			bufferInfos[i + 30].buffer = m_Momentum1Biases[i]->GetVulkanHandle();
+			bufferInfos[i + 30].offset = 0;
+			bufferInfos[i + 30].range = biasesSizes[i];
 		}
 
 		// Set writes
-		std::vector<VkWriteDescriptorSet> writes(30);
+		std::vector<VkWriteDescriptorSet> writes(36);
 		for (size_t i = 0; i < writes.size(); i++)
 		{
 			writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -427,7 +480,7 @@ namespace en
 		configWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		configWrite.pNext = nullptr;
 		configWrite.dstSet = m_DescSet;
-		configWrite.dstBinding = 30;
+		configWrite.dstBinding = 36;
 		configWrite.dstArrayElement = 0;
 		configWrite.descriptorCount = 1;
 		configWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -444,7 +497,7 @@ namespace en
 		statsWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		statsWrite.pNext = nullptr;
 		statsWrite.dstSet = m_DescSet;
-		statsWrite.dstBinding = 31;
+		statsWrite.dstBinding = 37;
 		statsWrite.dstArrayElement = 0;
 		statsWrite.descriptorCount = 1;
 		statsWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -476,6 +529,9 @@ namespace en
 
 			m_DeltaBiases[i]->Destroy();
 			delete m_DeltaBiases[i];
+
+			m_Momentum1Biases[i]->Destroy();
+			delete m_Momentum1Biases[i];
 		}
 
 		m_ConfigUniformBuffer.Destroy();
@@ -628,6 +684,12 @@ namespace en
 				{});
 
 			m_DeltaBiases[i] = new vk::Buffer(
+				biasesSizes[i],
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				{});
+
+			m_Momentum1Biases[i] = new vk::Buffer(
 				biasesSizes[i],
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,

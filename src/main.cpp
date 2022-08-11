@@ -156,8 +156,8 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.001f, 0.0f, 0.8f);
-	en::MRHE mrhe(0.001f, 1e-8f);
+	en::NeuralRadianceCache nrc(0.01f, 0.0f, 0.5f);
+	en::MRHE mrhe(0.01f, 0.0f);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,

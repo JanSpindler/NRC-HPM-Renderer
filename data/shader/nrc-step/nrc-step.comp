@@ -153,7 +153,37 @@ layout(std430, set = 4, binding = 29) buffer DeltaBiases5
 	float matDeltaBiases5[3];
 };
 
-layout(set = 4, binding = 30) uniform NrcConfig
+layout(std430, set = 4, binding = 30) buffer Momentum1Biases0
+{
+	float matMomentum1Biases0[64];
+};
+
+layout(std430, set = 4, binding = 31) buffer Momentum1Biases1
+{
+	float matMomentum1Biases1[64];
+};
+
+layout(std430, set = 4, binding = 32) buffer Momentum1Biases2
+{
+	float matMomentum1Biases2[64];
+};
+
+layout(std430, set = 4, binding = 33) buffer Momentum1Biases3
+{
+	float matMomentum1Biases3[64];
+};
+
+layout(std430, set = 4, binding = 34) buffer Momentum1Biases4
+{
+	float matMomentum1Biases4[64];
+};
+
+layout(std430, set = 4, binding = 35) buffer Momentum1Biases5
+{
+	float matMomentum1Biases5[3];
+};
+
+layout(set = 4, binding = 36) uniform NrcConfig
 {
 	float learningRate;
 	float weightDecay;
@@ -166,24 +196,6 @@ layout(constant_id = 1) const float HEIGHT_FACTOR = 0.1;
 
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
-
-#define PI 3.14159265359
-
-#define MAX_RAY_DISTANCE 100000.0
-#define MIN_RAY_DISTANCE 0.125
-
-#define SAMPLE_COUNT 40
-#define SECONDARY_SAMPLE_COUNT 32
-
-#define SAMPLE_COUNT0 16
-#define SAMPLE_COUNT1 16
-#define SAMPLE_COUNT2 8
-#define SAMPLE_COUNT3 8
-
-#define SIGMA_S volumeData.sigmaS
-#define SIGMA_E volumeData.sigmaE
-
-#define NRC_PROB 0.5
 
 bool IsNanOrInf(float x)
 {
@@ -322,11 +334,31 @@ void StepBiases(const uint index)
 
 	if (index < 64)
 	{
-		matBiases0[index] += ModifyDeltaWeight(matDeltaBiases0[index], matBiases0[index]) * nrcConfig.learningRate;
-		matBiases1[index] += ModifyDeltaWeight(matDeltaBiases1[index], matBiases1[index]) * nrcConfig.learningRate;
-		matBiases2[index] += ModifyDeltaWeight(matDeltaBiases2[index], matBiases2[index]) * nrcConfig.learningRate;
-		matBiases3[index] += ModifyDeltaWeight(matDeltaBiases3[index], matBiases3[index]) * nrcConfig.learningRate;
-		matBiases4[index] += ModifyDeltaWeight(matDeltaBiases4[index], matBiases4[index]) * nrcConfig.learningRate;
+		const float beta1 = nrcConfig.beta1;
+
+		float deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases0[index], matBiases0[index])) + (beta1 * matMomentum1Biases0[index]);
+		matBiases0[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases0[index] = deltaBias;
+
+		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases1[index], matBiases1[index])) + (beta1 * matMomentum1Biases1[index]);
+		matBiases1[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases1[index] = deltaBias;
+
+		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases2[index], matBiases2[index])) + (beta1 * matMomentum1Biases2[index]);
+		matBiases2[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases2[index] = deltaBias;
+
+		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases3[index], matBiases3[index])) + (beta1 * matMomentum1Biases3[index]);
+		matBiases3[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases3[index] = deltaBias;
+
+		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases4[index], matBiases4[index])) + (beta1 * matMomentum1Biases4[index]);
+		matBiases4[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases4[index] = deltaBias;
+
+		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index])) + (beta1 * matMomentum1Biases5[index]);
+		matBiases5[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases5[index] = deltaBias;
 	}
 }
 

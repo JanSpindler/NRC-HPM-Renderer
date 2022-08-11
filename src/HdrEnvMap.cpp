@@ -78,7 +78,7 @@ namespace en
 		m_Width(width),
 		m_Height(height),
 		m_RawSize(width * height * 4 * sizeof(float)),
-		m_ImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
+		m_ColorImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
 		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 0.0f }),
 		m_UniformBuffer(
 			sizeof(UniformData), 
@@ -101,79 +101,21 @@ namespace en
 
 		stagingBuffer.SetData(m_RawSize, hdr4f.data(), 0, 0);
 
-		// Create Image
-		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-
-		VkImageCreateInfo imageCreateInfo;
-		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.pNext = nullptr;
-		imageCreateInfo.flags = 0;
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = format;
-		imageCreateInfo.extent = { m_Width, m_Height, 1 };
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.queueFamilyIndexCount = 0;
-		imageCreateInfo.pQueueFamilyIndices = nullptr;
-		imageCreateInfo.initialLayout = m_ImageLayout;
-
-		VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &m_Image);
-		ASSERT_VULKAN(result);
-
-		// Image Memory
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device, m_Image, &memoryRequirements);
-
-		VkMemoryAllocateInfo allocateInfo;
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.pNext = nullptr;
-		allocateInfo.allocationSize = memoryRequirements.size;
-		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
-			memoryRequirements.memoryTypeBits,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_DeviceMemory);
-		ASSERT_VULKAN(result);
-
-		result = vkBindImageMemory(device, m_Image, m_DeviceMemory, 0);
-		ASSERT_VULKAN(result);
+		CreateColorImage(device);
+		CreateCdfXImage(device);
+		CreateCdfYImage(device);
 
 		// Transfer data
 		vk::CommandPool commandPool = vk::CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI());
 		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
 
-		ChangeLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer, queue);
-		WriteBufferToImage(commandBuffer, queue, stagingBuffer.GetVulkanHandle());
-		ChangeLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer, queue);
+		ChangeColorImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer, queue);
+		WriteBufferToColorImage(commandBuffer, queue, stagingBuffer.GetVulkanHandle());
+		ChangeColorImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer, queue);
 
 		stagingBuffer.Destroy();
 		commandPool.Destroy();
-
-		// Create ImageView
-		VkImageViewCreateInfo imageViewCreateInfo;
-		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.pNext = nullptr;
-		imageViewCreateInfo.flags = 0;
-		imageViewCreateInfo.image = m_Image;
-		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = format;
-		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-		imageViewCreateInfo.subresourceRange.levelCount = 1;
-		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount = 1;
-
-		result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_ImageView);
-		ASSERT_VULKAN(result);
 
 		// Create Sampler
 		VkFilter filter = VK_FILTER_LINEAR;
@@ -199,7 +141,7 @@ namespace en
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
-		result = vkCreateSampler(device, &samplerCreateInfo, nullptr, &m_Sampler);
+		VkResult result = vkCreateSampler(device, &samplerCreateInfo, nullptr, &m_Sampler);
 		ASSERT_VULKAN(result);
 
 		// Allocate desc set
@@ -216,8 +158,8 @@ namespace en
 		// Upload to desc set
 		VkDescriptorImageInfo hdrImageInfo;
 		hdrImageInfo.sampler = m_Sampler;
-		hdrImageInfo.imageView = m_ImageView;
-		hdrImageInfo.imageLayout = m_ImageLayout;
+		hdrImageInfo.imageView = m_ColorImageView;
+		hdrImageInfo.imageLayout = m_ColorImageLayout;
 
 		VkWriteDescriptorSet hdrTexWrite;
 		hdrTexWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -260,9 +202,9 @@ namespace en
 		m_UniformBuffer.Destroy();
 
 		vkDestroySampler(device, m_Sampler, nullptr);
-		vkFreeMemory(device, m_DeviceMemory, nullptr);
-		vkDestroyImageView(device, m_ImageView, nullptr);
-		vkDestroyImage(device, m_Image, nullptr);
+		vkFreeMemory(device, m_ColorImageMemory, nullptr);
+		vkDestroyImageView(device, m_ColorImageView, nullptr);
+		vkDestroyImage(device, m_ColorImage, nullptr);
 	}
 
 	void HdrEnvMap::RenderImGui()
@@ -292,7 +234,82 @@ namespace en
 		return m_DescSet;
 	}
 
-	void HdrEnvMap::ChangeLayout(VkImageLayout layout, VkCommandBuffer commandBuffer, VkQueue queue)
+	void HdrEnvMap::CreateColorImage(VkDevice device)
+	{
+		// Create Image
+		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+		VkImageCreateInfo imageCreateInfo;
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.pNext = nullptr;
+		imageCreateInfo.flags = 0;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = format;
+		imageCreateInfo.extent = { m_Width, m_Height, 1 };
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.queueFamilyIndexCount = 0;
+		imageCreateInfo.pQueueFamilyIndices = nullptr;
+		imageCreateInfo.initialLayout = m_ColorImageLayout;
+
+		VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &m_ColorImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_ColorImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_ColorImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_ColorImage, m_ColorImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create ImageView
+		VkImageViewCreateInfo imageViewCreateInfo;
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.pNext = nullptr;
+		imageViewCreateInfo.flags = 0;
+		imageViewCreateInfo.image = m_ColorImage;
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = format;
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_ColorImageView);
+		ASSERT_VULKAN(result);
+	}
+
+	void HdrEnvMap::CreateCdfXImage(VkDevice device)
+	{
+
+	}
+
+	void HdrEnvMap::CreateCdfYImage(VkDevice device)
+	{
+
+	}
+
+	void HdrEnvMap::ChangeColorImageLayout(VkImageLayout layout, VkCommandBuffer commandBuffer, VkQueue queue)
 	{
 		VkAccessFlags srcAccessMask;
 		VkAccessFlags dstAccessMask;
@@ -300,12 +317,12 @@ namespace en
 		VkPipelineStageFlags srcStageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 		VkPipelineStageFlags dstStageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
-		if (m_ImageLayout == VK_IMAGE_LAYOUT_PREINITIALIZED && layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		if (m_ColorImageLayout == VK_IMAGE_LAYOUT_PREINITIALIZED && layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 		{
 			srcAccessMask = VK_ACCESS_NONE_KHR;
 			dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		}
-		else if (m_ImageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		else if (m_ColorImageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
 			srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -326,8 +343,8 @@ namespace en
 
 		vk::CommandRecorder::ImageLayoutTransfer(
 			commandBuffer,
-			m_Image,
-			m_ImageLayout,
+			m_ColorImage,
+			m_ColorImageLayout,
 			layout,
 			srcAccessMask,
 			dstAccessMask,
@@ -354,10 +371,10 @@ namespace en
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 
-		m_ImageLayout = layout;
+		m_ColorImageLayout = layout;
 	}
 
-	void HdrEnvMap::WriteBufferToImage(VkCommandBuffer commandBuffer, VkQueue queue, VkBuffer buffer)
+	void HdrEnvMap::WriteBufferToColorImage(VkCommandBuffer commandBuffer, VkQueue queue, VkBuffer buffer)
 	{
 		VkCommandBufferBeginInfo beginInfo;
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -379,7 +396,7 @@ namespace en
 		bufferImageCopy.imageOffset = { 0, 0, 0 };
 		bufferImageCopy.imageExtent = { m_Width, m_Height, 1 };
 
-		vkCmdCopyBufferToImage(commandBuffer, buffer, m_Image, m_ImageLayout, 1, &bufferImageCopy);
+		vkCmdCopyBufferToImage(commandBuffer, buffer, m_ColorImage, m_ColorImageLayout, 1, &bufferImageCopy);
 
 		result = vkEndCommandBuffer(commandBuffer);
 		ASSERT_VULKAN(result);

@@ -266,7 +266,7 @@ void EncodeDirOneBlob(const vec3 dir)
 	const float theta = (atan(dir.z, dir.x) / PI) + 0.5;
 	const float phi = (atan(length(dir.xz), dir.y) / PI) + 0.5;
 
-	const float sigma = 1.0 / 16.0;
+	const float sigma = 1.0 / 4.0; // sqrt(16.0)
 	for (uint i = 0; i < 16; i++)
 	{
 		const float fI = float(i);
@@ -736,7 +736,7 @@ vec3 TraceScene(const vec3 pos, const vec3 dir)
 
 #define TRUE_TRACE_SAMPLE_COUNT 64
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
-{	
+{
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
 

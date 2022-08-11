@@ -46,6 +46,7 @@ namespace en
 
 		std::array<vk::Buffer*, 6> m_Biases;
 		std::array<vk::Buffer*, 6> m_DeltaBiases;
+		std::array<vk::Buffer*, 6> m_Momentum1Biases;
 
 		ConfigData m_ConfigData;
 		vk::Buffer m_ConfigUniformBuffer;

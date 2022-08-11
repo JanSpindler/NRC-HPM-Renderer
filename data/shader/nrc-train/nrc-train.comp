@@ -155,7 +155,7 @@ layout(std430, set = 4, binding = 29) buffer DeltaBiases5
 	float matDeltaBiases5[3];
 };
 
-layout(std430, set = 4, binding = 31) buffer NrcStats
+layout(std430, set = 4, binding = 37) buffer NrcStats
 {
 	float mseLoss;
 } nrcStats;
@@ -351,7 +351,7 @@ void EncodeDirOneBlob(const vec3 dir)
 	const float theta = (atan(dir.z, dir.x) / PI) + 0.5;
 	const float phi = (atan(length(dir.xz), dir.y) / PI) + 0.5;
 
-	const float sigma = 1.0 / 16.0;
+	const float sigma = 1.0 / 4.0; // sqrt(16.0)
 	for (uint i = 0; i < 16; i++)
 	{
 		const float fI = float(i);
@@ -433,7 +433,7 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
-vec3 NewRayDir(vec3 oldRayDir, const bool importanceSample)
+vec3 NewRayDir(vec3 oldRayDir)
 {
 	// Assert: length(oldRayDir) == 1.0
 	// Assert: rand's are in [0.0, 1.0]
@@ -446,26 +446,19 @@ vec3 NewRayDir(vec3 oldRayDir, const bool importanceSample)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-	float angle;
-	if (importanceSample)
+	float g = volumeData.g;
+	float cosTheta;
+	if (abs(g) < 0.001)
 	{
-		float g = volumeData.g;
-		float cosTheta;
-		if (abs(g) < 0.001)
-		{
-			cosTheta = 1 - 2 * RandFloat(1.0);
-		}
-		else
-		{
-			float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
-			cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
-		}
-		angle = acos(cosTheta);
+		cosTheta = 1 - 2 * RandFloat(1.0);
 	}
 	else
 	{
-		float angle = RandFloat(PI);
+		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
+		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
 	}
+	float angle = acos(cosTheta);
+	//float angle = RandFloat(PI);
 
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
@@ -1015,9 +1008,9 @@ void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 	const float mseLoss = ((error.x * error.x) + (error.y * error.y) + (error.z * error.z)) / 3.0;
 	atomicAdd(nrcStats.mseLoss, mseLoss * ONE_OVER_PIXEL_COUNT);
 
-	nr6[0] = error.x;
-	nr6[1] = error.y;
-	nr6[2] = error.z;
+	nr6[0] = sign(error.x);
+	nr6[1] = sign(error.y);
+	nr6[2] = sign(error.z);
 
 	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	//debugPrintfEXT("%f, %f, %f\n", target.x, target.y, target.z);
@@ -1103,7 +1096,7 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 
 	for (uint i = 0; i < sampleCount; i++)
 	{
-		const vec3 randomDir = NewRayDir(dir, true);
+		const vec3 randomDir = NewRayDir(dir);
 		const float phase = hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 32);
@@ -1125,7 +1118,7 @@ vec3 TraceScene(const vec3 pos, const vec3 dir)
 
 #define TRUE_TRACE_SAMPLE_COUNT 64
 vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
-{	
+{
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
 
@@ -1164,7 +1157,7 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 			lastDir = currentDir;
 
 			// Generate new direction
-			currentDir = NewRayDir(currentDir, true);
+			currentDir = NewRayDir(currentDir);
 		}
 
 		// Generate new point
@@ -1206,7 +1199,7 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 		if (getDensity(currentPoint) > 0.0)
 		{
 			didScatter = true;
-			currentDir = NewRayDir(currentDir, false);
+			currentDir = NewRayDir(currentDir);
 		}
 
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
@@ -1217,9 +1210,8 @@ void TracePathAndLearn(const vec3 rayOrigin, const vec3 rayDir)
 
 	if (!didScatter)
 	{
-		return;
-		//currentPoint = exit;
-		//currentDir = -normalize(currentPoint);
+		currentPoint = entry;
+		currentDir = -normalize(currentPoint);
 	}
 
 	const uint sampleCount = 8;
@@ -1259,8 +1251,7 @@ void main()
 
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		return;
-		//rd = -normalize(ro);
+		rd = -normalize(ro);
 	}
 
 	// Learn
