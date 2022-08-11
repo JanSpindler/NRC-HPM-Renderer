@@ -20,9 +20,11 @@ layout(set = 1, binding = 1) uniform volumeData_t
 {
 	vec4 random;
 	uint useNN;
+	uint showNonNN;
 	float densityFactor;
 	float g;
-	uint lowPassIndex;
+	int noNnSpp;
+	int withNnSpp;
 } volumeData;
 
 layout(set = 2, binding = 0) uniform dir_light_t
@@ -1008,9 +1010,9 @@ void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 	const float mseLoss = ((error.x * error.x) + (error.y * error.y) + (error.z * error.z)) / 3.0;
 	atomicAdd(nrcStats.mseLoss, mseLoss * ONE_OVER_PIXEL_COUNT);
 
-	nr6[0] = sign(error.x);
-	nr6[1] = sign(error.y);
-	nr6[2] = sign(error.z);
+	nr6[0] = 2.0 * error.x;
+	nr6[1] = 2.0 * error.y;
+	nr6[2] = 2.0 * error.z;
 
 	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	//debugPrintfEXT("%f, %f, %f\n", target.x, target.y, target.z);

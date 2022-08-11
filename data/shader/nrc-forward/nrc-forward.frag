@@ -18,9 +18,11 @@ layout(set = 1, binding = 1) uniform volumeData_t
 {
 	vec4 random;
 	uint useNN;
+	uint showNonNN;
 	float densityFactor;
 	float g;
-	uint lowPassIndex;
+	int noNnSpp;
+	int withNnSpp;
 } volumeData;
 
 layout(set = 2, binding = 0) uniform dir_light_t
@@ -518,7 +520,7 @@ vec3 Forward(vec3 ro, const vec3 rd)
 	ActivateNr5();
 	
 	ApplyWeights5();
-	debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
+	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	ActivateNr6();
 
 	vec3 outputCol;
@@ -760,8 +762,11 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 			{
 				if (RandFloat(1.0) > totalTermProb)
 				{
-					const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
-					scatteredLight += transmittance * Forward(currentPoint, currentDir) * dirPhase;
+					if (volumeData.showNonNN == 0)
+					{
+						const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
+						scatteredLight += transmittance * Forward(currentPoint, currentDir) * dirPhase;
+					}
 					return vec4(scatteredLight, transmittance);
 				}
 				totalTermProb *= 0.5;
@@ -799,6 +804,18 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 	return vec4(scatteredLight, transmittance);
 }
 
+vec4 TracePathMultiple(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
+{
+	const uint spp = useNN ? volumeData.withNnSpp : volumeData.noNnSpp;
+	vec4 average = vec4(0.0);
+	for (uint i = 0; i < spp; i++)
+	{
+		average += TracePath(rayOrigin, rayDir, useNN);
+	}
+	average /= float(spp);
+	return average;
+}
+
 // Main
 void main()
 {
@@ -820,7 +837,7 @@ void main()
 	}
 
 	// Render
-	const vec4 traceResult = TracePath(ro, rd, volumeData.useNN == 1);
+	const vec4 traceResult = TracePathMultiple(ro, rd, volumeData.useNN == 1);
 	const float transmittance = traceResult.w;
 
 	if (transmittance == 1.0)

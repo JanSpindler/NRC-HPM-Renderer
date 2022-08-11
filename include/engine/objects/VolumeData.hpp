@@ -11,9 +11,11 @@ namespace en
 	{
 		glm::vec4 random;
 		uint32_t useNN;
+		uint32_t showNonNN;
 		float densityFactor;
 		float g;
-		uint32_t lowPassIndex;
+		int noNnSpp;
+		int withNnSpp;
 	};
 
 	class VolumeData

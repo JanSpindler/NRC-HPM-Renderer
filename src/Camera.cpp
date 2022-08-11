@@ -172,6 +172,12 @@ namespace en
 		m_PosUniformBuffer->SetData(sizeof(glm::vec3), &m_Pos, 0, 0);
 	}
 
+	void Camera::RotateAroundOrigin(const glm::vec3& axis, float angle)
+	{
+		m_Pos = glm::rotate(angle, axis) * glm::vec4(m_Pos, 1.0);
+		m_ViewDir = -glm::normalize(m_Pos);
+	}
+
 	void Camera::Move(const glm::vec3& move)
 	{
 		glm::vec3 frontMove = glm::normalize(m_ViewDir * glm::vec3(1.0f, 0.0f, 1.0f)) * move.z;

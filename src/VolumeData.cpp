@@ -82,9 +82,11 @@ namespace en
 		m_UniformData({ 
 			.random = glm::vec4(0.0f),
 			.useNN = 0,
+			.showNonNN = 0,
 			.densityFactor = 0.35f,
 			.g = 0.99f,
-			.lowPassIndex = 0 })
+			.noNnSpp = 1,
+			.withNnSpp = 1 })
 	{
 		// Create and update descriptor set
 		VkDescriptorSetAllocateInfo descSetAI;
@@ -103,13 +105,6 @@ namespace en
 	void VolumeData::Update(bool cameraChanged)
 	{
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
-
-		if (m_UniformData.lowPassIndex < 1000000)
-			m_UniformData.lowPassIndex++;
-
-		if (cameraChanged)
-			m_UniformData.lowPassIndex = 0;
-
 		m_UniformBuffer.SetData(sizeof(VolumeUniformData), &m_UniformData, 0, 0);
 	}
 
@@ -123,12 +118,12 @@ namespace en
 		ImGui::Begin("HPM Volume");
 
 		ImGui::Checkbox("Use NN", reinterpret_cast<bool*>(&m_UniformData.useNN));
+		ImGui::Checkbox("Show non NN", reinterpret_cast<bool*>(&m_UniformData.showNonNN));
 		ImGui::SliderFloat("Density Factor", &m_UniformData.densityFactor, 0.0f, 1.0f);
 		ImGui::SliderFloat("G", &m_UniformData.g, 0.0f, 1.0f);
-		if (ImGui::Button("Reset Low Pass Filter"))
-			m_UniformData.lowPassIndex = 0;
-		ImGui::Text(std::string("Low Pass Index: " + std::to_string(m_UniformData.lowPassIndex)).c_str());
-		
+		ImGui::SliderInt("No NN SPP", &m_UniformData.noNnSpp, 1, 32);
+		ImGui::SliderInt("With NN SPP", &m_UniformData.withNnSpp, 1, 32);
+
 		ImGui::End();
 	}
 

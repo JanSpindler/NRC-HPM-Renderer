@@ -27,6 +27,8 @@ namespace en
 		void Destroy();
 		void UpdateUniformBuffer();
 
+		void RotateAroundOrigin(const glm::vec3& axis, float angle);
+
 		void Move(const glm::vec3& move);
 		void RotateViewDir(float phi, float theta);
 
