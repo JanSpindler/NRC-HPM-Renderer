@@ -21,14 +21,32 @@ namespace en
 		hdrTexBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		hdrTexBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding cdfXBinding;
+		cdfXBinding.binding = 1;
+		cdfXBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		cdfXBinding.descriptorCount = 1;
+		cdfXBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		cdfXBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding cdfYBinding;
+		cdfYBinding.binding = 2;
+		cdfYBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		cdfYBinding.descriptorCount = 1;
+		cdfYBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		cdfYBinding.pImmutableSamplers = nullptr;
+
 		VkDescriptorSetLayoutBinding uniformBinding;
-		uniformBinding.binding = 1;
+		uniformBinding.binding = 3;
 		uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uniformBinding.descriptorCount = 1;
 		uniformBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		uniformBinding.pImmutableSamplers = nullptr;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings = { hdrTexBinding, uniformBinding };
+		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
+			hdrTexBinding, 
+			cdfXBinding,
+			cdfYBinding,
+			uniformBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -43,7 +61,7 @@ namespace en
 		// Create descriptor pool
 		VkDescriptorPoolSize imagePoolSize;
 		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		imagePoolSize.descriptorCount = 1;
+		imagePoolSize.descriptorCount = 3;
 
 		VkDescriptorPoolSize uniformPoolSize;
 		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -107,7 +125,7 @@ namespace en
 
 		// Create Sampler
 		VkFilter filter = VK_FILTER_LINEAR;
-		VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
 		VkSamplerCreateInfo samplerCreateInfo;
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -161,6 +179,40 @@ namespace en
 		hdrTexWrite.pBufferInfo = nullptr;
 		hdrTexWrite.pTexelBufferView = nullptr;
 
+		VkDescriptorImageInfo cdfXImageInfo;
+		cdfXImageInfo.sampler = m_Sampler;
+		cdfXImageInfo.imageView = m_CdfXImageView;
+		cdfXImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkWriteDescriptorSet cdfXWrite;
+		cdfXWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		cdfXWrite.pNext = nullptr;
+		cdfXWrite.dstSet = m_DescSet;
+		cdfXWrite.dstBinding = 1;
+		cdfXWrite.dstArrayElement = 0;
+		cdfXWrite.descriptorCount = 1;
+		cdfXWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		cdfXWrite.pImageInfo = &cdfXImageInfo;
+		cdfXWrite.pBufferInfo = nullptr;
+		cdfXWrite.pTexelBufferView = nullptr;
+
+		VkDescriptorImageInfo cdfYImageInfo;
+		cdfYImageInfo.sampler = m_Sampler;
+		cdfYImageInfo.imageView = m_CdfYImageView;
+		cdfYImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkWriteDescriptorSet cdfYWrite;
+		cdfYWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		cdfYWrite.pNext = nullptr;
+		cdfYWrite.dstSet = m_DescSet;
+		cdfYWrite.dstBinding = 2;
+		cdfYWrite.dstArrayElement = 0;
+		cdfYWrite.descriptorCount = 1;
+		cdfYWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		cdfYWrite.pImageInfo = &cdfYImageInfo;
+		cdfYWrite.pBufferInfo = nullptr;
+		cdfYWrite.pTexelBufferView = nullptr;
+
 		VkDescriptorBufferInfo uniformBufferInfo;
 		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
 		uniformBufferInfo.offset = 0;
@@ -170,7 +222,7 @@ namespace en
 		uniformWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		uniformWrite.pNext = nullptr;
 		uniformWrite.dstSet = m_DescSet;
-		uniformWrite.dstBinding = 1;
+		uniformWrite.dstBinding = 3;
 		uniformWrite.dstArrayElement = 0;
 		uniformWrite.descriptorCount = 1;
 		uniformWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -178,7 +230,7 @@ namespace en
 		uniformWrite.pBufferInfo = &uniformBufferInfo;
 		uniformWrite.pTexelBufferView = nullptr;
 
-		std::vector<VkWriteDescriptorSet> writes = { hdrTexWrite, uniformWrite };
+		std::vector<VkWriteDescriptorSet> writes = { hdrTexWrite, cdfXWrite, cdfYWrite, uniformWrite };
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
