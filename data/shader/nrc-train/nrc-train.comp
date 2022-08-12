@@ -219,8 +219,6 @@ const vec3 skyPos = vec3(0.0);
 
 #define SAMPLE_COUNT 40
 
-#define IMPORTANCE_SAMPLING
-
 // Random
 float preRand;// = volumeData.random.x * fragUV.x;
 float prePreRand;// = volumeData.random.y * fragUV.y;
@@ -416,14 +414,10 @@ float getDensity(vec3 pos)
 
 float hg_phase_func(const float cos_theta)
 {
-#ifdef IMPORTANCE_SAMPLING
-	return 1.0;
-#else
 	const float g = volumeData.g;
 	const float g2 = g * g;
 	const float result = 0.5 * (1 - g2) / pow(1 + g2 - (2 * g * cos_theta), 1.5);
 	return result;
-#endif
 }
 
 mat4 rotationMatrix(vec3 axis, float angle)
@@ -464,7 +458,6 @@ vec3 NewRayDir(vec3 oldRayDir)
 		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
 	}
 	float angle = acos(cosTheta);
-	//float angle = RandFloat(PI);
 
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
@@ -1017,6 +1010,10 @@ void Backprop(vec3 target, const vec3 pos, const vec3 dir)
 	nr6[0] = 2.0 * error.x;
 	nr6[1] = 2.0 * error.y;
 	nr6[2] = 2.0 * error.z;
+	
+	//nr6[0] = sign(error.x);
+	//nr6[1] = sign(error.y);
+	//nr6[2] = sign(error.z);
 
 	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
 	//debugPrintfEXT("%f, %f, %f\n", target.x, target.y, target.z);
@@ -1103,7 +1100,7 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 	for (uint i = 0; i < sampleCount; i++)
 	{
 		const vec3 randomDir = NewRayDir(dir);
-		const float phase = hg_phase_func(dot(randomDir, -dir));
+		const float phase = 1.0;//hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 32);
 		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase;
@@ -1136,8 +1133,6 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
-	float totalPhase = 1.0;
-
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
@@ -1148,11 +1143,10 @@ vec3 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
 
 			// Phase factor
-			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
-			totalPhase *= dirPhase;
+			const float phase = 1.0; // Importance sampling
 
 			// Transmittance calculation
-			const vec3 s_int = density * sceneLighting * totalPhase;
+			const vec3 s_int = density * sceneLighting;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
 
 			scatteredLight += transmittance * s_int;

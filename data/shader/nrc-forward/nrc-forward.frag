@@ -145,8 +145,6 @@ const vec3 skyPos = vec3(0.0);
 
 #define SAMPLE_COUNT 40
 
-#define IMPORTANCE_SAMPLING
-
 // Random
 float preRand = volumeData.random.x * fragUV.x;
 float prePreRand = volumeData.random.y * fragUV.y;
@@ -585,14 +583,10 @@ float getDensity(vec3 pos)
 
 float hg_phase_func(const float cos_theta)
 {
-#ifdef IMPORTANCE_SAMPLING
-	return 1.0;
-#else
 	const float g = volumeData.g;
 	const float g2 = g * g;
 	const float result = 0.5 * (1 - g2) / pow(1 + g2 - (2 * g * cos_theta), 1.5);
 	return result;
-#endif
 }
 
 mat4 rotationMatrix(vec3 axis, float angle)
@@ -621,7 +615,6 @@ vec3 NewRayDir(vec3 oldRayDir)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-#ifdef IMPORTANCE_SAMPLING
 	float g = volumeData.g;
 	float cosTheta;
 	if (abs(g) < 0.001)
@@ -634,9 +627,6 @@ vec3 NewRayDir(vec3 oldRayDir)
 		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
 	}
 	float angle = acos(cosTheta);
-#else
-	float angle = RandFloat(PI);
-#endif
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
@@ -719,7 +709,7 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 	for (uint i = 0; i < sampleCount; i++)
 	{
 		const vec3 randomDir = NewRayDir(dir);
-		const float phase = hg_phase_func(dot(randomDir, -dir));
+		const float phase = 1.0;//hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 32);
 		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase;
@@ -754,8 +744,6 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 
 	float totalTermProb = 1.0;
 
-	float totalPhase = 1.0;
-
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
@@ -780,11 +768,10 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
 
 			// Phase factor
-			const float dirPhase = hg_phase_func(dot(currentDir, -lastDir));
-			totalPhase *= dirPhase;
+			const float phase = 1.0; // Importance sampling
 
 			// Transmittance calculation
-			const vec3 s_int = density * sceneLighting * totalPhase;
+			const vec3 s_int = density * sceneLighting * phase;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
 
 			scatteredLight += transmittance * s_int;

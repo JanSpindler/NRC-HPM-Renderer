@@ -672,7 +672,7 @@ namespace en
 			1, &memoryBarrier,
 			0, nullptr,
 			0, nullptr);
-
+		
 		// Begin render pass
 		std::vector<VkClearValue> clearValues = {
 			{ 0.0f, 0.0f, 0.0f, 1.0f },
