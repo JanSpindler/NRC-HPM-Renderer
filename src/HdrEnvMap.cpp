@@ -74,10 +74,18 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	HdrEnvMap::HdrEnvMap(const std::vector<float>& hdr4f, uint32_t width, uint32_t height) :
+	HdrEnvMap::HdrEnvMap(
+		uint32_t width, 
+		uint32_t height, 
+		const std::vector<float>& hdr4f,
+		const std::vector<float>& cdfX,
+		const std::vector<float>& cdfY)
+		:
 		m_Width(width),
 		m_Height(height),
-		m_RawSize(width * height * 4 * sizeof(float)),
+		m_RawColorSize(width * height * 4 * sizeof(float)),
+		m_RawCdfXSize(width * height * sizeof(float)),
+		m_RawCdfYSize(height * sizeof(float)),
 		m_ColorImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
 		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 0.0f }),
 		m_UniformBuffer(
@@ -92,30 +100,10 @@ namespace en
 		// Uniform
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 
-		// Staging Buffer
-		vk::Buffer stagingBuffer(
-			m_RawSize,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			{});
-
-		stagingBuffer.SetData(m_RawSize, hdr4f.data(), 0, 0);
-
-		CreateColorImage(device);
-		CreateCdfXImage(device);
-		CreateCdfYImage(device);
-
-		// Transfer data
-		vk::CommandPool commandPool = vk::CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI());
-		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
-
-		ChangeColorImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer, queue);
-		WriteBufferToColorImage(commandBuffer, queue, stagingBuffer.GetVulkanHandle());
-		ChangeColorImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer, queue);
-
-		stagingBuffer.Destroy();
-		commandPool.Destroy();
+		// Create images and resources
+		CreateColorImage(device, queue, hdr4f);
+		CreateCdfXImage(device, queue, cdfX);
+		CreateCdfYImage(device, queue, cdfY);
 
 		// Create Sampler
 		VkFilter filter = VK_FILTER_LINEAR;
@@ -202,6 +190,15 @@ namespace en
 		m_UniformBuffer.Destroy();
 
 		vkDestroySampler(device, m_Sampler, nullptr);
+
+		vkFreeMemory(device, m_CdfYImageMemory, nullptr);
+		vkDestroyImageView(device, m_CdfYImageView, nullptr);
+		vkDestroyImage(device, m_CdfYImage, nullptr);
+
+		vkFreeMemory(device, m_CdfXImageMemory, nullptr);
+		vkDestroyImageView(device, m_CdfXImageView, nullptr);
+		vkDestroyImage(device, m_CdfXImage, nullptr);
+
 		vkFreeMemory(device, m_ColorImageMemory, nullptr);
 		vkDestroyImageView(device, m_ColorImageView, nullptr);
 		vkDestroyImage(device, m_ColorImage, nullptr);
@@ -234,7 +231,7 @@ namespace en
 		return m_DescSet;
 	}
 
-	void HdrEnvMap::CreateColorImage(VkDevice device)
+	void HdrEnvMap::CreateColorImage(VkDevice device, VkQueue queue, const std::vector<float>& hdr4f)
 	{
 		// Create Image
 		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -297,16 +294,311 @@ namespace en
 
 		result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_ColorImageView);
 		ASSERT_VULKAN(result);
+
+		// Staging Buffer
+		vk::Buffer stagingBuffer(
+			m_RawColorSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		stagingBuffer.SetData(m_RawColorSize, hdr4f.data(), 0, 0);
+
+		// Transfer data
+		vk::CommandPool commandPool = vk::CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI());
+		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
+
+		ChangeColorImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer, queue);
+		WriteBufferToColorImage(commandBuffer, queue, stagingBuffer.GetVulkanHandle());
+		ChangeColorImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer, queue);
+
+		stagingBuffer.Destroy();
+		commandPool.Destroy();
 	}
 
-	void HdrEnvMap::CreateCdfXImage(VkDevice device)
+	void HdrEnvMap::CreateCdfXImage(VkDevice device, VkQueue queue, const std::vector<float>& cdfX)
 	{
+		// Create Image
+		VkFormat format = VK_FORMAT_R32_SFLOAT;
 
+		VkImageCreateInfo imageCreateInfo;
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.pNext = nullptr;
+		imageCreateInfo.flags = 0;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = format;
+		imageCreateInfo.extent = { m_Width, m_Height, 1 };
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.queueFamilyIndexCount = 0;
+		imageCreateInfo.pQueueFamilyIndices = nullptr;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+
+		VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &m_CdfXImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_CdfXImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_CdfXImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_CdfXImage, m_CdfXImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create ImageView
+		VkImageViewCreateInfo imageViewCreateInfo;
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.pNext = nullptr;
+		imageViewCreateInfo.flags = 0;
+		imageViewCreateInfo.image = m_CdfXImage;
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = format;
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_CdfXImageView);
+		ASSERT_VULKAN(result);
+
+		// Staging Buffer
+		vk::Buffer stagingBuffer(
+			m_RawCdfXSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		stagingBuffer.SetData(m_RawCdfXSize, cdfX.data(), 0, 0);
+
+		// Transfer data
+		vk::CommandPool commandPool = vk::CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI());
+		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
+
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+		
+		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			commandBuffer, 
+			m_CdfXImage,
+			VK_IMAGE_LAYOUT_PREINITIALIZED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_ACCESS_NONE,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+		VkBufferImageCopy bufferImageCopy;
+		bufferImageCopy.bufferOffset = 0;
+		bufferImageCopy.bufferRowLength = 0;
+		bufferImageCopy.bufferImageHeight = 0;
+		bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		bufferImageCopy.imageSubresource.mipLevel = 0;
+		bufferImageCopy.imageSubresource.baseArrayLayer = 0;
+		bufferImageCopy.imageSubresource.layerCount = 1;
+		bufferImageCopy.imageOffset = { 0, 0, 0 };
+		bufferImageCopy.imageExtent = { m_Width, m_Height, 1 };
+
+		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.GetVulkanHandle(), m_CdfXImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			commandBuffer,
+			m_CdfXImage,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+		
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+
+		stagingBuffer.Destroy();
+		commandPool.Destroy();
 	}
 
-	void HdrEnvMap::CreateCdfYImage(VkDevice device)
+	void HdrEnvMap::CreateCdfYImage(VkDevice device, VkQueue queue, const std::vector<float>& cdfY)
 	{
+		// Create Image
+		VkFormat format = VK_FORMAT_R32_SFLOAT;
 
+		VkImageCreateInfo imageCreateInfo;
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.pNext = nullptr;
+		imageCreateInfo.flags = 0;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_1D;
+		imageCreateInfo.format = format;
+		imageCreateInfo.extent = { m_Height, 1, 1 };
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.queueFamilyIndexCount = 0;
+		imageCreateInfo.pQueueFamilyIndices = nullptr;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+
+		VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &m_CdfYImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_CdfYImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_CdfYImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_CdfYImage, m_CdfYImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create ImageView
+		VkImageViewCreateInfo imageViewCreateInfo;
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.pNext = nullptr;
+		imageViewCreateInfo.flags = 0;
+		imageViewCreateInfo.image = m_CdfYImage;
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_1D;
+		imageViewCreateInfo.format = format;
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_CdfYImageView);
+		ASSERT_VULKAN(result);
+
+		// Staging Buffer
+		vk::Buffer stagingBuffer(
+			m_RawCdfYSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		stagingBuffer.SetData(m_RawCdfYSize, cdfY.data(), 0, 0);
+
+		// Transfer data
+		vk::CommandPool commandPool = vk::CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI());
+		commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
+
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			commandBuffer,
+			m_CdfYImage,
+			VK_IMAGE_LAYOUT_PREINITIALIZED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_ACCESS_NONE,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+		VkBufferImageCopy bufferImageCopy;
+		bufferImageCopy.bufferOffset = 0;
+		bufferImageCopy.bufferRowLength = 0;
+		bufferImageCopy.bufferImageHeight = 0;
+		bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		bufferImageCopy.imageSubresource.mipLevel = 0;
+		bufferImageCopy.imageSubresource.baseArrayLayer = 0;
+		bufferImageCopy.imageSubresource.layerCount = 1;
+		bufferImageCopy.imageOffset = { 0, 0, 0 };
+		bufferImageCopy.imageExtent = { m_Height, 1, 1 };
+
+		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.GetVulkanHandle(), m_CdfYImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			commandBuffer,
+			m_CdfYImage,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+
+		stagingBuffer.Destroy();
+		commandPool.Destroy();
 	}
 
 	void HdrEnvMap::ChangeColorImageLayout(VkImageLayout layout, VkCommandBuffer commandBuffer, VkQueue queue)

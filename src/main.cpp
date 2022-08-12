@@ -126,7 +126,13 @@ void RunNrcHpm()
 
 	int hdrWidth, hdrHeight;
 	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/photostudio_4k.hdr", hdrWidth, hdrHeight);
-	en::HdrEnvMap hdrEnvMap(hdr4fData, hdrWidth, hdrHeight);
+	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
+	en::HdrEnvMap hdrEnvMap(
+		hdrWidth, 
+		hdrHeight, 
+		hdr4fData,
+		hdrCdf[0],
+		hdrCdf[1]);
 
 	// Setup rendering
 	en::Camera camera(
@@ -143,8 +149,8 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.001f, 0.0f, 0.9f);
-	en::MRHE mrhe(1.0f, 0.0f);
+	en::NeuralRadianceCache nrc(0.01f, 0.0f, 0.5f);
+	en::MRHE mrhe(0.01f, 0.0f);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,

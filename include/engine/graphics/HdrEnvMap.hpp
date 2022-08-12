@@ -12,7 +12,12 @@ namespace en
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		HdrEnvMap(const std::vector<float>& hdr4f, uint32_t width, uint32_t height);
+		HdrEnvMap(
+			uint32_t width, 
+			uint32_t height, 
+			const std::vector<float>& hdr4f,
+			const std::vector<float>& cdfX,
+			const std::vector<float>& cdfY);
 
 		void Destroy();
 
@@ -32,24 +37,24 @@ namespace en
 
 		uint32_t m_Width;
 		uint32_t m_Height;
-		VkDeviceSize m_RawSize;
+		VkDeviceSize m_RawColorSize;
+		VkDeviceSize m_RawCdfXSize;
+		VkDeviceSize m_RawCdfYSize;
 
 		VkImage m_ColorImage;
 		VkImageView m_ColorImageView;
 		VkDeviceMemory m_ColorImageMemory;
 		VkImageLayout m_ColorImageLayout;
 		
-		// Cdf of X
+		// Cdf of X given Y
 		VkImage m_CdfXImage;
 		VkImageView m_CdfXImageView;
 		VkDeviceMemory m_CdfXImageMemory;
-		VkImageLayout m_CdfXImageLayout;
 		
-		// Cdf of Y given X
+		// Cdf of Y
 		VkImage m_CdfYImage;
 		VkImageView m_CdfYImageView;
 		VkDeviceMemory m_CdfYImageMemory;
-		VkImageLayout m_CdfYImageLayout;
 
 		VkSampler m_Sampler;
 
@@ -58,9 +63,9 @@ namespace en
 
 		VkDescriptorSet m_DescSet;
 
-		void CreateColorImage(VkDevice device);
-		void CreateCdfXImage(VkDevice device);
-		void CreateCdfYImage(VkDevice device);
+		void CreateColorImage(VkDevice device, VkQueue queue, const std::vector<float>& hdr4f);
+		void CreateCdfXImage(VkDevice device, VkQueue queue, const std::vector<float>& cdfX);
+		void CreateCdfYImage(VkDevice device, VkQueue queue, const std::vector<float>& cdfY);
 
 		void ChangeColorImageLayout(VkImageLayout layout, VkCommandBuffer commandBuffer, VkQueue queue);
 		void WriteBufferToColorImage(VkCommandBuffer commandBuffer, VkQueue queue, VkBuffer buffer);

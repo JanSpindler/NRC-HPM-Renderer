@@ -327,15 +327,17 @@ void StepWeights5(const uint index)
 
 void StepBiases(const uint index)
 {
+	const float beta1 = nrcConfig.beta1;
+
 	if (index < 3)
 	{
-		matBiases5[index] += ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index]) * nrcConfig.learningRate;
+		float deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index])) + (beta1 * matMomentum1Biases5[index]);
+		matBiases5[index] += deltaBias * nrcConfig.learningRate;
+		matMomentum1Biases5[index] = deltaBias;
 	}
 
 	if (index < 64)
 	{
-		const float beta1 = nrcConfig.beta1;
-
 		float deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases0[index], matBiases0[index])) + (beta1 * matMomentum1Biases0[index]);
 		matBiases0[index] += deltaBias * nrcConfig.learningRate;
 		matMomentum1Biases0[index] = deltaBias;
@@ -355,10 +357,6 @@ void StepBiases(const uint index)
 		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases4[index], matBiases4[index])) + (beta1 * matMomentum1Biases4[index]);
 		matBiases4[index] += deltaBias * nrcConfig.learningRate;
 		matMomentum1Biases4[index] = deltaBias;
-
-		deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index])) + (beta1 * matMomentum1Biases5[index]);
-		matBiases5[index] += deltaBias * nrcConfig.learningRate;
-		matMomentum1Biases5[index] = deltaBias;
 	}
 }
 
