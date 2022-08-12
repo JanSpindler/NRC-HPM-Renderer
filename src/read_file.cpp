@@ -120,9 +120,32 @@ namespace en
 		return hdrData;
 	}
 
+	std::vector<float> InvertCdf(const std::vector<float>& cdf)
+	{
+		std::vector<float> invCdf(cdf.size());
+
+		size_t p = 0;
+		for (size_t i = 0; i < invCdf.size(); i++)
+		{
+			const float threshold = static_cast<float>(i) / static_cast<float>(invCdf.size());
+			while (cdf[p] < threshold)
+			{
+				p++;
+			}
+			invCdf[i] = static_cast<float>(p) / static_cast<float>(cdf.size());
+		}
+
+		return invCdf;
+	}
+
 	std::array<std::vector<float>, 2> Hdr4fToCdf(const std::vector<float>& hdr4f, size_t width, size_t height)
 	{
-		std::vector<float> cdfX(width * height);
+		std::vector<std::vector<float>> cdfX(height);
+		for (std::vector<float>& cdfXgivenY : cdfX)
+		{
+			cdfXgivenY.resize(width);
+		}
+
 		std::vector<float> pdfY(height);
 
 		// Get cdf of x given y
@@ -139,13 +162,13 @@ namespace en
 				const float brightness = r + g + b;
 				brightnessSum += brightness;
 
-				cdfX[(y * width) + x] = brightnessSum;
+				cdfX[y][x] = brightnessSum;
 			}
 
 			// Norm
 			for (size_t x = 0; x < width; x++)
 			{
-				cdfX[(y * width) + x] /= brightnessSum;
+				cdfX[y][x] /= brightnessSum;
 			}
 
 			// Store pdf unorm of y
@@ -168,6 +191,17 @@ namespace en
 			cdfY[y] /= cdfY[height - 1];
 		}
 
-		return { cdfX, cdfY };
+		std::vector<float> invCdfX(width * height);
+
+		for (size_t y = 0; y < height; y++)
+		{
+			std::vector<float> invCdfXgivenY = InvertCdf(cdfX[y]);
+			for (size_t x = 0; x < width; x++)
+			{
+				invCdfX[(y * width) + x] = invCdfXgivenY[x];
+			}
+		}
+
+		return { invCdfX, InvertCdf(cdfY) };
 	}
 }

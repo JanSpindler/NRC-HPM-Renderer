@@ -104,9 +104,9 @@ layout(set = 4, binding = 0) uniform PointLight
 
 layout(set = 5, binding = 0) uniform sampler2D hdrEnvMap;
 
-layout(set = 5, binding = 1) uniform sampler2D hdrEnvMapCdfX;
+layout(set = 5, binding = 1) uniform sampler2D hdrEnvMapInvCdfX;
 
-layout(set = 5, binding = 2) uniform sampler1D hdrEnvMapCdfY;
+layout(set = 5, binding = 2) uniform sampler1D hdrEnvMapInvCdfY;
 
 layout(set = 5, binding = 3) uniform HdrEnvMapData
 {
@@ -699,6 +699,7 @@ vec3 SampleHdrEnvMap(const vec3 dir, const bool hpm)
 
 	const float strength = hpm ? hdrEnvMapData.hpmStrength : hdrEnvMapData.directStrength;
 
+	//return vec3(texture(hdrEnvMapInvCdfX, uv).x);
 	return texture(hdrEnvMap, uv).xyz * strength;
 }
 
