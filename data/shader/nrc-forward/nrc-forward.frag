@@ -687,33 +687,58 @@ vec3 TracePointLight(const vec3 pos, const vec3 dir)
 	return pointLighting;
 }
 
-vec3 SampleHdrEnvMap(const vec3 dir, const bool hpm)
+vec3 SampleHdrEnvMap(const vec2 dir, const bool hpm)
 {
 	// Assert: dir is normalized
-
 	const vec2 invAtan = vec2(0.1591, 0.3183);
 
-	vec2 uv = vec2(atan(dir.z, dir.x), asin(dir.y));
+	vec2 uv = dir;
     uv *= invAtan;
     uv += 0.5;
 
 	const float strength = hpm ? hdrEnvMapData.hpmStrength : hdrEnvMapData.directStrength;
-
-	//return vec3(texture(hdrEnvMapInvCdfX, uv).x);
 	return texture(hdrEnvMap, uv).xyz * strength;
+}
+
+vec3 SampleHdrEnvMap(const vec3 dir, const bool hpm)
+{
+	// Assert: dir is normalized
+	vec2 phiTheta = vec2(atan(dir.z, dir.x), asin(dir.y));
+	return SampleHdrEnvMap(phiTheta, hpm);
 }
 
 vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 {
 	vec3 light = vec3(0.0);
 
-	for (uint i = 0; i < sampleCount; i++)
+	// Half ray importance sampled
+	const uint halfSampleCount = sampleCount;//sampleCount / 2;
+	for (uint i = 0; i < halfSampleCount; i++)
 	{
 		const vec3 randomDir = NewRayDir(dir);
 		const float phase = 1.0;//hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
-		const float transmittance = GetTransmittance(pos, exit, 32);
-		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase;
+		const float transmittance = GetTransmittance(pos, exit, 16);
+		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase * transmittance;
+
+		light += sampleLight;
+	}
+
+	// Half env map importance sampled
+	for (uint i = 0; i < sampleCount - halfSampleCount; i++)
+	{
+		const float thetaNorm = texture(hdrEnvMapInvCdfY, RandFloat(1.0)).x;
+		const float phiNorm = texture(hdrEnvMapInvCdfX, vec2(RandFloat(1.0), thetaNorm)).x;
+
+		//const float thetaNorm = 0.458;
+		//const float phiNorm = 0.477;
+
+		const vec3 randomDir = sin(thetaNorm * PI) * vec3(cos(phiNorm * 2.0 * PI), 1.0, sin(phiNorm * 2.0 * PI));
+
+		const float phase = hg_phase_func(dot(randomDir, -dir));
+		const vec3 exit = find_entry_exit(pos, randomDir)[1];
+		const float transmittance = GetTransmittance(pos, exit, 16);
+		const vec3 sampleLight = texture(hdrEnvMap, vec2(phiNorm, thetaNorm)).xyz * hdrEnvMapData.hpmStrength * phase * transmittance;
 
 		light += sampleLight;
 	}
@@ -725,11 +750,11 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 
 vec3 TraceScene(const vec3 pos, const vec3 dir)
 {
-	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) * SampleHdrEnvMap(pos, dir, 16);
+	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) + SampleHdrEnvMap(pos, dir, 8);
 	return totalLight;
 }
 
-#define TRUE_TRACE_SAMPLE_COUNT 64
+#define TRUE_TRACE_SAMPLE_COUNT 32
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 {
 	vec3 scatteredLight = vec3(0.0);
@@ -838,9 +863,8 @@ void main()
 		return;
 	}
 
-	envMapColor = SampleHdrEnvMap(rd, false);
-
-	const float primaryRayTransmittance = GetTransmittance(entry, exit, 64);
-
-	outColor = vec4(traceResult.xyz + (envMapColor * primaryRayTransmittance), transmittance);
+	//envMapColor = SampleHdrEnvMap(rd, false);
+	//const float primaryRayTransmittance = GetTransmittance(entry, exit, 64);
+	//outColor = vec4(traceResult.xyz + (envMapColor * primaryRayTransmittance), transmittance);
+	outColor = traceResult;
 }

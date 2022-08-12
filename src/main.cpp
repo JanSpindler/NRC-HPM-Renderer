@@ -136,7 +136,7 @@ void RunNrcHpm()
 
 	// Setup rendering
 	en::Camera camera(
-		glm::vec3(0.0f, 0.0f, -5.0f),
+		glm::vec3(0.0f, 0.0f, -64.0f),
 		glm::vec3(0.0f, 0.0f, 1.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f),
 		static_cast<float>(width) / static_cast<float>(height),
@@ -144,7 +144,7 @@ void RunNrcHpm()
 		0.1f,
 		100.0f);
 
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 8.0f);
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
 	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);

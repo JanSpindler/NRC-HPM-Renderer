@@ -105,7 +105,7 @@ namespace en
 		m_RawCdfXSize(width * height * sizeof(float)),
 		m_RawCdfYSize(height * sizeof(float)),
 		m_ColorImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
-		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 0.0f }),
+		m_UniformData({ .directStrength = 1.0f, .hpmStrength = 8.0f }),
 		m_UniformBuffer(
 			sizeof(UniformData), 
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
