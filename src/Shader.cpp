@@ -27,6 +27,7 @@ namespace en::vk
 				compilerPath + " " +
 				fullFilePath +
 				" -I " + includeDirPath +
+				" --target-spv=spv1.5 " +
 				" -o " + outputFileName;
 			Log::Info("Shader Compile Command: " + command);
 
