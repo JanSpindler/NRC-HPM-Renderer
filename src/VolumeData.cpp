@@ -83,7 +83,7 @@ namespace en
 			.random = glm::vec4(0.0f),
 			.useNN = 0,
 			.showNonNN = 0,
-			.densityFactor = 0.4f,
+			.densityFactor = 0.2f,
 			.g = 0.7f,
 			.noNnSpp = 1,
 			.withNnSpp = 1 })

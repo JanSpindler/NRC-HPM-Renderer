@@ -111,6 +111,8 @@ namespace en
 						maxX = x;
 						maxY = y;
 					}
+
+					hdrData[linearIndex] = 0.75f;
 				}
 			}
 		}

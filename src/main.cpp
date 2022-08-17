@@ -125,7 +125,7 @@ void RunNrcHpm()
 	en::VolumeData volumeData(&density3DTex);
 
 	int hdrWidth, hdrHeight;
-	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/photostudio_4k.hdr", hdrWidth, hdrHeight);
+	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
 	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(
 		hdrWidth, 
@@ -149,8 +149,8 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.001f, 0.0f, 0.5f);
-	en::MRHE mrhe(0.01f, 0.0f);
+	en::NeuralRadianceCache nrc(0.0001f, 0.1f, 0.9f);
+	en::MRHE mrhe(0.1f, 0.0f);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,

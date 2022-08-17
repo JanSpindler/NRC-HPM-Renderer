@@ -125,13 +125,13 @@ namespace en
 	
 		// Setup hash tables buffer
 		std::default_random_engine generator((std::random_device()()));
-		std::normal_distribution<float> distribution(0.0f, 1.0);
+		std::normal_distribution<float> distribution(0.0f, 1.0f);
 
 		float* hashTablesData = reinterpret_cast<float*>(malloc(m_HashTablesSize));
 
 		for (size_t i = 0; i < m_HashTablesSize / sizeof(float); i++)
 		{
-			hashTablesData[i] = distribution(generator) * 0.1f;
+			hashTablesData[i] = distribution(generator) * 0.1;
 		}
 
 		vk::Buffer stagingBuffer(

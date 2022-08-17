@@ -638,11 +638,12 @@ namespace en
 				{});
 
 			float* data = reinterpret_cast<float*>(malloc(sizes[i]));
+			const float norm = 1.0f / std::sqrt(static_cast<float>(sizes[i] / sizeof(float)));
 
 			// Weights
 			for (size_t weight = 0; weight < (sizes[i] / sizeof(float)); weight++)
 			{
-				data[weight] = distribution(generator) * 0.01f;
+				data[weight] = distribution(generator) * norm;
 			}
 
 			stagingBuffer.SetData(sizes[i], data, 0, 0);

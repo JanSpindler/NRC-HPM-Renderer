@@ -327,13 +327,15 @@ void StepWeights5(const uint index)
 
 void StepBiases(const uint index)
 {
+	//const float beta1 = 0.0;
 	const float beta1 = nrcConfig.beta1;
 
 	if (index < 3)
 	{
-		float deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index])) + (beta1 * matMomentum1Biases5[index]);
-		matBiases5[index] += deltaBias * nrcConfig.learningRate;
-		matMomentum1Biases5[index] = deltaBias;
+		//float deltaBias = ((1.0 - beta1) * ModifyDeltaWeight(matDeltaBiases5[index], matBiases5[index])) + (beta1 * matMomentum1Biases5[index]);
+		//matBiases5[index] += deltaBias * nrcConfig.learningRate;
+		//matMomentum1Biases5[index] = deltaBias;
+		matBiases5[index] = 0.0;
 	}
 
 	if (index < 64)
