@@ -400,7 +400,9 @@ namespace en
 			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
 			VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
 			VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME,
-			VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME };
+			VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME,
+			VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME };
 
 		float priorities[] = { 1.0f, 1.0f };
 		VkDeviceQueueCreateInfo queueCreateInfo;
@@ -414,10 +416,32 @@ namespace en
 		// Features
 		VkPhysicalDeviceFeatures features{};
 
+		// Nv cooperative matrix features
+		VkPhysicalDeviceCooperativeMatrixFeaturesNV coopMatFeatures;
+		coopMatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
+		coopMatFeatures.pNext = nullptr;
+		coopMatFeatures.cooperativeMatrix = VK_TRUE;
+		coopMatFeatures.cooperativeMatrixRobustBufferAccess = VK_FALSE;
+
+		// Buffer address features
+		VkPhysicalDeviceBufferAddressFeaturesEXT bufferAddressFeatures;
+		bufferAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
+		bufferAddressFeatures.pNext = &coopMatFeatures;
+		bufferAddressFeatures.bufferDeviceAddress = VK_TRUE;
+		bufferAddressFeatures.bufferDeviceAddressCaptureReplay = VK_FALSE;
+		bufferAddressFeatures.bufferDeviceAddressMultiDevice = VK_FALSE;
+
+		// Float 16 features
+		VkPhysicalDeviceFloat16Int8FeaturesKHR float16Features;
+		float16Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+		float16Features.pNext = &bufferAddressFeatures;
+		float16Features.shaderFloat16 = VK_TRUE;
+		float16Features.shaderInt8 = VK_FALSE;
+
 		// Atomic float features
 		VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures;
 		atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-		atomicFloatFeatures.pNext = nullptr;
+		atomicFloatFeatures.pNext = &float16Features;
 		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
 		atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
 		atomicFloatFeatures.shaderBufferFloat64Atomics = VK_FALSE;
