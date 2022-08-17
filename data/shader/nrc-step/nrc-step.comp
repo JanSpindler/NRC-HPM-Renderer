@@ -2,11 +2,7 @@
 #extension GL_EXT_debug_printf : enable
 #extension GL_EXT_shader_atomic_float : enable
 
-#include "descriptors.glsl"
-#include "constants.glsl"
-
-const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
-const vec3 skyPos = vec3(0.0);
+#include "common.glsl"
 
 bool IsNanOrInf(float x)
 {

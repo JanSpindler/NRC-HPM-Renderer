@@ -1,10 +1,7 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
-#extension GL_EXT_debug_printf : enable
 
-#include "descriptors.glsl"
-#include "defines.glsl"
-#include "random.glsl"
+#include "common.glsl"
 
 // Inputs
 layout(location = 0) in vec3 pixelWorldPos;
@@ -12,93 +9,6 @@ layout(location = 1) in vec2 fragUV;
 
 // Output
 layout(location = 0) out vec4 outColor;
-
-// Constants
-const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
-const vec3 skyPos = vec3(0.0);
-
-// MRHE helper
-
-float GetMrheFeature(const uint level, const uint entryIndex, const uint featureIndex)
-{
-	const uint linearIndex = (mrhe.hashTableSize * mrhe.featureCount * level) + (entryIndex * mrhe.featureCount) + featureIndex;
-	const float feature = mrHashTable[linearIndex];
-	return feature;
-}
-
-uint HashFunc(const uvec3 pos)
-{
-	const uvec3 primes = uvec3(1, 19349663, 83492791);
-	uint hash = (pos.x * primes.x) + (pos.y * primes.y) + (pos.z * primes.z);
-	hash %= mrhe.hashTableSize;
-	return hash;
-}
-
-float mrheFeatures[32]; // 16 * 2
-
-// Encode pos
-void EncodePosMrhe(const vec3 pos)
-{
-	const vec3 normPos = (pos / skySize) + vec3(0.5);
-
-	for (uint level = 0; level < mrhe.levelCount; level++)
-	{
-		// Get level resolution
-		const uint res = mrhe.resolutions[level];
-		const vec3 resPos = normPos * float(res);
-
-		// Get all 8 neighbours
-		const vec3 floorPos = floor(resPos);
-
-		vec3 neighbours[8]; // 2^3
-		for (uint x = 0; x < 2; x++)
-		{
-			for (uint y = 0; y < 2; y++)
-			{
-				for (uint z = 0; z < 2; z++)
-				{
-					uint linearIndex = (x * 4) + (y * 2) + z;
-					neighbours[linearIndex] = floorPos + vec3(uvec3(x, y, z));
-				}
-			}
-		}
-
-		// Extract neighbour features
-		vec2 neighbourFeatures[8];
-		for (uint neigh = 0; neigh < 8; neigh++)
-		{
-			const uint entryIndex = HashFunc(uvec3(neighbours[neigh]));
-			neighbourFeatures[neigh] = vec2(GetMrheFeature(level, entryIndex, 0), GetMrheFeature(level, entryIndex, 1));
-		}
-
-		// Linearly interpolate neightbour features
-		vec3 lerpFactors = pos - neighbours[0];
-
-		vec2 zLerpFeatures[4];
-		for (uint i = 0; i < 4; i++)
-		{
-			zLerpFeatures[i] = 
-				(neighbourFeatures[i] * (1.0 - lerpFactors.z)) + 
-				(neighbourFeatures[4 + i] * lerpFactors.z);
-		}
-
-		vec2 yLerpFeatures[2];
-		for (uint i = 0; i < 2; i++)
-		{
-			yLerpFeatures[i] =
-				(zLerpFeatures[i] * (1.0 - lerpFactors.y)) +
-				(zLerpFeatures[2 + i] * lerpFactors.y);
-		}
-
-		vec2 xLerpFeatures =
-			(yLerpFeatures[0] * (1.0 - lerpFactors.x)) +
-			(yLerpFeatures[1] * lerpFactors.x);
-
-		// Store in feature array
-		mrheFeatures[(level * mrhe.featureCount) + 0] = xLerpFeatures.x;
-		mrheFeatures[(level * mrhe.featureCount) + 1] = xLerpFeatures.y;
-	}
-}
 
 // Encode dir
 float oneBlobFeatures[32];
@@ -126,217 +36,6 @@ void EncodeDirOneBlob(const vec3 dir)
 	}
 }
 
-// NN helper
-float Sigmoid(float x)
-{
-	return 1.0 / (1.0 + exp(-x));
-}
-
-float Relu(float x)
-{
-	return max(0.0, x);
-}
-
-float nr0[64];
-float nr1[64];
-float nr2[64];
-float nr3[64];
-float nr4[64];
-float nr5[64];
-float nr6[3];
-
-float GetWeight0(uint row, uint col)
-{
-	uint linearIndex = row * 64 + col;
-	return matWeights0[linearIndex];
-}
-
-float GetWeight1(uint row, uint col)
-{
-	uint linearIndex = row * 64 + col;
-	return matWeights1[linearIndex];
-}
-
-float GetWeight2(uint row, uint col)
-{
-	uint linearIndex = row * 64 + col;
-	return matWeights2[linearIndex];
-}
-
-float GetWeight3(uint row, uint col)
-{
-	uint linearIndex = row * 64 + col;
-	return matWeights3[linearIndex];
-}
-
-float GetWeight4(uint row, uint col)
-{
-	uint linearIndex = row * 64 + col;
-	return matWeights4[linearIndex];
-}
-
-float GetWeight5(uint row, uint col)
-{
-	uint linearIndex = row * 64 + col;
-	return matWeights5[linearIndex];
-}
-
-void ApplyWeights0()
-{
-	for (uint outRow = 0; outRow < 64; outRow++)
-	{
-		float sum = 0.0;
-		
-		for (uint inCol = 0; inCol < 64; inCol++)
-		{
-			float inVal = nr0[inCol];
-			float weightVal = GetWeight0(outRow, inCol);
-			sum += inVal * weightVal;
-		}
-
-		nr1[outRow] = sum + matBiases0[outRow];
-	}
-}
-
-void ApplyWeights1()
-{
-	for (uint outRow = 0; outRow < 64; outRow++)
-	{
-		float sum = 0.0;
-		
-		for (uint inCol = 0; inCol < 64; inCol++)
-		{
-			float inVal = nr1[inCol];
-			float weightVal = GetWeight1(outRow, inCol);
-			sum += inVal * weightVal;
-		}
-
-		nr2[outRow] = sum + matBiases1[outRow];
-	}
-}
-
-void ApplyWeights2()
-{
-	for (uint outRow = 0; outRow < 64; outRow++)
-	{
-		float sum = 0.0;
-		
-		for (uint inCol = 0; inCol < 64; inCol++)
-		{
-			float inVal = nr2[inCol];
-			float weightVal = GetWeight2(outRow, inCol);
-			sum += inVal * weightVal;
-		}
-
-		nr3[outRow] = sum + matBiases2[outRow];
-	}
-}
-
-void ApplyWeights3()
-{
-	for (uint outRow = 0; outRow < 64; outRow++)
-	{
-		float sum = 0.0;
-		
-		for (uint inCol = 0; inCol < 64; inCol++)
-		{
-			float inVal = nr3[inCol];
-			float weightVal = GetWeight3(outRow, inCol);
-			sum += inVal * weightVal;
-		}
-
-		nr4[outRow] = sum + matBiases3[outRow];
-	}
-}
-
-void ApplyWeights4()
-{
-	for (uint outRow = 0; outRow < 64; outRow++)
-	{
-		float sum = 0.0;
-		
-		for (uint inCol = 0; inCol < 64; inCol++)
-		{
-			float inVal = nr4[inCol];
-			float weightVal = GetWeight4(outRow, inCol);
-			sum += inVal * weightVal;
-		}
-
-		nr5[outRow] = sum + matBiases4[outRow];
-	}
-}
-
-void ApplyWeights5()
-{
-	for (uint outRow = 0; outRow < 3; outRow++)
-	{
-		float sum = 0.0;
-		
-		for (uint inCol = 0; inCol < 64; inCol++)
-		{
-			float inVal = nr5[inCol];
-			float weightVal = GetWeight5(outRow, inCol);
-			sum += inVal * weightVal;
-		}
-
-		nr6[outRow] = sum + matBiases5[outRow];
-	}
-}
-
-void ActivateNr1()
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		//nr1[i] = Sigmoid(nr1[i]);
-		nr1[i] = Relu(nr1[i]);
-	}
-}
-
-void ActivateNr2()
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		//nr2[i] = Sigmoid(nr2[i]);
-		nr2[i] = Relu(nr2[i]);
-	}
-}
-
-void ActivateNr3()
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		//nr3[i] = Sigmoid(nr3[i]);
-		nr3[i] = Relu(nr3[i]);
-	}
-}
-
-void ActivateNr4()
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		//nr4[i] = Sigmoid(nr4[i]);
-		nr4[i] = Relu(nr4[i]);
-	}
-}
-
-void ActivateNr5()
-{
-	for (uint i = 0; i < 64; i++)
-	{
-		//nr5[i] = Sigmoid(nr5[i]);
-		nr5[i] = Relu(nr5[i]);
-	}
-}
-
-void ActivateNr6()
-{
-	for (uint i = 0; i < 3; i++)
-	{
-		//nr6[i] = Sigmoid(nr6[i]);
-		nr6[i] = Relu(nr6[i]);
-	}
-}
-
 void EncodeRay(vec3 pos, const vec3 dir)
 {
 	EncodePosMrhe(pos);
@@ -347,39 +46,6 @@ void EncodeRay(vec3 pos, const vec3 dir)
 		nr0[i] = mrheFeatures[i];
 		nr0[i + 32] = oneBlobFeatures[i];
 	}
-}
-
-vec3 Forward(vec3 ro, const vec3 rd)
-{
-	EncodeRay(ro, rd);
-
-	//debugPrintfEXT("%f, %f, %f, %f, %f\n", nr0[0], nr0[1], nr0[2], nr0[3], nr0[4]);
-
-	ApplyWeights0();
-	ActivateNr1();
-	
-	ApplyWeights1();
-	ActivateNr2();
-	
-	ApplyWeights2();
-	ActivateNr3();
-	
-	ApplyWeights3();
-	ActivateNr4();
-
-	ApplyWeights4();
-	ActivateNr5();
-	
-	ApplyWeights5();
-	//debugPrintfEXT("%f, %f, %f\n", nr6[0], nr6[1], nr6[2]);
-	ActivateNr6();
-
-	vec3 outputCol;
-	outputCol.x = max(0.0, nr6[0]);
-	outputCol.y = max(0.0, nr6[1]);
-	outputCol.z = max(0.0, nr6[2]);
-
-	return outputCol;
 }
 
 // Path trace helper
@@ -601,6 +267,13 @@ vec3 TraceScene(const vec3 pos, const vec3 dir)
 {
 	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) + SampleHdrEnvMap(pos, dir, 4);
 	return totalLight;
+}
+
+vec3 Forward(const vec3 pos, const vec3 dir)
+{
+	EncodeRay(pos, dir);
+	Forward();
+	return vec3(nr6[0], nr6[1], nr6[2]);
 }
 
 #define TRUE_TRACE_SAMPLE_COUNT 32

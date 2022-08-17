@@ -1,8 +1,6 @@
 #version 460
-#extension GL_EXT_debug_printf : enable
-#extension GL_EXT_shader_atomic_float : enable
 
-#include "descriptors.glsl"
+#include "common.glsl"
 
 bool IsNanOrInf(float x)
 {
