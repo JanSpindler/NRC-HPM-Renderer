@@ -2,134 +2,13 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_debug_printf : enable
 
+#include "descriptors.glsl"
+#include "defines.glsl"
+#include "random.glsl"
+
 // Inputs
 layout(location = 0) in vec3 pixelWorldPos;
 layout(location = 1) in vec2 fragUV;
-
-// Uniforms
-layout(set = 0, binding = 1) uniform camera_t
-{
-	vec3 pos;
-} camera;
-
-layout(set = 1, binding = 0) uniform sampler3D densityTex;
-
-layout(set = 1, binding = 1) uniform volumeData_t
-{
-	vec4 random;
-	uint useNN;
-	uint showNonNN;
-	float densityFactor;
-	float g;
-	int noNnSpp;
-	int withNnSpp;
-} volumeData;
-
-layout(set = 2, binding = 0) uniform dir_light_t
-{
-	vec3 color;
-	float zenith;
-	vec3 dir;
-	float azimuth;
-	float strength;
-} dir_light;
-
-// NN buffers
-layout(std430, set = 3, binding = 0) readonly buffer Weights0
-{
-	float matWeights0[4096]; // 64 x 64
-};
-
-layout(std430, set = 3, binding = 1) readonly buffer Weights1
-{
-	float matWeights1[4096]; // 64 x 64
-};
-
-layout(std430, set = 3, binding = 2) readonly buffer Weights2
-{
-	float matWeights2[4096]; // 64 x 64
-};
-
-layout(std430, set = 3, binding = 3) readonly buffer Weights3
-{
-	float matWeights3[4096]; // 64 x 64
-};
-
-layout(std430, set = 3, binding = 4) readonly buffer Weights4
-{
-	float matWeights4[4096]; // 64 x 64
-};
-
-layout(std430, set = 3, binding = 5) readonly buffer Weights5
-{
-	float matWeights5[192]; // 64 x 3
-};
-
-layout(std430, set = 3, binding = 18) readonly buffer Biases0
-{
-	float matBiases0[64];
-};
-
-layout(std430, set = 3, binding = 19) readonly buffer Biases1
-{
-	float matBiases1[64];
-};
-
-layout(std430, set = 3, binding = 20) readonly buffer Biases2
-{
-	float matBiases2[64];
-};
-
-layout(std430, set = 3, binding = 21) readonly buffer Biases3
-{
-	float matBiases3[64];
-};
-
-layout(std430, set = 3, binding = 22) readonly buffer Biases4
-{
-	float matBiases4[64];
-};
-
-layout(std430, set = 3, binding = 23) readonly buffer Biases5
-{
-	float matBiases5[3];
-};
-
-layout(set = 4, binding = 0) uniform PointLight
-{
-	vec3 pos;
-	float strength;
-	vec3 color;
-} pointLight;
-
-layout(set = 5, binding = 0) uniform sampler2D hdrEnvMap;
-
-layout(set = 5, binding = 1) uniform sampler2D hdrEnvMapInvCdfX;
-
-layout(set = 5, binding = 2) uniform sampler1D hdrEnvMapInvCdfY;
-
-layout(set = 5, binding = 3) uniform HdrEnvMapData
-{
-	float directStrength;
-	float hpmStrength;
-} hdrEnvMapData;
-
-layout(set = 6, binding = 0) uniform MrheData
-{
-	float learningRate;
-	float weightDecay;
-	uint levelCount;
-	uint hashTableSize;
-	uint featureCount;
-	uint minRes;
-	uint maxRes;
-	uint resolutions[16];
-} mrhe;
-
-layout(std430, set = 6, binding = 1) readonly buffer MRHashTable
-{
-	float mrHashTable[];
-};
 
 // Output
 layout(location = 0) out vec4 outColor;
@@ -137,36 +16,6 @@ layout(location = 0) out vec4 outColor;
 // Constants
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
-
-#define PI 3.14159265359
-
-#define MAX_RAY_DISTANCE 100000.0
-#define MIN_RAY_DISTANCE 0.125
-
-#define SAMPLE_COUNT 40
-
-// Random
-float preRand = volumeData.random.x * fragUV.x;
-float prePreRand = volumeData.random.y * fragUV.y;
-
-float rand(vec2 co)
-{
-	return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-float myRand()
-{
-	float result = rand(vec2(preRand, prePreRand));
-	prePreRand = preRand;
-	preRand = result;
-	return result;
-}
-
-float RandFloat(float maxVal)
-{
-	float f = myRand();
-	return f * maxVal;
-}
 
 // MRHE helper
 
@@ -836,6 +685,10 @@ vec4 TracePathMultiple(const vec3 rayOrigin, const vec3 rayDir, bool useNN)
 // Main
 void main()
 {
+	// Random
+	preRand = volumeData.random.x * fragUV.x;
+	prePreRand = volumeData.random.y * fragUV.y;
+
 	// Setup
 	const vec3 ro = camera.pos;
 	const vec3 rd = normalize(pixelWorldPos - ro);

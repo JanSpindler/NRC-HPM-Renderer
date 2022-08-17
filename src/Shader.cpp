@@ -5,6 +5,7 @@
 
 const std::string compilerPath = "glslc";
 const std::string shaderDirPath = "data/shader/";
+const std::string includeDirPath = "data/shader/include";
 
 namespace en::vk
 {
@@ -25,7 +26,8 @@ namespace en::vk
 			std::string command = 
 				compilerPath + " " +
 				fullFilePath +
-				" -o " + outputFileName;;
+				" -I " + includeDirPath +
+				" -o " + outputFileName;
 			Log::Info("Shader Compile Command: " + command);
 
 			// Compile

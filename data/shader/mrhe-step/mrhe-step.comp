@@ -2,27 +2,7 @@
 #extension GL_EXT_debug_printf : enable
 #extension GL_EXT_shader_atomic_float : enable
 
-layout(set = 6, binding = 0) uniform MrheData
-{
-	float learningRate;
-	float weightDecay;
-	uint levelCount;
-	uint hashTableSize;
-	uint featureCount;
-	uint minRes;
-	uint maxRes;
-	uint resolutions[16];
-} mrhe;
-
-layout(std430, set = 6, binding = 1) buffer MRHashTable
-{
-	float mrHashTable[];
-};
-
-layout(std430, set = 6, binding = 2) buffer MRDeltaHashTable
-{
-	float mrDeltaHashTable[];
-};
+#include "descriptors.glsl"
 
 bool IsNanOrInf(float x)
 {
