@@ -200,8 +200,6 @@ void ClearDeltaWeights(const uint index)
 	}
 }
 
-#include "nvnn.glsl"
-
 void main()
 {
 	const uint index = gl_GlobalInvocationID.x;
@@ -214,9 +212,4 @@ void main()
 	StepWeights5(index);
 	StepBiases(index);
 	ClearDeltaWeights(index);
-
-	if (index == 0)
-	{
-		testNvnn();
-	}
 }
