@@ -149,8 +149,11 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(0.0001f, 0.1f, 0.9f);
-	en::MRHE mrhe(0.1f, 0.0f);
+	//en::NeuralRadianceCache nrc(0.0001f, 0.1f, 0.9f);
+	//en::MRHE mrhe(0.1f, 0.0f);
+
+	en::NeuralRadianceCache nrc(6, 64, 0.001f);
+	nrc.Init();
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
@@ -178,7 +181,7 @@ void RunNrcHpm()
 	{
 		if (counter % 100 == 0)
 		{
-			nrc.PrintWeights();
+			//nrc.PrintWeights();
 			//mrhe.PrintHashTables();
 		}
 
@@ -208,15 +211,15 @@ void RunNrcHpm()
 		camera.SetAspectRatio(width, height);
 		camera.UpdateUniformBuffer();
 
-		nrc.ResetStats();
+		//nrc.ResetStats();
 		nrcHpmRenderer->Render(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
 
 		if (counter % 25 == 0)
 		{
-			const en::NeuralRadianceCache::StatsData& nrcStats = nrc.GetStats();
-			en::Log::Info("NRC MSE Loss: " + std::to_string(nrcStats.mseLoss));
+			//const en::NeuralRadianceCache::StatsData& nrcStats = nrc.GetStats();
+			//en::Log::Info("NRC MSE Loss: " + std::to_string(nrcStats.mseLoss));
 		}
 
 		// ImGui
@@ -255,8 +258,8 @@ void RunNrcHpm()
 	nrcHpmRenderer->Destroy();
 	delete nrcHpmRenderer;
 
-	mrhe.Destroy();
-	nrc.Destroy();
+	//mrhe.Destroy();
+	//nrc.Destroy();
 
 	swapchain.Destroy(true);
 
