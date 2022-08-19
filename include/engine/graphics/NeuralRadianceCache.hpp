@@ -21,10 +21,19 @@ namespace en
 			OneBlob
 		};
 
-		NeuralRadianceCache(PosEncoding posEncoding, DirEncoding dirEncoding, size_t layerCount, size_t layerWidth);
+		static void Init(VkDevice device);
+		static void Shutdown(VkDevice device);
+
+		NeuralRadianceCache(size_t layerCount, size_t layerWidth, float nrcLearningRate);
 
 		void SetPosFrequencyEncoding(uint32_t freqCount);
-		void SetPosMrheEncoding(uint32_t minFreq, uint32_t maxFreq, uint32_t levelCount, uint32_t featureCount);
+		void SetPosMrheEncoding(
+			uint32_t minFreq, 
+			uint32_t maxFreq, 
+			uint32_t levelCount, 
+			uint32_t hashTableSize, 
+			uint32_t featureCount, 
+			float learningRate);
 
 		void SetDirFrequencyEncoding(uint32_t freqCount);
 		void SetDirOneBlobEncoding(uint32_t featureCount);
@@ -33,32 +42,48 @@ namespace en
 
 		void Destroy();
 
-		uint32_t GetInputFeatureCount() const;
+		uint32_t GetPosFreqCount() const;
+		uint32_t GetPosMinFreq() const;
+		uint32_t GetPosMaxFreq() const;
+		uint32_t GetPosLevelCount() const;
+		uint32_t GetPosHashTableSize() const;
+		uint32_t GetPosFeatureCount() const;
+
+		uint32_t GetDirFreqCount() const;
+		uint32_t GetDirFeatureCount() const;
+		
+		size_t GetLayerCount() const;
+		size_t GetLayerWidth() const;
+		
+		float GetNrcLearningRate() const;
+		float GetMrheLearningRate() const;
 
 	private:
-		struct UniformData
-		{
-			uint32_t posFreqCount;
-			uint32_t posMinFreq;
-			uint32_t posMaxFreq;
-			uint32_t posLevelCount;
-			uint32_t posFeatureCount;
-
-			uint32_t dirFreqCount;
-			uint32_t dirFeatureCount;
-		};
+		static VkDescriptorSetLayout m_DescSetLayout;
+		static VkDescriptorPool m_DescPool;
 
 		PosEncoding m_PosEncoding;
 		DirEncoding m_DirEncoding;
 
+		uint32_t m_PosFreqCount;
+		uint32_t m_PosMinFreq;
+		uint32_t m_PosMaxFreq;
+		uint32_t m_PosLevelCount;
+		uint32_t m_PosHashTableSize;
+		uint32_t m_PosFeatureCount;
+
+		uint32_t m_DirFreqCount;
+		uint32_t m_DirFeatureCount;
+
 		size_t m_LayerCount;
 		size_t m_LayerWidth;
 
-		uint32_t m_InputFeatureCount;
+		float m_NrcLearningRate;
+		float m_MrheLearningRate;
 
-		UniformData m_UniformData;
+		uint32_t m_InputFeatureCount;
 		
-		vk::Buffer* m_ResultsBuffer;
+		vk::Buffer* m_NeuronsBuffer;
 
 		vk::Buffer* m_WeightsBuffer;
 		vk::Buffer* m_DeltaWeightsBuffer;
@@ -71,10 +96,19 @@ namespace en
 		vk::Buffer* m_MrheBuffer;
 		vk::Buffer* m_DeltaMrheBuffer;
 
+		size_t m_NeuronsBufferSize;
+		size_t m_WeightsBufferSize;
+		size_t m_BiasesBufferSize;
+		size_t m_MrheBufferSize;
+
+		VkDescriptorSet m_DescSet;
+
 		void InitNn();
-		void CreateNnBuffers(size_t weightsBufferSize, size_t biasesBufferSize);
-		void FillNnBuffers(size_t weightsBufferSize, size_t biasesBufferSize);
+		void CreateNnBuffers();
+		void FillNnBuffers();
 		
 		void InitMrhe();
+
+		void AllocateAndUpdateDescSet();
 	};
 }
