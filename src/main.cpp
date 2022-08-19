@@ -97,7 +97,7 @@ void SwapchainResizeCallback()
 
 	uint32_t width = en::Window::GetWidth();
 	uint32_t height = en::Window::GetHeight();
-	nrcHpmRenderer->ResizeFrame(width, height);
+	//nrcHpmRenderer->ResizeFrame(width, height);
 	en::ImGuiRenderer::Resize(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
 }
@@ -161,8 +161,7 @@ void RunNrcHpm()
 		camera,
 		volumeData,
 		dirLight, pointLight, hdrEnvMap,
-		nrc,
-		mrhe);
+		nrc);
 
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());

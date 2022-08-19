@@ -1,4 +1,4 @@
-/*#include <engine/graphics/renderer/OldNrcHpmRenderer.hpp>
+#include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/util/Log.hpp>
 
 namespace en
@@ -13,37 +13,39 @@ namespace en
 		const DirLight& dirLight,
 		const PointLight& pointLight,
 		const HdrEnvMap& hdrEnvMap,
-		const NeuralRadianceCache& nrc,
-		const MRHE& mrhe)
+		const NeuralRadianceCache& nrc)
 		:
 		m_FrameWidth(width),
 		m_FrameHeight(height),
 		m_TrainWidth(trainWidth),
 		m_TrainHeight(trainHeight),
-		m_RenderVertShader("nrc-forward/nrc-forward.vert", false),
-		m_RenderFragShader("nrc-forward/nrc-forward.frag", false),
+		m_VertShader("nrc-forward/nrc-forward.vert", false),
+		m_FragShader("nrc-forward/nrc-forward.frag", false),
 		m_TrainShader("nrc-train/nrc-train.comp", false),
 		m_StepShader("nrc-step/nrc-step.comp", false),
 		m_MrheStepShader("mrhe-step/mrhe-step.comp", false),
+		m_GenRaysShader("gen_rays/gen_rays.comp", false),
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
 		m_DirLight(dirLight),
 		m_PointLight(pointLight),
 		m_HdrEnvMap(hdrEnvMap),
-		m_Nrc(nrc),
-		m_Mrhe(mrhe)
+		m_Nrc(nrc)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
 		CreatePipelineLayout(device);
-		
+
+		InitSpecializationConstants();
+
 		CreateRenderRenderPass(device);
 		CreateRenderPipeline(device);
-		
+
 		CreateTrainPipeline(device);
 		CreateStepPipeline(device);
 		CreateMrheStepPipeline(device);
+		CreateGenRaysShader(device);
 
 		CreateColorImage(device);
 		CreateFramebuffer(device);
@@ -77,10 +79,13 @@ namespace en
 
 		m_CommandPool.Destroy();
 		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
-		
+
 		vkDestroyImageView(device, m_ColorImageView, nullptr);
 		vkFreeMemory(device, m_ColorImageMemory, nullptr);
 		vkDestroyImage(device, m_ColorImage, nullptr);
+
+		vkDestroyPipeline(device, m_GenRaysPipeline, nullptr);
+		m_GenRaysShader.Destroy();
 
 		vkDestroyPipeline(device, m_MrheStepPipeline, nullptr);
 		m_MrheStepShader.Destroy();
@@ -92,38 +97,38 @@ namespace en
 		m_TrainShader.Destroy();
 
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
-		m_RenderVertShader.Destroy();
-		m_RenderFragShader.Destroy();
+		m_VertShader.Destroy();
+		m_FragShader.Destroy();
 
-		vkDestroyRenderPass(device, m_RenderRenderPass, nullptr);
+		vkDestroyRenderPass(device, m_RenderPass, nullptr);
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 	}
 
-	void NrcHpmRenderer::ResizeFrame(uint32_t width, uint32_t height)
-	{
-		m_FrameWidth = width;
-		m_FrameHeight = height;
-
-		VkDevice device = VulkanAPI::GetDevice();
-
-		// Destroy
-		m_CommandPool.FreeBuffers();
-		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
-
-		vkDestroyImageView(device, m_ColorImageView, nullptr);
-		vkFreeMemory(device, m_ColorImageMemory, nullptr);
-		vkDestroyImage(device, m_ColorImage, nullptr);
-
-		// Create
-		CreateColorImage(device);
-		CreateFramebuffer(device);
-
-		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		m_CommandBuffer = m_CommandPool.GetBuffer(0);
-
-		RecordCommandBuffer();
-	}
+//	void NrcHpmRenderer::ResizeFrame(uint32_t width, uint32_t height)
+//	{
+//		m_FrameWidth = width;
+//		m_FrameHeight = height;
+//
+//		VkDevice device = VulkanAPI::GetDevice();
+//
+//		// Destroy
+//		m_CommandPool.FreeBuffers();
+//		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
+//
+//		vkDestroyImageView(device, m_ColorImageView, nullptr);
+//		vkFreeMemory(device, m_ColorImageMemory, nullptr);
+//		vkDestroyImage(device, m_ColorImage, nullptr);
+//
+//		// Create
+//		CreateColorImage(device);
+//		CreateFramebuffer(device);
+//
+//		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+//		m_CommandBuffer = m_CommandPool.GetBuffer(0);
+//
+//		RecordCommandBuffer();
+//	}
 
 	VkImage NrcHpmRenderer::GetImage() const
 	{
@@ -147,10 +152,9 @@ namespace en
 			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
 			DirLight::GetDescriptorSetLayout(),
-			NeuralRadianceCache::GetDescSetLayout(),
+			NeuralRadianceCache::GetDescriptorSetLayout(),
 			PointLight::GetDescriptorSetLayout(),
-			HdrEnvMap::GetDescriptorSetLayout(),
-			MRHE::GetDescriptorSetLayout() };
+			HdrEnvMap::GetDescriptorSetLayout() };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -163,6 +167,169 @@ namespace en
 
 		VkResult result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &m_PipelineLayout);
 		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::InitSpecializationConstants()
+	{
+		// Fill struct
+		m_SpecData.renderWidth = m_FrameWidth;
+		m_SpecData.renderHeight = m_FrameHeight;
+		
+		m_SpecData.trainWidth = m_TrainWidth;
+		m_SpecData.trainHeight = m_TrainHeight;
+
+		m_SpecData.posEncoding = m_Nrc.GetPosEncoding();
+		m_SpecData.dirEncoding = m_Nrc.GetDirEncoding();
+
+		m_SpecData.posFreqCount = m_Nrc.GetPosFreqCount();
+		m_SpecData.posMinFreq = m_Nrc.GetPosMinFreq();
+		m_SpecData.posMaxFreq = m_Nrc.GetPosMaxFreq();
+		m_SpecData.posLevelCount = m_Nrc.GetPosLevelCount();
+		m_SpecData.posHashTableSize = m_Nrc.GetPosHashTableSize();
+		m_SpecData.posFeatureCount = m_Nrc.GetPosFeatureCount();
+		
+		m_SpecData.dirFreqCount = m_Nrc.GetDirFreqCount();
+		m_SpecData.dirFeatureCount = m_Nrc.GetDirFeatureCount();
+		
+		m_SpecData.layerCount = m_Nrc.GetLayerCount();
+		m_SpecData.layerWidth = m_Nrc.GetLayerWidth();
+		m_SpecData.inputFeatureCount = m_Nrc.GetDirFeatureCount();
+		m_SpecData.nrcLearningRate = m_Nrc.GetNrcLearningRate();
+		m_SpecData.mrheLearningRate = m_Nrc.GetMrheLearningRate();
+
+		// Init map entries
+		// Render size
+		VkSpecializationMapEntry renderWidthEntry;
+		renderWidthEntry.constantID = 0;
+		renderWidthEntry.offset = offsetof(SpecializationData, SpecializationData::renderWidth);
+		renderWidthEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry renderHeightEntry;
+		renderHeightEntry.constantID = 1;
+		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
+		renderHeightEntry.size = sizeof(uint32_t);
+
+		// Train size
+		VkSpecializationMapEntry trainWidthEntry;
+		trainWidthEntry.constantID = 2;
+		trainWidthEntry.offset = offsetof(SpecializationData, SpecializationData::trainWidth);
+		trainWidthEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry trainHeightEntry;
+		trainHeightEntry.constantID = 3;
+		trainHeightEntry.offset = offsetof(SpecializationData, SpecializationData::trainHeight);
+		trainHeightEntry.size = sizeof(uint32_t);
+
+		// Encoding
+		VkSpecializationMapEntry posEncodingEntry;
+		posEncodingEntry.constantID = 4;
+		posEncodingEntry.offset = offsetof(SpecializationData, SpecializationData::posEncoding);
+		posEncodingEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry dirEncodingEntry;
+		dirEncodingEntry.constantID = 5;
+		dirEncodingEntry.offset = offsetof(SpecializationData, SpecializationData::dirEncoding);
+		dirEncodingEntry.size = sizeof(uint32_t);
+
+		// Pos parameters
+		VkSpecializationMapEntry posFreqCountEntry;
+		posFreqCountEntry.constantID = 6;
+		posFreqCountEntry.offset = offsetof(SpecializationData, SpecializationData::posFreqCount);
+		posFreqCountEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry posMinFreqEntry;
+		posMinFreqEntry.constantID = 7;
+		posMinFreqEntry.offset = offsetof(SpecializationData, SpecializationData::posMinFreq);
+		posMinFreqEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry posMaxFreqEntry;
+		posMaxFreqEntry.constantID = 8;
+		posMaxFreqEntry.offset = offsetof(SpecializationData, SpecializationData::posMaxFreq);
+		posMaxFreqEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry posLevelCountEntry;
+		posLevelCountEntry.constantID = 9;
+		posLevelCountEntry.offset = offsetof(SpecializationData, SpecializationData::posLevelCount);
+		posLevelCountEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry posHashTableSizeEntry;
+		posHashTableSizeEntry.constantID = 10;
+		posHashTableSizeEntry.offset = offsetof(SpecializationData, SpecializationData::posHashTableSize);
+		posHashTableSizeEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry posFeatureCountEntry;
+		posFeatureCountEntry.constantID = 11;
+		posFeatureCountEntry.offset = offsetof(SpecializationData, SpecializationData::posFeatureCount);
+		posFeatureCountEntry.size = sizeof(uint32_t);
+
+		// Dir parameters
+		VkSpecializationMapEntry dirFreqCountEntry;
+		dirFreqCountEntry.constantID = 12;
+		dirFreqCountEntry.offset = offsetof(SpecializationData, SpecializationData::dirFreqCount);
+		dirFreqCountEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry dirFeatureCountEntry;
+		dirFeatureCountEntry.constantID = 13;
+		dirFeatureCountEntry.offset = offsetof(SpecializationData, SpecializationData::dirFeatureCount);
+		dirFeatureCountEntry.size = sizeof(uint32_t);
+
+		// Nn
+		VkSpecializationMapEntry layerCountEntry;
+		layerCountEntry.constantID = 14;
+		layerCountEntry.offset = offsetof(SpecializationData, SpecializationData::layerCount);
+		layerCountEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry layerWidthEntry;
+		layerWidthEntry.constantID = 15;
+		layerWidthEntry.offset = offsetof(SpecializationData, SpecializationData::layerWidth);
+		layerWidthEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry inputFeatureCountEntry;
+		inputFeatureCountEntry.constantID = 16;
+		inputFeatureCountEntry.offset = offsetof(SpecializationData, SpecializationData::inputFeatureCount);
+		inputFeatureCountEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry nrcLearningRateEntry;
+		nrcLearningRateEntry.constantID = 17;
+		nrcLearningRateEntry.offset = offsetof(SpecializationData, SpecializationData::nrcLearningRate);
+		nrcLearningRateEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry mrheLearningRateEntry;
+		mrheLearningRateEntry.constantID = 18;
+		mrheLearningRateEntry.offset = offsetof(SpecializationData, SpecializationData::mrheLearningRate);
+		mrheLearningRateEntry.size = sizeof(float);
+
+		m_SpecMapEntries = {
+			renderWidthEntry,
+			renderHeightEntry,
+
+			trainWidthEntry,
+			trainHeightEntry,
+
+			posEncodingEntry,
+			dirEncodingEntry,
+
+			posFreqCountEntry,
+			posMinFreqEntry,
+			posMaxFreqEntry,
+			posLevelCountEntry,
+			posHashTableSizeEntry,
+			posFeatureCountEntry,
+
+			dirFreqCountEntry,
+			dirFeatureCountEntry,
+
+			layerCountEntry,
+			layerWidthEntry,
+			inputFeatureCountEntry,
+			nrcLearningRateEntry,
+			mrheLearningRateEntry };
+
+		VkSpecializationInfo specInfo;
+		specInfo.mapEntryCount = m_SpecMapEntries.size();
+		specInfo.pMapEntries = m_SpecMapEntries.data();
+		specInfo.dataSize = sizeof(SpecializationData);
+		specInfo.pData = &m_SpecData;
 	}
 
 	void NrcHpmRenderer::CreateRenderRenderPass(VkDevice device)
@@ -220,7 +387,7 @@ namespace en
 		createInfo.dependencyCount = 1;
 		createInfo.pDependencies = &subpassDependency;
 
-		VkResult result = vkCreateRenderPass(device, &createInfo, nullptr, &m_RenderRenderPass);
+		VkResult result = vkCreateRenderPass(device, &createInfo, nullptr, &m_RenderPass);
 		ASSERT_VULKAN(result);
 	}
 
@@ -232,7 +399,7 @@ namespace en
 		vertStageCreateInfo.pNext = nullptr;
 		vertStageCreateInfo.flags = 0;
 		vertStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertStageCreateInfo.module = m_RenderVertShader.GetVulkanModule();
+		vertStageCreateInfo.module = m_VertShader.GetVulkanModule();
 		vertStageCreateInfo.pName = "main";
 		vertStageCreateInfo.pSpecializationInfo = nullptr;
 
@@ -241,9 +408,9 @@ namespace en
 		fragStageCreateInfo.pNext = nullptr;
 		fragStageCreateInfo.flags = 0;
 		fragStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStageCreateInfo.module = m_RenderFragShader.GetVulkanModule();
+		fragStageCreateInfo.module = m_FragShader.GetVulkanModule();
 		fragStageCreateInfo.pName = "main";
-		fragStageCreateInfo.pSpecializationInfo = nullptr;
+		fragStageCreateInfo.pSpecializationInfo = &m_SpecInfo;
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertStageCreateInfo, fragStageCreateInfo };
 
@@ -316,19 +483,19 @@ namespace en
 		multisampleCreateInfo.alphaToOneEnable = VK_FALSE;
 
 		// Depth and stencil testing
-//		VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo; // TODO
-//		depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-//		depthStencilCreateInfo.pNext = nullptr;
-//		depthStencilCreateInfo.flags = 0;
-//		depthStencilCreateInfo.depthTestEnable = VK_FALSE;
-//		depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
-//		depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-//		depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
-//		depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
-//		depthStencilCreateInfo.front;
-//		depthStencilCreateInfo.back;
-//		depthStencilCreateInfo.minDepthBounds;
-//		depthStencilCreateInfo.maxDepthBounds;
+		/*VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo; // TODO
+		depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencilCreateInfo.pNext = nullptr;
+		depthStencilCreateInfo.flags = 0;
+		depthStencilCreateInfo.depthTestEnable = VK_FALSE;
+		depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
+		depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
+		depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
+		depthStencilCreateInfo.front;
+		depthStencilCreateInfo.back;
+		depthStencilCreateInfo.minDepthBounds;
+		depthStencilCreateInfo.maxDepthBounds;*/
 
 		// Color blending
 		VkPipelineColorBlendAttachmentState colorBlendAttachment;
@@ -383,7 +550,7 @@ namespace en
 		createInfo.pColorBlendState = &colorBlendCreateInfo;
 		createInfo.pDynamicState = &dynamicStateCreateInfo;
 		createInfo.layout = m_PipelineLayout;
-		createInfo.renderPass = m_RenderRenderPass;
+		createInfo.renderPass = m_RenderPass;
 		createInfo.subpass = 0;
 		createInfo.basePipelineHandle = VK_NULL_HANDLE;
 		createInfo.basePipelineIndex = -1;
@@ -394,28 +561,6 @@ namespace en
 
 	void NrcHpmRenderer::CreateTrainPipeline(VkDevice device)
 	{
-		VkSpecializationMapEntry widthMapEntry;
-		widthMapEntry.constantID = 0;
-		widthMapEntry.offset = 0;
-		widthMapEntry.size = sizeof(float);
-
-		VkSpecializationMapEntry heightMapEntry;
-		heightMapEntry.constantID = 1;
-		heightMapEntry.offset = sizeof(float);
-		heightMapEntry.size = sizeof(float);
-
-		std::vector<VkSpecializationMapEntry> specMapEntries = { widthMapEntry, heightMapEntry };
-
-		float specialData[] = { 
-			1.0f / static_cast<float>(m_TrainWidth), 
-			1.0f / static_cast<float>(m_TrainHeight) };
-
-		VkSpecializationInfo specInfo;
-		specInfo.mapEntryCount = specMapEntries.size();
-		specInfo.pMapEntries = specMapEntries.data();
-		specInfo.dataSize = sizeof(float) * 2;
-		specInfo.pData = specialData;
-
 		VkPipelineShaderStageCreateInfo shaderStage;
 		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStage.pNext = nullptr;
@@ -423,7 +568,7 @@ namespace en
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 		shaderStage.module = m_TrainShader.GetVulkanModule();
 		shaderStage.pName = "main";
-		shaderStage.pSpecializationInfo = &specInfo;
+		shaderStage.pSpecializationInfo = &m_SpecInfo;
 
 		VkComputePipelineCreateInfo pipelineCI;
 		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -447,7 +592,7 @@ namespace en
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 		shaderStage.module = m_StepShader.GetVulkanModule();
 		shaderStage.pName = "main";
-		shaderStage.pSpecializationInfo = nullptr;
+		shaderStage.pSpecializationInfo = &m_SpecInfo;
 
 		VkComputePipelineCreateInfo pipelineCI;
 		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -471,7 +616,7 @@ namespace en
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 		shaderStage.module = m_MrheStepShader.GetVulkanModule();
 		shaderStage.pName = "main";
-		shaderStage.pSpecializationInfo = nullptr;
+		shaderStage.pSpecializationInfo = &m_SpecInfo;
 
 		VkComputePipelineCreateInfo pipelineCI;
 		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -483,6 +628,30 @@ namespace en
 		pipelineCI.basePipelineIndex = 0;
 
 		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_MrheStepPipeline);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::CreateGenRaysShader(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.pNext = nullptr;
+		shaderStage.flags = 0;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_GenRaysShader.GetVulkanModule();
+		shaderStage.pName = "main";
+		shaderStage.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStage;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_GenRaysPipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -557,7 +726,7 @@ namespace en
 		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.renderPass = m_RenderRenderPass;
+		createInfo.renderPass = m_RenderPass;
 		createInfo.attachmentCount = attachments.size();
 		createInfo.pAttachments = attachments.data();
 		createInfo.width = m_FrameWidth;
@@ -586,10 +755,9 @@ namespace en
 			m_Camera.GetDescriptorSet(),
 			m_VolumeData.GetDescriptorSet(),
 			m_DirLight.GetDescriptorSet(),
-			m_Nrc.GetDescSet(),
+			m_Nrc.GetDescriptorSet(),
 			m_PointLight.GetDescriptorSet(),
-			m_HdrEnvMap.GetDescriptorSet(),
-			m_Mrhe.GetDescriptorSet() };
+			m_HdrEnvMap.GetDescriptorSet() };
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
@@ -656,7 +824,7 @@ namespace en
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_MrheStepPipeline);
 
 		// Dispatch mrhe gradient step
-		vkCmdDispatch(m_CommandBuffer, m_Mrhe.GetHashTableSize() / sizeof(float), 1, 1);
+		vkCmdDispatch(m_CommandBuffer, m_SpecData.posLevelCount * m_SpecData.posFeatureCount * m_SpecData.posHashTableSize, 1, 1);
 
 		// Pipeline barrier
 		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -668,11 +836,11 @@ namespace en
 			m_CommandBuffer,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 
+			0,
 			1, &memoryBarrier,
 			0, nullptr,
 			0, nullptr);
-		
+
 		// Begin render pass
 		std::vector<VkClearValue> clearValues = {
 			{ 0.0f, 0.0f, 0.0f, 1.0f },
@@ -682,7 +850,7 @@ namespace en
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassBeginInfo.pNext = nullptr;
-		renderPassBeginInfo.renderPass = m_RenderRenderPass;
+		renderPassBeginInfo.renderPass = m_RenderPass;
 		renderPassBeginInfo.framebuffer = m_Framebuffer;
 		renderPassBeginInfo.renderArea.offset = { 0, 0 };
 		renderPassBeginInfo.renderArea.extent = { m_FrameWidth, m_FrameHeight };
@@ -729,4 +897,3 @@ namespace en
 			Log::Error("Failed to end VkCommandBuffer", true);
 	}
 }
-*/

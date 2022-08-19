@@ -118,6 +118,11 @@ namespace en
 		vkDestroyDescriptorSetLayout(device, m_DescSetLayout, nullptr);
 	}
 
+	VkDescriptorSetLayout NeuralRadianceCache::GetDescriptorSetLayout()
+	{
+		return m_DescSetLayout;
+	}
+
 	NeuralRadianceCache::NeuralRadianceCache(size_t layerCount, size_t layerWidth, float nrcLearningRate) :
 		m_PosEncoding(PosEncoding::Direct),
 		m_DirEncoding(DirEncoding::Direct),
@@ -211,11 +216,7 @@ namespace en
 
 		// Init
 		InitNn();
-
-		if (m_PosEncoding == PosEncoding::Mrhe)
-		{
-			InitMrhe();
-		}
+		InitMrhe(); // Being initialized anyways, because of nullptr otherwise
 
 		AllocateAndUpdateDescSet();
 	}
@@ -229,6 +230,8 @@ namespace en
 		m_BiasesBuffer->Destroy();
 		m_DeltaBiasesBuffer->Destroy();
 		m_MomentumBiasesBuffer->Destroy();
+		m_MrheBuffer->Destroy();
+		m_DeltaMrheBuffer->Destroy();
 
 		delete m_NeuronsBuffer;
 		delete m_WeightsBuffer;
@@ -237,15 +240,18 @@ namespace en
 		delete m_BiasesBuffer;
 		delete m_DeltaBiasesBuffer;
 		delete m_MomentumBiasesBuffer;
-		
-		if (m_PosEncoding == PosEncoding::Mrhe)
-		{
-			m_MrheBuffer->Destroy();
-			m_DeltaMrheBuffer->Destroy();
+		delete m_MrheBuffer;
+		delete m_DeltaMrheBuffer;
+	}
 
-			delete m_MrheBuffer;
-			delete m_DeltaMrheBuffer;
-		}
+	uint32_t NeuralRadianceCache::GetPosEncoding() const
+	{
+		return static_cast<uint32_t>(m_PosEncoding);
+	}
+
+	uint32_t NeuralRadianceCache::GetDirEncoding() const
+	{
+		return static_cast<uint32_t>(m_DirEncoding);
 	}
 
 	uint32_t NeuralRadianceCache::GetPosFreqCount() const
@@ -288,14 +294,19 @@ namespace en
 		return m_DirFeatureCount;
 	}
 
-	size_t NeuralRadianceCache::GetLayerCount() const
+	uint32_t NeuralRadianceCache::GetLayerCount() const
 	{
-		return m_LayerCount;
+		return static_cast<uint32_t>(m_LayerCount);
 	}
 
-	size_t NeuralRadianceCache::GetLayerWidth() const
+	uint32_t NeuralRadianceCache::GetLayerWidth() const
 	{
-		return m_LayerWidth;
+		return static_cast<uint32_t>(m_LayerWidth);
+	}
+
+	uint32_t NeuralRadianceCache::GetInputFeatureCount() const
+	{
+		return m_InputFeatureCount;
 	}
 
 	float NeuralRadianceCache::GetNrcLearningRate() const
@@ -306,6 +317,11 @@ namespace en
 	float NeuralRadianceCache::GetMrheLearningRate() const
 	{
 		return m_MrheLearningRate;
+	}
+
+	VkDescriptorSet NeuralRadianceCache::GetDescriptorSet() const
+	{
+		return m_DescSet;
 	}
 
 	void NeuralRadianceCache::InitNn()

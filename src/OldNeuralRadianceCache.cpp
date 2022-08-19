@@ -1,4 +1,4 @@
-#include <engine/graphics/NeuralRadianceCache.hpp>
+/*#include <engine/graphics/OldNeuralRadianceCache.hpp>
 #include <random>
 
 namespace en
@@ -700,3 +700,4 @@ namespace en
 		// TODO: init biases
 	}
 }
+*/

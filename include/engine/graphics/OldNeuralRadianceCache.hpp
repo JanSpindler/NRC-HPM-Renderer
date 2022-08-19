@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 
 #include <engine/graphics/vulkan/Buffer.hpp>
 #include <array>
@@ -60,3 +60,4 @@ namespace en
 		void InitBiasBuffers();
 	};
 }
+*/
