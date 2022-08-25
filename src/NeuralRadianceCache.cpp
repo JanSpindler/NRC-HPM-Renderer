@@ -123,12 +123,13 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	NeuralRadianceCache::NeuralRadianceCache(size_t layerCount, size_t layerWidth, float nrcLearningRate) :
+	NeuralRadianceCache::NeuralRadianceCache(size_t layerCount, size_t layerWidth, float nrcLearningRate, uint32_t batchSize) :
 		m_PosEncoding(PosEncoding::Direct),
 		m_DirEncoding(DirEncoding::Direct),
 		m_LayerCount(layerCount),
 		m_LayerWidth(layerWidth),
 		m_NrcLearningRate(nrcLearningRate),
+		m_BatchSize(batchSize),
 		m_MrheLearningRate(0.0f),
 		m_InputFeatureCount(0),
 		m_PosFreqCount(0),
@@ -139,12 +140,19 @@ namespace en
 		m_DirFreqCount(0),
 		m_DirFeatureCount(0)
 	{
+		if (layerCount < 1)
+		{
+			Log::Error("NeuralRadianceCache needs at least 1 hidden layer", true);
+		}
 	}
 
 	void NeuralRadianceCache::SetPosFrequencyEncoding(uint32_t freqCount)
 	{
-		m_PosEncoding = PosEncoding::Frequency;
-		
+		if (m_PosEncoding == PosEncoding::Direct)
+		{
+			m_PosEncoding = PosEncoding::Direct_Frequency;
+		}
+
 		m_PosFreqCount = freqCount;
 	}
 
@@ -156,7 +164,7 @@ namespace en
 		uint32_t featureCount, 
 		float learningRate)
 	{
-		m_PosEncoding = PosEncoding::Mrhe;
+		m_PosEncoding = PosEncoding::Direct_Frequency_Mrhe;
 
 		m_PosMinFreq = minFreq;
 		m_PosMaxFreq = maxFreq;
@@ -168,14 +176,17 @@ namespace en
 
 	void NeuralRadianceCache::SetDirFrequencyEncoding(uint32_t freqCount)
 	{
-		m_DirEncoding = DirEncoding::Frequency;
+		if (m_DirEncoding == DirEncoding::Direct)
+		{
+			m_DirEncoding = DirEncoding::Direct_Frequency;
+		}
 
 		m_DirFreqCount = freqCount;
 	}
 	
 	void NeuralRadianceCache::SetDirOneBlobEncoding(uint32_t featureCount)
 	{
-		m_DirEncoding = DirEncoding::OneBlob;
+		m_DirEncoding = DirEncoding::Direct_Frequency_OneBlob;
 
 		m_DirFeatureCount = featureCount;
 	}
@@ -183,17 +194,14 @@ namespace en
 	void NeuralRadianceCache::Init()
 	{
 		// Calc input feature count
-		m_InputFeatureCount = 0;
+		m_InputFeatureCount = 5;
 		switch (m_PosEncoding)
 		{
-		case PosEncoding::Direct:
-			m_InputFeatureCount += 3;
-			break;
-		case PosEncoding::Frequency:
+		case PosEncoding::Direct_Frequency:
 			m_InputFeatureCount += 2 * 3 * m_PosFreqCount;
 			break;
-		case PosEncoding::Mrhe:
-			m_InputFeatureCount += m_PosFeatureCount * m_PosLevelCount * m_PosHashTableSize;
+		case PosEncoding::Direct_Frequency_Mrhe:
+			m_InputFeatureCount += (2 * 3 * m_PosFreqCount) + (m_PosFeatureCount * m_PosLevelCount);
 			break;
 		default:
 			break;
@@ -201,22 +209,21 @@ namespace en
 
 		switch (m_DirEncoding)
 		{
-		case DirEncoding::Direct:
-			m_InputFeatureCount += 2;
-			break;
-		case DirEncoding::Frequency:
+		case DirEncoding::Direct_Frequency:
 			m_InputFeatureCount += 2 * 3 * m_DirFreqCount;
 			break;
-		case DirEncoding::OneBlob:
-			m_InputFeatureCount += m_DirFeatureCount * 2;
+		case DirEncoding::Direct_Frequency_OneBlob:
+			m_InputFeatureCount += (2 * 3 * m_DirFreqCount) + (m_DirFeatureCount * 2);
 			break;
 		default:
 			break;
 		}
 
+		Log::Info("NeuralRadianceCache has " + std::to_string(m_InputFeatureCount) + " input features");
+
 		// Init
 		InitNn();
-		InitMrhe(); // Being initialized anyways, because of nullptr otherwise
+		InitMrhe();
 
 		AllocateAndUpdateDescSet();
 	}
@@ -317,6 +324,11 @@ namespace en
 	float NeuralRadianceCache::GetMrheLearningRate() const
 	{
 		return m_MrheLearningRate;
+	}
+
+	uint32_t NeuralRadianceCache::GetBatchSize() const
+	{
+		return m_BatchSize;
 	}
 
 	VkDescriptorSet NeuralRadianceCache::GetDescriptorSet() const

@@ -105,7 +105,7 @@ void SwapchainResizeCallback()
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 800;
+	uint32_t width = 768; // Multiple of 128 for nrc batch size
 	uint32_t height = width;
 
 	// Start engine
@@ -152,12 +152,16 @@ void RunNrcHpm()
 	//en::NeuralRadianceCache nrc(0.0001f, 0.1f, 0.9f);
 	//en::MRHE mrhe(0.1f, 0.0f);
 
-	en::NeuralRadianceCache nrc(6, 64, 0.001f);
+	en::NeuralRadianceCache nrc(6, 64, 0.001f, 128);
+	nrc.SetPosFrequencyEncoding(4);
+	nrc.SetPosMrheEncoding(16, 512, 8, std::pow(2, 14), 4, 0.01f);
+	nrc.SetDirFrequencyEncoding(4);
+	nrc.SetDirOneBlobEncoding(4);
 	nrc.Init();
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
-		100, 100,
+		128, 128,
 		camera,
 		volumeData,
 		dirLight, pointLight, hdrEnvMap,

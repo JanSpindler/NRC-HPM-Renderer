@@ -10,22 +10,22 @@ namespace en
 		enum class PosEncoding
 		{
 			Direct = 0,
-			Frequency = 1,
-			Mrhe = 2
+			Direct_Frequency = 1,
+			Direct_Frequency_Mrhe = 2
 		};
 
 		enum class DirEncoding
 		{
 			Direct = 0,
-			Frequency = 1,
-			OneBlob = 2
+			Direct_Frequency = 1,
+			Direct_Frequency_OneBlob = 2
 		};
 
 		static void Init(VkDevice device);
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		NeuralRadianceCache(size_t layerCount, size_t layerWidth, float nrcLearningRate);
+		NeuralRadianceCache(size_t layerCount, size_t layerWidth, float nrcLearningRate, uint32_t batchSize);
 
 		void SetPosFrequencyEncoding(uint32_t freqCount);
 		void SetPosMrheEncoding(
@@ -58,11 +58,10 @@ namespace en
 		
 		uint32_t GetLayerCount() const;
 		uint32_t GetLayerWidth() const;
-		
 		uint32_t GetInputFeatureCount() const;
-
 		float GetNrcLearningRate() const;
 		float GetMrheLearningRate() const;
+		uint32_t GetBatchSize() const;
 
 		VkDescriptorSet GetDescriptorSet() const;
 
@@ -85,12 +84,11 @@ namespace en
 
 		size_t m_LayerCount;
 		size_t m_LayerWidth;
-
 		uint32_t m_InputFeatureCount;
-
 		float m_NrcLearningRate;
 		float m_MrheLearningRate;
-		
+		uint32_t m_BatchSize;
+
 		vk::Buffer* m_NeuronsBuffer;
 
 		vk::Buffer* m_WeightsBuffer;
