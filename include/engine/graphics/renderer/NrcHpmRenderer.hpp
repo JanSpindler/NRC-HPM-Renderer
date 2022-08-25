@@ -93,6 +93,9 @@ namespace en
 		vk::Shader m_ForwardShader;
 		VkPipeline m_ForwardPipeline;
 
+		vk::Shader m_BackpropShader;
+		VkPipeline m_BackpropPipeline;
+
 		vk::Shader m_RenderShader;
 		VkPipeline m_RenderPipeline;
 
@@ -115,6 +118,7 @@ namespace en
 
 		void CreateGenRaysPipeline(VkDevice device);
 		void CreateForwardPipeline(VkDevice device);
+		void CreateBackpropPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);

@@ -81,6 +81,7 @@ namespace en
 		m_TrainHeight(trainHeight),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
 		m_ForwardShader("nrc/forward.comp", false),
+		m_BackpropShader("nrc/backprop.comp", false),
 		m_RenderShader("nrc/render.comp", false),
 		m_CommandPool(0, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
@@ -107,6 +108,7 @@ namespace en
 
 		CreateGenRaysPipeline(device);
 		CreateForwardPipeline(device);
+		CreateBackpropPipeline(device);
 		CreateRenderPipeline(device);
 
 		CreateOutputImage(device);
@@ -150,6 +152,9 @@ namespace en
 
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
 		m_RenderShader.Destroy();
+
+		vkDestroyPipeline(device, m_BackpropPipeline, nullptr);
+		m_BackpropShader.Destroy();
 
 		vkDestroyPipeline(device, m_ForwardPipeline, nullptr);
 		m_ForwardShader.Destroy();
@@ -433,6 +438,30 @@ namespace en
 		pipelineCI.basePipelineIndex = 0;
 
 		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_ForwardPipeline);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::CreateBackpropPipeline(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.pNext = nullptr;
+		shaderStage.flags = 0;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_BackpropShader.GetVulkanModule();
+		shaderStage.pName = "main";
+		shaderStage.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStage;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_BackpropPipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -759,8 +788,14 @@ namespace en
 		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);
 
 		// Forward pipeline
+		const uint32_t forwardBatchCount = (m_FrameWidth * m_FrameHeight) / m_Nrc.GetBatchSize();
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ForwardPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);
+		vkCmdDispatch(m_CommandBuffer, forwardBatchCount, 1, 1);
+
+		// Backprop pipeline
+		const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
+		vkCmdDispatch(m_CommandBuffer, backpropBatchCount, 1, 1);
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);

@@ -152,16 +152,16 @@ void RunNrcHpm()
 	//en::NeuralRadianceCache nrc(0.0001f, 0.1f, 0.9f);
 	//en::MRHE mrhe(0.1f, 0.0f);
 
-	en::NeuralRadianceCache nrc(6, 64, 0.001f, 128);
+	en::NeuralRadianceCache nrc(6, 64, 0.001f, 128); // Batch size is multiple of 128
 	nrc.SetPosFrequencyEncoding(4);
-	nrc.SetPosMrheEncoding(16, 512, 8, std::pow(2, 14), 4, 0.01f);
+	nrc.SetPosMrheEncoding(16, 512, 8, 16384, 4, 0.01f);
 	nrc.SetDirFrequencyEncoding(4);
 	nrc.SetDirOneBlobEncoding(4);
 	nrc.Init();
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width, height,
-		128, 128,
+		128, 128, // Multiple of 128
 		camera,
 		volumeData,
 		dirLight, pointLight, hdrEnvMap,
