@@ -31,7 +31,6 @@ namespace en
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
-		size_t GetImageDataSize() const;
 
 	private:
 		struct SpecializationData
@@ -81,26 +80,15 @@ namespace en
 		std::vector<VkSpecializationMapEntry> m_SpecMapEntries;
 		VkSpecializationInfo m_SpecInfo;
 
-		VkRenderPass m_RenderPass;
-		vk::Shader m_VertShader;
-		vk::Shader m_FragShader;
-		VkPipeline m_RenderPipeline;
-
-		vk::Shader m_TrainShader;
-		VkPipeline m_TrainPipeline;
-
-		vk::Shader m_StepShader;
-		VkPipeline m_StepPipeline;
-
-		vk::Shader m_MrheStepShader;
-		VkPipeline m_MrheStepPipeline;
-
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
-		VkImage m_ColorImage;
-		VkDeviceMemory m_ColorImageMemory;
-		VkImageView m_ColorImageView;
+		vk::Shader m_RenderShader;
+		VkPipeline m_RenderPipeline;
+
+		VkImage m_OutputImage;
+		VkDeviceMemory m_OutputImageMemory;
+		VkImageView m_OutputImageView;
 
 		VkFramebuffer m_Framebuffer;
 		vk::CommandPool m_CommandPool;
@@ -110,19 +98,10 @@ namespace en
 
 		void InitSpecializationConstants();
 
-		void CreateRenderRenderPass(VkDevice device);
+		void CreateGenRaysPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 
-		void CreateTrainPipeline(VkDevice device);
-
-		void CreateStepPipeline(VkDevice device);
-
-		void CreateMrheStepPipeline(VkDevice device);
-
-		void CreateGenRaysShader(VkDevice device);
-
-		void CreateColorImage(VkDevice device);
-		void CreateFramebuffer(VkDevice device);
+		void CreateOutputImage(VkDevice device);
 
 		void RecordCommandBuffer();
 	};

@@ -474,6 +474,7 @@ namespace en
 		// Calc size
 		const size_t mrheCount = m_PosFeatureCount * m_PosLevelCount * m_PosHashTableSize;
 		m_MrheBufferSize = mrheCount * sizeof(float);
+		m_MrheBufferSize = std::max(m_MrheBufferSize, static_cast<size_t>(1)); // need minimum size > 0
 
 		// Create buffers
 		m_MrheBuffer = new vk::Buffer(

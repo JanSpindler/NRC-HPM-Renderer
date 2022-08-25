@@ -1,4 +1,4 @@
-float GetMrheFeature(const uint level, const uint entryIndex, const uint featureIndex)
+/*float GetMrheFeature(const uint level, const uint entryIndex, const uint featureIndex)
 {
 	const uint linearIndex = (mrhe.hashTableSize * mrhe.featureCount * level) + (entryIndex * mrhe.featureCount) + featureIndex;
 	const float feature = mrHashTable[linearIndex];
@@ -129,3 +129,4 @@ void BackpropMrhe()
 		}
 	}
 }
+*/

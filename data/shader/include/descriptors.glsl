@@ -35,47 +35,47 @@ layout(set = 2, binding = 0) uniform dir_light_t
 layout(std430, set = 3, binding = 0) buffer Neurons
 {
 	float neurons[];
-}
+};
 
 layout(std430, set = 3, binding = 1) buffer Weights
 {
 	float weights[];
-}
+};
 
 layout(std430, set = 3, binding = 2) buffer DeltaWeights
 {
 	float deltaWeights[];
-}
+};
 
 layout(std430, set = 3, binding = 3) buffer MomentumWeights
 {
 	float momentumWeights[];
-}
+};
 
 layout(std430, set = 3, binding = 4) buffer Biases
 {
 	float biases[];
-}
+};
 
 layout(std430, set = 3, binding = 5) buffer DeltaBiases
 {
 	float deltaBiases[];
-}
+};
 
 layout(std430, set = 3, binding = 6) buffer MomentumBiases
 {
 	float momentumBiases[];
-}
+};
 
 layout(std430, set = 3, binding = 7) buffer Mrhe
 {
 	float mrhe[];
-}
+};
 
 layout(std430, set = 3, binding = 8) buffer DeltaMrhe
 {
 	float deltaMrhe[];
-}
+};
 
 layout(set = 4, binding = 0) uniform PointLight
 {
@@ -96,24 +96,4 @@ layout(set = 5, binding = 3) uniform HdrEnvMapData
 	float hpmStrength;
 } hdrEnvMapData;
 
-layout(set = 6, binding = 0) uniform MrheData
-{
-	float learningRate;
-	float weightDecay;
-	uint levelCount;
-	uint hashTableSize;
-	uint featureCount;
-	uint minRes;
-	uint maxRes;
-	uint resolutions[16];
-} mrhe;
-
-layout(std430, set = 6, binding = 1) buffer MRHashTable
-{
-	float mrHashTable[];
-};
-
-layout(std430, set = 6, binding = 2) buffer MRDeltaHashTable
-{
-	float mrDeltaHashTable[];
-};
+layout(set = 6, binding = 0, rgba32f) uniform image2D nrcOutputImage;

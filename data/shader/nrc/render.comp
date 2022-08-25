@@ -1,0 +1,11 @@
+#version 460
+#include "common.glsl"
+
+void main()
+{
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+
+	const vec4 color = vec4(1.0);
+	imageStore(nrcOutputImage, uvec2(x, y), color);
+}

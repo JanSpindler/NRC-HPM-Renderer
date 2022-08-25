@@ -10,6 +10,11 @@ layout(location = 1) in vec2 fragUV;
 // Output
 layout(location = 0) out vec4 outColor;
 
+void main()
+{
+}
+
+/*
 void EncodeRay(vec3 pos, const vec3 dir)
 {
 	EncodePosMrhe(pos);
@@ -147,3 +152,4 @@ void main()
 	//outColor = vec4(traceResult.xyz + (envMapColor * primaryRayTransmittance), transmittance);
 	outColor = traceResult;
 }
+*/
