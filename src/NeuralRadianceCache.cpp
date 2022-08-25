@@ -423,6 +423,7 @@ namespace en
 		vk::Buffer::Copy(&neuronsStagingBuffer, m_NeuronsBuffer, m_NeuronsBufferSize);
 
 		free(neuronsData);
+		neuronsStagingBuffer.Destroy();
 
 		// Weights
 		vk::Buffer weightsStagingBuffer(
@@ -450,6 +451,7 @@ namespace en
 		vk::Buffer::Copy(&weightsStagingBuffer, m_MomentumWeightsBuffer, m_WeightsBufferSize);
 
 		free(weightsData);
+		weightsStagingBuffer.Destroy();
 
 		// Biases
 		vk::Buffer biasesStagingBuffer(
@@ -477,6 +479,7 @@ namespace en
 		vk::Buffer::Copy(&biasesStagingBuffer, m_MomentumBiasesBuffer, m_BiasesBufferSize);
 
 		free(biasesData);
+		biasesStagingBuffer.Destroy();
 	}
 
 	void NeuralRadianceCache::InitMrhe()
@@ -525,6 +528,7 @@ namespace en
 		vk::Buffer::Copy(&mrheStagingBuffer, m_DeltaMrheBuffer, m_MrheBufferSize);
 
 		free(mrheData);
+		mrheStagingBuffer.Destroy();
 	}
 
 	void NeuralRadianceCache::AllocateAndUpdateDescSet()
