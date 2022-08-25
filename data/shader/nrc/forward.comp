@@ -12,8 +12,6 @@ void LoadNeuralRayFromImages(const uint batchIndex, const uint sampleIndex, out 
 	rayDir = imageLoad(nrcNeuralRayDirImage, imageCoord).xyz;
 }
 
-float rayEncoding[INPUT_FEATURE_COUNT];
-
 void EncodeRay()
 {
 	

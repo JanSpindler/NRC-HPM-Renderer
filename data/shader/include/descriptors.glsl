@@ -103,3 +103,5 @@ layout(set = 6, binding = 1, rgba32f) uniform image2D nrcPrimaryRayImage;
 layout(set = 6, binding = 2, rgba32f) uniform image2D nrcNeuralRayOriginImage;
 
 layout(set = 6, binding = 3, rgba32f) uniform image2D nrcNeuralRayDirImage;
+
+layout(set = 6, binding = 4, rgba32f) uniform image2D nrcNeuralRayColorImage;
