@@ -26,6 +26,10 @@ layout(constant_id = 18) const float MRHE_LEARNING_RATE = 0.0;
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
 
+// TODO: performant?
+#define ONE_OVER_RENDER_WIDTH (1.0 / float(RENDER_WIDTH))
+#define ONE_OVER_RENDER_HEIGHT (1.0 / float(RENDER_HEIGHT))
+
 const uint LAYER_WIDTH_AFTER_INPUT = LAYER_COUNT > 0 ? LAYER_WIDTH : 3;
 const uint LAYER_WIDTH_BEFORE_OUTPUT = LAYER_COUNT > 0 ? LAYER_WIDTH : INPUT_FEATURE_COUNT;
 

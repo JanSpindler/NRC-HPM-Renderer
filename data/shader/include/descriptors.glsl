@@ -97,3 +97,5 @@ layout(set = 5, binding = 3) uniform HdrEnvMapData
 } hdrEnvMapData;
 
 layout(set = 6, binding = 0, rgba32f) uniform image2D nrcOutputImage;
+
+layout(set = 6, binding = 1, rgba32f) uniform image2D nrcPrimaryRayImage;

@@ -92,9 +92,13 @@ namespace en
 		vk::Shader m_RenderShader;
 		VkPipeline m_RenderPipeline;
 
-		VkImage m_OutputImage;
+		VkImage m_OutputImage; // rgba32f output color
 		VkDeviceMemory m_OutputImageMemory;
 		VkImageView m_OutputImageView;
+
+		VkImage m_PrimaryRayImage; // rgb32f primary ray output color + a32f transmittance
+		VkDeviceMemory m_PrimaryRayImageMemory;
+		VkImageView m_PrimaryRayImageView;
 
 		VkDescriptorSet m_DescSet;
 
@@ -109,6 +113,7 @@ namespace en
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
+		void CreatePrimaryRayImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 
