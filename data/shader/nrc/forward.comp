@@ -3,4 +3,12 @@
 
 void main()
 {
+	const uint batchIndex = gl_GlobalInvocationID.x;
+
+	fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, LAYER_WIDTH> weights = fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, LAYER_WIDTH>(0.0);
+	fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, BATCH_SIZE> batch = fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, BATCH_SIZE>(0.0);
+	fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, BATCH_SIZE> biases = fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, BATCH_SIZE>(0.0);
+	fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, BATCH_SIZE> result = fcoopmatNV<32, gl_ScopeSubgroup, LAYER_WIDTH, BATCH_SIZE>(0.0);
+
+	result = coopMatMulAddNV(weights, batch, biases);
 }
