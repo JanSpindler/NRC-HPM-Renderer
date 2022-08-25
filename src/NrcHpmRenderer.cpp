@@ -235,6 +235,7 @@ namespace en
 		m_SpecData.inputFeatureCount = m_Nrc.GetDirFeatureCount();
 		m_SpecData.nrcLearningRate = m_Nrc.GetNrcLearningRate();
 		m_SpecData.mrheLearningRate = m_Nrc.GetMrheLearningRate();
+		m_SpecData.batchSize = m_Nrc.GetBatchSize();
 
 		// Init map entries
 		// Render size
@@ -338,6 +339,11 @@ namespace en
 		mrheLearningRateEntry.offset = offsetof(SpecializationData, SpecializationData::mrheLearningRate);
 		mrheLearningRateEntry.size = sizeof(float);
 
+		VkSpecializationMapEntry batchSizeEntry;
+		batchSizeEntry.constantID = 19;
+		batchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::batchSize);
+		batchSizeEntry.size = sizeof(uint32_t);
+
 		m_SpecMapEntries = {
 			renderWidthEntry,
 			renderHeightEntry,
@@ -362,7 +368,8 @@ namespace en
 			layerWidthEntry,
 			inputFeatureCountEntry,
 			nrcLearningRateEntry,
-			mrheLearningRateEntry };
+			mrheLearningRateEntry,
+			batchSizeEntry };
 
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
 		m_SpecInfo.pMapEntries = m_SpecMapEntries.data();

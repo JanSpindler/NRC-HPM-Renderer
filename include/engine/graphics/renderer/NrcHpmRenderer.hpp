@@ -62,6 +62,7 @@ namespace en
 			uint32_t inputFeatureCount;
 			float nrcLearningRate;
 			float mrheLearningRate;
+			uint32_t batchSize;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;

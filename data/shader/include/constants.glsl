@@ -22,6 +22,7 @@ layout(constant_id = 15) const uint LAYER_WIDTH = 0;
 layout(constant_id = 16) const uint INPUT_FEATURE_COUNT = 0;
 layout(constant_id = 17) const float NRC_LEARNING_RATE = 0.0;
 layout(constant_id = 18) const float MRHE_LEARNING_RATE = 0.0;
+layout(constant_id = 19) const uint BATCH_SIZE = 0;
 
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
@@ -30,9 +31,9 @@ const vec3 skyPos = vec3(0.0);
 #define ONE_OVER_RENDER_WIDTH (1.0 / float(RENDER_WIDTH))
 #define ONE_OVER_RENDER_HEIGHT (1.0 / float(RENDER_HEIGHT))
 
-const uint INPUT_WEIGHTS_COUNT = INPUT_FEATURE_COUNT * LAYER_WIDTH_AFTER_INPUT;
+const uint INPUT_WEIGHTS_COUNT = INPUT_FEATURE_COUNT * LAYER_WIDTH;
 const uint HIDDEN_WEIGHTS_COUNT = LAYER_WIDTH * LAYER_WIDTH;
-const uint OUTPUT_WEIGHTS_COUNT = 3 * LAYER_WIDTH_BEFORE_OUTPUT;
+const uint OUTPUT_WEIGHTS_COUNT = LAYER_WIDTH * 3;
 
 const uint NN_MAT_TYPE_OG = 0;
 const uint NN_MAT_TYPE_DELTA = 1;
