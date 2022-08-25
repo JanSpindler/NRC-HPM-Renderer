@@ -345,10 +345,10 @@ namespace en
 			(m_InputFeatureCount * m_LayerWidth) + 
 			(m_LayerWidth * m_LayerWidth * (m_LayerCount - 1)) +
 			(m_LayerWidth * 3);
-		m_WeightsBufferSize *= m_BatchSize * sizeof(float);
+		m_WeightsBufferSize *= sizeof(float);
 
 		m_BiasesBufferSize = ((m_LayerCount) * m_LayerWidth) + 3;
-		m_BiasesBufferSize *= m_BatchSize * sizeof(float);
+		m_BiasesBufferSize *= sizeof(float);
 
 		CreateNnBuffers();
 		FillNnBuffers();
