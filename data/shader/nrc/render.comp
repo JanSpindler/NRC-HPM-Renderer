@@ -8,6 +8,6 @@ void main()
 	const ivec2 outputImageCoord = ivec2(x, y);
 	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - y);
 
-	const vec4 primaryRayColor = imageLoad(nrcPrimaryRayImage, invertedYImageCoord);
-	imageStore(nrcOutputImage, outputImageCoord, primaryRayColor);
+	vec4 outputColor = imageLoad(nrcPrimaryRayImage, invertedYImageCoord);
+	imageStore(nrcOutputImage, outputImageCoord, outputColor);
 }

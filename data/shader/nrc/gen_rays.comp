@@ -1,6 +1,8 @@
 #version 460
 #include "common.glsl"
 
+ivec2 imageCoord;
+
 #define TRUE_TRACE_SAMPLE_COUNT 32
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
@@ -25,8 +27,8 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 		{
 			if (RandFloat(1.0) > totalTermProb)
 			{
-				const vec3 neuralRayOrigin = currentPoint;
-				const vec3 neuralRayDir = currentDir;
+				imageStore(nrcNeuralRayOriginImage, imageCoord, vec4(currentPoint, 0.0));
+				imageStore(nrcNeuralRayDirImage, imageCoord, vec4(currentDir, 0.0));
 				return vec4(scatteredLight, transmittance);
 			}
 			totalTermProb *= 0.5;
@@ -66,6 +68,7 @@ void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
+	imageCoord = ivec2(x, y);
 
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
@@ -97,5 +100,5 @@ void main()
 	}
 
 	// Store output
-	imageStore(nrcPrimaryRayImage, ivec2(x, y), color);
+	imageStore(nrcPrimaryRayImage, imageCoord, color);
 }

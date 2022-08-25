@@ -128,6 +128,7 @@ void RunNrcHpm()
 	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
 	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(
+		0.0f,
 		hdrWidth, 
 		hdrHeight, 
 		hdr4fData,
@@ -144,7 +145,7 @@ void RunNrcHpm()
 		0.1f,
 		100.0f);
 
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 1.5f);
 	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);

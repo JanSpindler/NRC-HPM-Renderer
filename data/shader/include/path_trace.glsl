@@ -69,6 +69,11 @@ vec3 SampleHdrEnvMap(const vec3 dir, const bool hpm)
 
 vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 {
+	if (hdrEnvMapData.hpmStrength == 0.0)
+	{
+		return vec3(0.0);
+	}
+
 	vec3 light = vec3(0.0);
 
 	// Half ray importance sampled

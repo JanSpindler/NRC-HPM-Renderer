@@ -107,6 +107,14 @@ namespace en
 		VkDeviceMemory m_PrimaryRayImageMemory;
 		VkImageView m_PrimaryRayImageView;
 
+		VkImage m_NeuralRayOriginImage;
+		VkDeviceMemory m_NeuralRayOriginImageMemory;
+		VkImageView m_NeuralRayOriginImageView;
+
+		VkImage m_NeuralRayDirImage;
+		VkDeviceMemory m_NeuralRayDirImageMemory;
+		VkImageView m_NeuralRayDirImageView;
+
 		VkDescriptorSet m_DescSet;
 
 		vk::CommandPool m_CommandPool;
@@ -123,6 +131,8 @@ namespace en
 
 		void CreateOutputImage(VkDevice device);
 		void CreatePrimaryRayImage(VkDevice device);
+		void CreateNeuralRayOriginImage(VkDevice device);
+		void CreateNeuralRayDirImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 

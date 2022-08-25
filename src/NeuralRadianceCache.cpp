@@ -210,10 +210,10 @@ namespace en
 		switch (m_DirEncoding)
 		{
 		case DirEncoding::Direct_Frequency:
-			m_InputFeatureCount += 2 * 3 * m_DirFreqCount;
+			m_InputFeatureCount += 2 * 2 * m_DirFreqCount;
 			break;
 		case DirEncoding::Direct_Frequency_OneBlob:
-			m_InputFeatureCount += (2 * 3 * m_DirFreqCount) + (m_DirFeatureCount * 2);
+			m_InputFeatureCount += (2 * 2 * m_DirFreqCount) + (m_DirFeatureCount * 2);
 			break;
 		default:
 			break;
