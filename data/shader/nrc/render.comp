@@ -6,6 +6,6 @@ void main()
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 
-	const vec4 color = vec4(1.0);
-	imageStore(nrcOutputImage, uvec2(x, y), color);
+	const vec4 color = vec4(1.0, 0.0, 1.0, 1.0);
+	imageStore(nrcOutputImage, ivec2(x, y), color);
 }

@@ -4,6 +4,56 @@
 
 namespace en
 {
+	VkDescriptorSetLayout NrcHpmRenderer::m_DescSetLayout;
+	VkDescriptorPool NrcHpmRenderer::m_DescPool;
+
+	void NrcHpmRenderer::Init(VkDevice device)
+	{
+		// Create desc set layout
+		VkDescriptorSetLayoutBinding outputImageBinding;
+		outputImageBinding.binding = 0;
+		outputImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		outputImageBinding.descriptorCount = 1;
+		outputImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		outputImageBinding.pImmutableSamplers = nullptr;
+
+		std::vector<VkDescriptorSetLayoutBinding> bindings = { outputImageBinding };
+
+		VkDescriptorSetLayoutCreateInfo layoutCI;
+		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutCI.pNext = nullptr;
+		layoutCI.flags = 0;
+		layoutCI.bindingCount = bindings.size();
+		layoutCI.pBindings = bindings.data();
+
+		VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_DescSetLayout);
+		ASSERT_VULKAN(result);
+
+		// Create desc pool
+		VkDescriptorPoolSize storageImagePoolSize;
+		storageImagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		storageImagePoolSize.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePoolSize };
+
+		VkDescriptorPoolCreateInfo poolCI;
+		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolCI.pNext = nullptr;
+		poolCI.flags = 0;
+		poolCI.maxSets = 1;
+		poolCI.poolSizeCount = poolSizes.size();
+		poolCI.pPoolSizes = poolSizes.data();
+
+		result = vkCreateDescriptorPool(device, &poolCI, nullptr, &m_DescPool);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::Shutdown(VkDevice device)
+	{
+		vkDestroyDescriptorPool(device, m_DescPool, nullptr);
+		vkDestroyDescriptorSetLayout(device, m_DescSetLayout, nullptr);
+	}
+
 	NrcHpmRenderer::NrcHpmRenderer(
 		uint32_t width,
 		uint32_t height,
@@ -32,6 +82,9 @@ namespace en
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
+		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		m_CommandBuffer = m_CommandPool.GetBuffer(0);
+
 		CreatePipelineLayout(device);
 
 		InitSpecializationConstants();
@@ -41,8 +94,7 @@ namespace en
 
 		CreateOutputImage(device);
 
-		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		m_CommandBuffer = m_CommandPool.GetBuffer(0);
+		AllocateAndUpdateDescriptorSet(device);
 
 		RecordCommandBuffer();
 	}
@@ -69,7 +121,6 @@ namespace en
 		VkDevice device = VulkanAPI::GetDevice();
 
 		m_CommandPool.Destroy();
-		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
 
 		vkDestroyImageView(device, m_OutputImageView, nullptr);
 		vkFreeMemory(device, m_OutputImageMemory, nullptr);
@@ -127,7 +178,8 @@ namespace en
 			DirLight::GetDescriptorSetLayout(),
 			NeuralRadianceCache::GetDescriptorSetLayout(),
 			PointLight::GetDescriptorSetLayout(),
-			HdrEnvMap::GetDescriptorSetLayout() };
+			HdrEnvMap::GetDescriptorSetLayout(),
+			m_DescSetLayout };
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo;
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -298,11 +350,10 @@ namespace en
 			nrcLearningRateEntry,
 			mrheLearningRateEntry };
 
-		VkSpecializationInfo specInfo;
-		specInfo.mapEntryCount = m_SpecMapEntries.size();
-		specInfo.pMapEntries = m_SpecMapEntries.data();
-		specInfo.dataSize = sizeof(SpecializationData);
-		specInfo.pData = &m_SpecData;
+		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
+		m_SpecInfo.pMapEntries = m_SpecMapEntries.data();
+		m_SpecInfo.dataSize = sizeof(SpecializationData);
+		m_SpecInfo.pData = &m_SpecData;
 	}
 
 	void NrcHpmRenderer::CreateGenRaysPipeline(VkDevice device)
@@ -458,6 +509,42 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
+	void NrcHpmRenderer::AllocateAndUpdateDescriptorSet(VkDevice device)
+	{
+		// Allocate
+		VkDescriptorSetAllocateInfo descSetAI;
+		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descSetAI.pNext = nullptr;
+		descSetAI.descriptorPool = m_DescPool;
+		descSetAI.descriptorSetCount = 1;
+		descSetAI.pSetLayouts = &m_DescSetLayout;
+
+		VkResult result = vkAllocateDescriptorSets(device, &descSetAI, &m_DescSet);
+		ASSERT_VULKAN(result);
+
+		// Write
+		VkDescriptorImageInfo outputImageInfo;
+		outputImageInfo.sampler = VK_NULL_HANDLE;
+		outputImageInfo.imageView = m_OutputImageView;
+		outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet outputImageWrite;
+		outputImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		outputImageWrite.pNext = nullptr;
+		outputImageWrite.dstSet = m_DescSet;
+		outputImageWrite.dstBinding = 0;
+		outputImageWrite.dstArrayElement = 0;
+		outputImageWrite.descriptorCount = 1;
+		outputImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		outputImageWrite.pImageInfo = &outputImageInfo;
+		outputImageWrite.pBufferInfo = nullptr;
+		outputImageWrite.pTexelBufferView = nullptr;
+
+		std::vector<VkWriteDescriptorSet> writes = { outputImageWrite };
+
+		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+	}
+
 	void NrcHpmRenderer::RecordCommandBuffer()
 	{
 		// Begin
@@ -478,7 +565,8 @@ namespace en
 			m_DirLight.GetDescriptorSet(),
 			m_Nrc.GetDescriptorSet(),
 			m_PointLight.GetDescriptorSet(),
-			m_HdrEnvMap.GetDescriptorSet() };
+			m_HdrEnvMap.GetDescriptorSet(),
+			m_DescSet };
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(

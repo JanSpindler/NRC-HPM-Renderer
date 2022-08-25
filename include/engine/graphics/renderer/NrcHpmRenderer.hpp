@@ -12,6 +12,9 @@ namespace en
 	class NrcHpmRenderer
 	{
 	public:
+		static void Init(VkDevice device);
+		static void Shutdown(VkDevice device);
+
 		NrcHpmRenderer(
 			uint32_t width,
 			uint32_t height,
@@ -61,6 +64,9 @@ namespace en
 			float mrheLearningRate;
 		};
 
+		static VkDescriptorSetLayout m_DescSetLayout;
+		static VkDescriptorPool m_DescPool;
+
 		uint32_t m_FrameWidth;
 		uint32_t m_FrameHeight;
 
@@ -90,7 +96,8 @@ namespace en
 		VkDeviceMemory m_OutputImageMemory;
 		VkImageView m_OutputImageView;
 
-		VkFramebuffer m_Framebuffer;
+		VkDescriptorSet m_DescSet;
+
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
 
@@ -102,6 +109,8 @@ namespace en
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
+
+		void AllocateAndUpdateDescriptorSet(VkDevice device);
 
 		void RecordCommandBuffer();
 	};

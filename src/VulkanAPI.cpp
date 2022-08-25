@@ -49,12 +49,14 @@ namespace en
 		PointLight::Init(m_Device);
 		HdrEnvMap::Init(m_Device);
 		MRHE::Init(m_Device);
+		NrcHpmRenderer::Init(m_Device);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
+		NrcHpmRenderer::Shutdown(m_Device);
 		MRHE::Shutdown(m_Device);
 		HdrEnvMap::Shutdown(m_Device);
 		PointLight::Shutdown(m_Device);
