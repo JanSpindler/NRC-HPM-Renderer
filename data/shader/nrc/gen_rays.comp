@@ -73,17 +73,21 @@ void main()
 	const vec3 ro = camera.pos;
 	vec3 rd = normalize(pixelWorldPos - ro);
 
-	// SDF
+	// SDF + render
 	const vec3[2] entry_exit = find_entry_exit(ro, rd);
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
+	vec4 color;
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		rd = -normalize(ro);
+		color = vec4(vec3(0.0), 1.0);
+	}
+	else
+	{
+		color = TracePath(ro, rd);
 	}
 
-	// Trace path
-	const vec4 color = TracePath(ro, rd);
+	// Store output
 	imageStore(nrcPrimaryRayImage, ivec2(x, y), color);
 }
