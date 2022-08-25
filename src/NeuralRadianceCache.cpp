@@ -339,16 +339,16 @@ namespace en
 	void NeuralRadianceCache::InitNn()
 	{
 		m_NeuronsBufferSize = m_InputFeatureCount + (m_LayerCount * m_LayerWidth) + 3;
-		m_NeuronsBufferSize *= sizeof(float);
+		m_NeuronsBufferSize *= m_BatchSize * sizeof(float);
 
 		m_WeightsBufferSize = 
 			(m_InputFeatureCount * m_LayerWidth) + 
 			(m_LayerWidth * m_LayerWidth * (m_LayerCount - 1)) +
 			(m_LayerWidth * 3);
-		m_WeightsBufferSize *= sizeof(float);
+		m_WeightsBufferSize *= m_BatchSize * sizeof(float);
 
 		m_BiasesBufferSize = ((m_LayerCount) * m_LayerWidth) + 3;
-		m_BiasesBufferSize *= sizeof(float);
+		m_BiasesBufferSize *= m_BatchSize * sizeof(float);
 
 		CreateNnBuffers();
 		FillNnBuffers();
