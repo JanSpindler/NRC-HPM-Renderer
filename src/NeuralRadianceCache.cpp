@@ -500,7 +500,7 @@ namespace en
 		m_MrheBufferSize = mrheCount * sizeof(float);
 		m_MrheBufferSize = std::max(m_MrheBufferSize, static_cast<size_t>(1)); // need minimum size > 0
 
-		m_MrheResolutionsBufferSize = m_PosLevelCount * sizeof(uint32_t);
+		m_MrheResolutionsBufferSize = std::max(static_cast<size_t>(1), m_PosLevelCount * sizeof(uint32_t)); // need minimum size > 0
 
 		// Create buffers
 		m_MrheBuffer = new vk::Buffer(

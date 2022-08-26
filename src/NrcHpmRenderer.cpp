@@ -483,7 +483,7 @@ namespace en
 		VkComputePipelineCreateInfo pipelineCI;
 		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		pipelineCI.pNext = nullptr;
-		pipelineCI.flags = 0;
+		pipelineCI.flags = VK_PIPELINE_CREATE_DISPATCH_BASE_BIT;
 		pipelineCI.stage = shaderStage;
 		pipelineCI.layout = m_PipelineLayout;
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
@@ -1334,12 +1334,15 @@ namespace en
 		// Forward pipeline
 		const uint32_t forwardBatchCount = (m_FrameWidth * m_FrameHeight) / m_Nrc.GetBatchSize();
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ForwardPipeline);
-		vkCmdDispatch(m_CommandBuffer, forwardBatchCount, 1, 1);
+		for (uint32_t batch = 0; batch < forwardBatchCount; batch++)
+		{
+			vkCmdDispatchBase(m_CommandBuffer, forwardBatchCount, 0, 0, 1, 1, 1);
+		}
 
 		// Backprop pipeline
-		const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
-		vkCmdDispatch(m_CommandBuffer, backpropBatchCount, 1, 1);
+		//const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
+		//vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
+		//vkCmdDispatch(m_CommandBuffer, backpropBatchCount, 1, 1);
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
