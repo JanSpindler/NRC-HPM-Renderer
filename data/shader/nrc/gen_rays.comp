@@ -4,7 +4,7 @@
 ivec2 imageCoord;
 
 #define TRUE_TRACE_SAMPLE_COUNT 32
-vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
+vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 {
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
@@ -19,12 +19,15 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 	float totalTermProb = 1.0;
 
+	didScatter = false;
 	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
+			didScatter = true;
+
 			if (RandFloat(1.0) > totalTermProb)
 			{
 				imageStore(nrcNeuralRayOriginImage, imageCoord, vec4(currentPoint, 0.0));
@@ -89,16 +92,21 @@ void main()
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
-	vec4 color;
+	vec4 primaryRayColor;
+	vec4 primaryRayInfo;
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		color = vec4(vec3(0.0), 1.0);
+		primaryRayColor = vec4(vec3(0.0), 1.0);
+		primaryRayInfo = vec4(0.0);
 	}
 	else
 	{
-		color = TracePath(ro, rd);
+		bool didScatter;
+		primaryRayColor = TracePath(ro, rd, didScatter);
+		primaryRayInfo = vec4(didScatter ? 1.0 : 0.0, 0.0, 0.0, 0.0);
 	}
 
 	// Store output
-	imageStore(nrcPrimaryRayImage, imageCoord, color);
+	imageStore(nrcPrimaryRayColorImage, imageCoord, primaryRayColor);
+	imageStore(nrcPrimaryRayInfoImage, imageCoord, primaryRayInfo);
 }

@@ -1,6 +1,9 @@
 #version 460
 #include "common.glsl"
 
+// Set to nvidia subgroup count
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
 // Row major
 ivec2 BatchSampleToImageCoord(const uint batchIndex, const uint sampleIndex)
 {
@@ -99,7 +102,7 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 	}
 }
 
-vec3 Forward()
+void Forward(const uint sampleIndex)
 {
 	// Input to first hidden
 
@@ -109,26 +112,49 @@ vec3 Forward()
 	}
 
 	// Last hidden to output
-	
-	// Export output
-	return vec3(0.0);
+}
+
+void Forward()
+{
+	const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
+	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
+	{
+		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
+		Forward(sampleIndex);
+	}
 }
 
 void main()
 {
 	const uint batchIndex = gl_GlobalInvocationID.x;
 
+	// Load and encode neural ray
+	ivec2 imageCoords[BATCH_SIZE];
 	for (uint sampleIndex = 0; sampleIndex < BATCH_SIZE; sampleIndex++)
 	{
 		const ivec2 imageCoord = BatchSampleToImageCoord(batchIndex, sampleIndex);
+		imageCoords[sampleIndex] = imageCoord;
 
 		vec3 rayOrigin;
 		vec3 rayDir;
 		LoadNeuralRayFromImages(imageCoord, rayOrigin, rayDir);
 
 		EncodeRay(sampleIndex, rayOrigin, rayDir);
-		const vec3 nnOutput = Forward();
+	}
 
-		imageStore(nrcNeuralRayColorImage, imageCoord, vec4(nnOutput, 1.0));
+	Forward();
+
+	// Write neural ray color to image
+	for (uint sampleIndex = 0; sampleIndex < BATCH_SIZE; sampleIndex++)
+	{
+		const uint sampleOffset = sampleIndex * 3;
+
+		vec3 neuralRayColor;
+		neuralRayColor.x = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 0];
+		neuralRayColor.y = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
+		neuralRayColor.z = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
+		//neuralRayColor = vec3(0.2);
+		
+		imageStore(nrcNeuralRayColorImage, imageCoords[sampleIndex], vec4(neuralRayColor, 1.0));
 	}
 }

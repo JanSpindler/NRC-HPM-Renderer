@@ -103,9 +103,13 @@ namespace en
 		VkDeviceMemory m_OutputImageMemory;
 		VkImageView m_OutputImageView;
 
-		VkImage m_PrimaryRayImage; // rgb32f primary ray output color + a32f transmittance
-		VkDeviceMemory m_PrimaryRayImageMemory;
-		VkImageView m_PrimaryRayImageView;
+		VkImage m_PrimaryRayColorImage; // rgb32f primary ray output color + a32f transmittance
+		VkDeviceMemory m_PrimaryRayColorImageMemory;
+		VkImageView m_PrimaryRayColorImageView;
+
+		VkImage m_PrimaryRayInfoImage;
+		VkDeviceMemory m_PrimaryRayInfoImageMemory;
+		VkImageView m_PrimaryRayInfoImageView;
 
 		VkImage m_NeuralRayOriginImage;
 		VkDeviceMemory m_NeuralRayOriginImageMemory;
@@ -134,7 +138,8 @@ namespace en
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
-		void CreatePrimaryRayImage(VkDevice device);
+		void CreatePrimaryRayColorImage(VkDevice device);
+		void CreatePrimaryRayInfoImage(VkDevice device);
 		void CreateNeuralRayOriginImage(VkDevice device);
 		void CreateNeuralRayDirImage(VkDevice device);
 		void CreateNeuralRayColorImage(VkDevice device);
