@@ -13,10 +13,8 @@ uint HashFunc(const uvec3 pos)
 	return hash;
 }
 
-void EncodePosMrhe(const vec3 pos)
+void EncodePosMrhe(const vec3 normPos, const uint mrheInputBaseIndex)
 {
-	const vec3 normPos = (pos / skySize) + vec3(0.5);
-
 	for (uint level = 0; level < POS_LEVEL_COUNT; level++)
 	{
 		// Get level resolution
@@ -45,24 +43,23 @@ void EncodePosMrhe(const vec3 pos)
 		{
 			const uint index = HashFunc(uvec3(neighbours[neigh]));
 			neighbourIndices[neigh] = index;
-			
-			//const uint linearIndex = (level * 8) + neigh;
-			//allNeighbourIndices[linearIndex] = index;
 		}
 
 		// Extract neighbour features
-		vec2 neighbourFeatures[8];
+		float neighbourFeatures[8 * POS_FEATURE_COUNT];
 		for (uint neigh = 0; neigh < 8; neigh++)
 		{
 			const uint entryIndex = neighbourIndices[neigh];
-			neighbourFeatures[neigh] = vec2(GetMrheFeature(level, entryIndex, 0), GetMrheFeature(level, entryIndex, 1));
+			for (uint feature = 0; feature < POS_FEATURE_COUNT; feature++)
+			{
+				neighbourFeatures[(neigh * POS_FEATURE_COUNT) + feature] = GetMrheFeature(level, entryIndex, feature);
+			}
 		}
 
 		// Linearly interpolate neightbour features
-		vec3 lerpFactors = pos - neighbours[0];
-		//allLerpFactors[level] = lerpFactors;
+		vec3 lerpFactors = resPos - neighbours[0];
 
-		vec2 zLerpFeatures[4];
+		/*vec2 zLerpFeatures[4];
 		for (uint i = 0; i < 4; i++)
 		{
 			zLerpFeatures[i] = 
@@ -80,11 +77,17 @@ void EncodePosMrhe(const vec3 pos)
 
 		vec2 xLerpFeatures =
 			(yLerpFeatures[0] * (1.0 - lerpFactors.x)) +
-			(yLerpFeatures[1] * lerpFactors.x);
+			(yLerpFeatures[1] * lerpFactors.x);*/
 
-		// Store in feature array
-		neurons[(level * POS_FEATURE_COUNT) + 0] = xLerpFeatures.x;
-		neurons[(level * POS_FEATURE_COUNT) + 1] = xLerpFeatures.y;
+		// TODO: store
+
+		float features[POS_FEATURE_COUNT];
+
+		const uint levelBaseIndex = mrheInputBaseIndex + (level * POS_FEATURE_COUNT);
+		for (uint feature = 0; feature < POS_FEATURE_COUNT; feature++)
+		{
+			neurons[levelBaseIndex + feature] = features[feature];
+		}
 	}
 }
 

@@ -25,7 +25,7 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 	const uint startIndex = sampleIndex * INPUT_FEATURE_COUNT;
 
 	// Norm ray origin
-	const vec3 normRayOrigin = rayOrigin / skySize;
+	const vec3 normRayOrigin = (rayOrigin / skySize) + vec3(0.5);
 
 	// Dir to phi theta
 	const float phi = atan(rayDir.x, rayDir.z);
@@ -58,7 +58,7 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 	const uint mrhePosIndex = freqPosIndex + (POS_FREQ_COUNT * 6);
 	if (POS_ENCODING == 2)
 	{
-		// TODO
+		EncodePosMrhe(normRayOrigin, mrhePosIndex);
 	}
 
 	// Encode dir
