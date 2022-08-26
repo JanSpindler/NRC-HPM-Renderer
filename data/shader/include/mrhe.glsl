@@ -58,35 +58,25 @@ void EncodePosMrhe(const vec3 normPos, const uint mrheInputBaseIndex)
 
 		// Linearly interpolate neightbour features
 		vec3 lerpFactors = resPos - neighbours[0];
-
-		/*vec2 zLerpFeatures[4];
-		for (uint i = 0; i < 4; i++)
+		float linearLerpFactor[8];
+		for (uint neigh = 0; neigh < 8; neigh++)
 		{
-			zLerpFeatures[i] = 
-				(neighbourFeatures[i] * (1.0 - lerpFactors.z)) + 
-				(neighbourFeatures[4 + i] * lerpFactors.z);
+			const float xFactor = (neigh >> 2) > 0 ? (1.0 - lerpFactors.x) : lerpFactors.x;
+			const float yFactor = (neigh >> 1) > 0 ? (1.0 - lerpFactors.y) : lerpFactors.y;
+			const float zFactor = (neigh >> 0) > 0 ? (1.0 - lerpFactors.z) : lerpFactors.z;
+			linearLerpFactor[neigh] = xFactor * yFactor * zFactor;
 		}
 
-		vec2 yLerpFeatures[2];
-		for (uint i = 0; i < 2; i++)
-		{
-			yLerpFeatures[i] =
-				(zLerpFeatures[i] * (1.0 - lerpFactors.y)) +
-				(zLerpFeatures[2 + i] * lerpFactors.y);
-		}
-
-		vec2 xLerpFeatures =
-			(yLerpFeatures[0] * (1.0 - lerpFactors.x)) +
-			(yLerpFeatures[1] * lerpFactors.x);*/
-
-		// TODO: store
-
-		float features[POS_FEATURE_COUNT];
-
+		// Store
 		const uint levelBaseIndex = mrheInputBaseIndex + (level * POS_FEATURE_COUNT);
 		for (uint feature = 0; feature < POS_FEATURE_COUNT; feature++)
 		{
-			neurons[levelBaseIndex + feature] = features[feature];
+			float sum = 0.0;
+			for (uint neigh = 0; neigh < 8; neigh++)
+			{
+				sum += linearLerpFactor[neigh] * neighbourFeatures[(neigh * POS_FEATURE_COUNT) + feature];
+			}
+			neurons[levelBaseIndex + feature] = sum;
 		}
 	}
 }
