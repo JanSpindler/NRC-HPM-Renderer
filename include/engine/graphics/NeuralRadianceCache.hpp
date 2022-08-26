@@ -101,11 +101,13 @@ namespace en
 
 		vk::Buffer* m_MrheBuffer;
 		vk::Buffer* m_DeltaMrheBuffer;
+		vk::Buffer* m_MrheResolutionsBuffer;
 
 		size_t m_NeuronsBufferSize;
 		size_t m_WeightsBufferSize;
 		size_t m_BiasesBufferSize;
 		size_t m_MrheBufferSize;
+		size_t m_MrheResolutionsBufferSize;
 
 		VkDescriptorSet m_DescSet;
 

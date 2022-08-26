@@ -28,8 +28,8 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 	const vec3 normRayOrigin = rayOrigin / skySize;
 
 	// Dir to phi theta
-	const float theta = atan(rayDir.z, rayDir.x);
-	const float phi = atan(length(rayDir.xz), rayDir.y);
+	const float phi = atan(rayDir.x, rayDir.z);
+	const float theta = atan(length(rayDir.xz), rayDir.y);
 
 	// Encode pos
 	// Always encode direct
@@ -94,10 +94,14 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 	const uint oneBlobDirIndex = freqDirIndex + (DIR_FREQ_COUNT * 4);
 	if (DIR_ENCODING == 2)
 	{
+		const float normPhi = (phi / (2.0 * PI)) + 0.5;
+		const float normTheta = (theta / PI) + 0.5;
+
 		for (uint feature = 0; feature < DIR_FEATURE_COUNT; feature++)
 		{
-			neurons[oneBlobDirIndex + (feature * 2) + 0] = NormGauss(phi, 0.0, ONE_OVER_DIR_FEATURE_COUNT);
-			neurons[oneBlobDirIndex + (feature * 2) + 1] = NormGauss(phi, 0.0, ONE_OVER_DIR_FEATURE_COUNT);
+			const float angleSample = float(feature) / float(DIR_FEATURE_COUNT);
+			neurons[oneBlobDirIndex + (feature * 2) + 0] = NormGauss(angleSample, normPhi, ONE_OVER_DIR_FEATURE_COUNT);
+			neurons[oneBlobDirIndex + (feature * 2) + 1] = NormGauss(angleSample, normTheta, ONE_OVER_DIR_FEATURE_COUNT);
 		}
 	}
 }

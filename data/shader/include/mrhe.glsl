@@ -1,7 +1,7 @@
-/*float GetMrheFeature(const uint level, const uint entryIndex, const uint featureIndex)
+float GetMrheFeature(const uint level, const uint entryIndex, const uint featureIndex)
 {
-	const uint linearIndex = (mrhe.hashTableSize * mrhe.featureCount * level) + (entryIndex * mrhe.featureCount) + featureIndex;
-	const float feature = mrHashTable[linearIndex];
+	const uint linearIndex = (POS_HASH_TABLE_SIZE * POS_FEATURE_COUNT * level) + (entryIndex * POS_FEATURE_COUNT) + featureIndex;
+	const float feature = mrhe[linearIndex];
 	return feature;
 }
 
@@ -9,19 +9,15 @@ uint HashFunc(const uvec3 pos)
 {
 	const uvec3 primes = uvec3(1, 19349663, 83492791);
 	uint hash = (pos.x * primes.x) + (pos.y * primes.y) + (pos.z * primes.z);
-	hash %= mrhe.hashTableSize;
+	hash %= POS_HASH_TABLE_SIZE;
 	return hash;
 }
-
-float mrheFeatures[32]; // 16 * 2
-uint allNeighbourIndices[128]; // 16 * (2^3)
-vec3 allLerpFactors[16];
 
 void EncodePosMrhe(const vec3 pos)
 {
 	const vec3 normPos = (pos / skySize) + vec3(0.5);
 
-	for (uint level = 0; level < mrhe.levelCount; level++)
+	for (uint level = 0; level < POS_LEVEL_COUNT; level++)
 	{
 		// Get level resolution
 		const uint res = mrhe.resolutions[level];
@@ -129,4 +125,3 @@ void BackpropMrhe()
 		}
 	}
 }
-*/

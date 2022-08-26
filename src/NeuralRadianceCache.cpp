@@ -72,6 +72,13 @@ namespace en
 		deltaMrheBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		deltaMrheBufferBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding mrheResBufferBinding;
+		mrheResBufferBinding.binding = 9;
+		mrheResBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mrheResBufferBinding.descriptorCount = 1;
+		mrheResBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		mrheResBufferBinding.pImmutableSamplers = nullptr;
+
 		std::vector<VkDescriptorSetLayoutBinding> bindings = {
 			neuronsBufferBinding,
 			weightsBufferBinding,
@@ -81,7 +88,8 @@ namespace en
 			deltaBiasesBufferBinding,
 			momentumBiasesBufferBinding,
 			mrheBufferBinding,
-			deltaMrheBufferBinding };
+			deltaMrheBufferBinding,
+			mrheResBufferBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -98,7 +106,13 @@ namespace en
 		storagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		storagePoolSize.descriptorCount = 9;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { storagePoolSize };
+		VkDescriptorPoolSize uniformPoolSize;
+		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformPoolSize.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { 
+			storagePoolSize,
+			uniformPoolSize };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -239,6 +253,7 @@ namespace en
 		m_MomentumBiasesBuffer->Destroy();
 		m_MrheBuffer->Destroy();
 		m_DeltaMrheBuffer->Destroy();
+		m_MrheResolutionsBuffer->Destroy();
 
 		delete m_NeuronsBuffer;
 		delete m_WeightsBuffer;
@@ -491,6 +506,8 @@ namespace en
 		m_MrheBufferSize = mrheCount * sizeof(float);
 		m_MrheBufferSize = std::max(m_MrheBufferSize, static_cast<size_t>(1)); // need minimum size > 0
 
+		m_MrheResolutionsBufferSize = m_PosLevelCount * sizeof(float);
+
 		// Create buffers
 		m_MrheBuffer = new vk::Buffer(
 			m_MrheBufferSize,
@@ -504,7 +521,13 @@ namespace en
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
-		// Fille buffers
+		m_MrheResolutionsBuffer = new vk::Buffer(
+			m_MrheResolutionsBufferSize,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		// Fill buffers
 		vk::Buffer mrheStagingBuffer(
 			m_MrheBufferSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -529,6 +552,33 @@ namespace en
 
 		free(mrheData);
 		mrheStagingBuffer.Destroy();
+
+		// Res
+		vk::Buffer mrheResStagingBuffer(
+			m_MrheResolutionsBufferSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		float* mrheResolutions = reinterpret_cast<float*>(malloc(m_MrheResolutionsBufferSize));
+
+		// Init mrhe resolutions
+		float b = std::exp(
+			(std::log(static_cast<float>(m_PosMaxFreq)) - std::log(static_cast<float>(m_PosMinFreq))) /
+			static_cast<float>(m_PosLevelCount - 1));
+		for (size_t i = 0; i < m_PosLevelCount; i++)
+		{
+			float resF =
+				static_cast<float>(m_PosMinFreq) *
+				std::pow(b, static_cast<float>(i));
+			mrheResolutions[i] = static_cast<uint32_t>(resF);
+		}
+
+		mrheResStagingBuffer.SetData(m_MrheResolutionsBufferSize, mrheResolutions, 0, 0);
+		vk::Buffer::Copy(&mrheResStagingBuffer, m_MrheResolutionsBuffer, m_MrheResolutionsBufferSize);
+
+		free(mrheResolutions);
+		mrheResStagingBuffer.Destroy();
 	}
 
 	void NeuralRadianceCache::AllocateAndUpdateDescSet()
@@ -547,7 +597,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Update desc set
-		std::vector<VkDescriptorBufferInfo> bufferInfos(9);
+		std::vector<VkDescriptorBufferInfo> bufferInfos(10);
 		for (size_t i = 0; i < bufferInfos.size(); i++)
 		{
 			bufferInfos[i].offset = 0;
@@ -574,6 +624,8 @@ namespace en
 		bufferInfos[7].range = m_MrheBufferSize;
 		bufferInfos[8].buffer = m_DeltaMrheBuffer->GetVulkanHandle();
 		bufferInfos[8].range = m_MrheBufferSize;
+		bufferInfos[9].buffer = m_MrheResolutionsBuffer->GetVulkanHandle();
+		bufferInfos[9].range = m_MrheResolutionsBufferSize;
 
 		std::vector<VkWriteDescriptorSet> writes(bufferInfos.size());
 		for (size_t i = 0; i < writes.size(); i++)
@@ -589,6 +641,8 @@ namespace en
 			writes[i].pBufferInfo = &bufferInfos[i];
 			writes[i].pTexelBufferView = nullptr;
 		}
+
+		writes[9].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}

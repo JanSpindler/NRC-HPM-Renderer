@@ -428,7 +428,7 @@ namespace en
 		memoryModelFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES;
 		memoryModelFeatures.pNext = nullptr;
 		memoryModelFeatures.vulkanMemoryModel = VK_TRUE;
-		memoryModelFeatures.vulkanMemoryModelDeviceScope = VK_FALSE;
+		memoryModelFeatures.vulkanMemoryModelDeviceScope = VK_TRUE;
 		memoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains = VK_FALSE;
 
 		// Nv cooperative matrix features
