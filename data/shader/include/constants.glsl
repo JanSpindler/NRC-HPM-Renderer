@@ -12,7 +12,7 @@ layout(constant_id = 7) const uint POS_MIN_FREQ = 1;
 layout(constant_id = 8) const uint POS_MAX_FREQ = 1;
 layout(constant_id = 9) const uint POS_LEVEL_COUNT = 1;
 layout(constant_id = 10) const uint POS_HASH_TABLE_SIZE = 1;
-layout(constant_id = 11) const uint POS_FEATURE_COUNt = 1;
+layout(constant_id = 11) const uint POS_FEATURE_COUNT = 1;
 
 layout(constant_id = 12) const uint DIR_FREQ_COUNT = 1;
 layout(constant_id = 13) const uint DIR_FEATURE_COUNT = 1;
@@ -30,6 +30,8 @@ const vec3 skyPos = vec3(0.0);
 // TODO: performant?
 #define ONE_OVER_RENDER_WIDTH (1.0 / float(RENDER_WIDTH))
 #define ONE_OVER_RENDER_HEIGHT (1.0 / float(RENDER_HEIGHT))
+
+#define ONE_OVER_DIR_FEATURE_COUNT (1.0 / float(DIR_FEATURE_COUNT))
 
 const uint INPUT_WEIGHTS_COUNT = INPUT_FEATURE_COUNT * LAYER_WIDTH;
 const uint HIDDEN_WEIGHTS_COUNT = LAYER_WIDTH * LAYER_WIDTH;

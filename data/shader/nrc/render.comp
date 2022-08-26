@@ -6,8 +6,9 @@ void main()
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 	const ivec2 outputImageCoord = ivec2(x, y);
-	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - y);
+	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - (y + 1));
 
 	vec4 outputColor = imageLoad(nrcPrimaryRayImage, invertedYImageCoord);
+	const vec4 neuralRayColor = imageLoad(nrcNeuralRayColorImage, invertedYImageCoord);
 	imageStore(nrcOutputImage, outputImageCoord, outputColor);
 }

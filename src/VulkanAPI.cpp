@@ -304,6 +304,12 @@ namespace en
 				}
 			}
 
+			// Cooperative matrix types
+			//uint32_t coopMatPropertyCount;
+			//vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, nullptr);
+			//std::vector<VkCooperativeMatrixPropertiesNV> coopMatProperties(coopMatPropertyCount);
+			//vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, coopMatProperties.data());
+
 			// Surface support
 			VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
 			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_Surface, &surfaceCapabilities);
