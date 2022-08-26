@@ -461,7 +461,7 @@ namespace en
 			{});
 		float* biasesData = reinterpret_cast<float*>(malloc(m_BiasesBufferSize));
 		const size_t biasesCount = m_BiasesBufferSize / sizeof(float);
-		std::normal_distribution<float> biasesDist(0.5f, 0.125f);
+		std::normal_distribution<float> biasesDist(0.125f, 1.0 / static_cast<float>(m_LayerWidth));
 
 		for (size_t i = 0; i < biasesCount; i++)
 		{
