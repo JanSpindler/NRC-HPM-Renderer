@@ -74,7 +74,7 @@ namespace en
 
 		VkDescriptorSetLayoutBinding mrheResBufferBinding;
 		mrheResBufferBinding.binding = 9;
-		mrheResBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mrheResBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		mrheResBufferBinding.descriptorCount = 1;
 		mrheResBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		mrheResBufferBinding.pImmutableSamplers = nullptr;
@@ -104,15 +104,9 @@ namespace en
 		// Create pool
 		VkDescriptorPoolSize storagePoolSize;
 		storagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		storagePoolSize.descriptorCount = 9;
+		storagePoolSize.descriptorCount = 10;
 
-		VkDescriptorPoolSize uniformPoolSize;
-		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uniformPoolSize.descriptorCount = 1;
-
-		std::vector<VkDescriptorPoolSize> poolSizes = { 
-			storagePoolSize,
-			uniformPoolSize };
+		std::vector<VkDescriptorPoolSize> poolSizes = { storagePoolSize };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -524,7 +518,7 @@ namespace en
 		m_MrheResolutionsBuffer = new vk::Buffer(
 			m_MrheResolutionsBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
 		// Fill buffers
@@ -641,8 +635,6 @@ namespace en
 			writes[i].pBufferInfo = &bufferInfos[i];
 			writes[i].pTexelBufferView = nullptr;
 		}
-
-		writes[9].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
