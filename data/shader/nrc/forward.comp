@@ -127,16 +127,54 @@ void ForwardInputToFirstHidden(const uint sampleIndex)
 
 void ForwardHiddenToNextHidden(const uint sampleIndex, const uint hiddenLayerIndex)
 {
+	const uint inputNeuronsOffset = BATCH_SIZE * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * hiddenLayerIndex));
+	const uint weightsOffset = (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * hiddenLayerIndex);
+	const uint biasesOffset = LAYER_WIDTH * (hiddenLayerIndex + 1);
+	const uint outputNeuronsOffset = inputNeuronsOffset + (BATCH_SIZE * LAYER_WIDTH);
+
+	for (uint row = 0; row < LAYER_WIDTH; row++)
+	{
+		float sum = 0.0;
+		for (uint col = 0; col < LAYER_WIDTH; col++)
+		{
+			const float feature = neurons[inputNeuronsOffset + (sampleIndex * LAYER_WIDTH) + col];
+			const float weight = weights[weightsOffset + (col * LAYER_WIDTH) + row];
+			sum += feature * weight;
+		}
+		sum += biases[biasesOffset + row];
+		sum = ReLU(sum);
+
+		neurons[outputNeuronsOffset + (sampleIndex * LAYER_WIDTH) + row] = sum;
+	}
 }
 
 void ForwardLastHiddenToOutput(const uint sampleIndex)
 {
+	const uint inputNeuronsOffset = BATCH_SIZE * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
+	const uint weightsOffset = (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * LAYER_COUNT);
+	const uint biasesOffset = LAYER_WIDTH * LAYER_COUNT;
+	const uint outputNeuronsOffset = inputNeuronsOffset + (BATCH_SIZE * LAYER_WIDTH);
+
+	for (uint row = 0; row < 3; row++)
+	{
+		float sum = 0.0;
+		for (uint col = 0; col < LAYER_WIDTH; col++)
+		{
+			const float feature = neurons[inputNeuronsOffset + (sampleIndex * LAYER_WIDTH) + col];
+			const float weight = weights[weightsOffset + (col * 3) + row];
+			sum += feature * weight;
+		}
+		sum += biases[biasesOffset + row];
+		sum = ReLU(sum);
+
+		neurons[outputNeuronsOffset + (sampleIndex * 3) + row] = sum;
+	}
 }
 
 void Forward(const uint sampleIndex)
 {
 	ForwardInputToFirstHidden(sampleIndex);
-	for (uint hiddenLayerIndex = 0; hiddenLayerIndex < LAYER_COUNT; hiddenLayerIndex++)
+	for (uint hiddenLayerIndex = 0; hiddenLayerIndex < LAYER_COUNT - 1; hiddenLayerIndex++)
 	{
 		ForwardHiddenToNextHidden(sampleIndex, hiddenLayerIndex);
 	}
