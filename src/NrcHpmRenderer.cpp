@@ -507,7 +507,7 @@ namespace en
 		VkComputePipelineCreateInfo pipelineCI;
 		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		pipelineCI.pNext = nullptr;
-		pipelineCI.flags = 0;
+		pipelineCI.flags = VK_PIPELINE_CREATE_DISPATCH_BASE_BIT;
 		pipelineCI.stage = shaderStage;
 		pipelineCI.layout = m_PipelineLayout;
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
@@ -1321,6 +1321,13 @@ namespace en
 			m_HdrEnvMap.GetDescriptorSet(),
 			m_DescSet };
 
+		// Create memory barrier
+		VkMemoryBarrier memoryBarrier;
+		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		memoryBarrier.pNext = nullptr;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
 			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
@@ -1331,18 +1338,49 @@ namespace en
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
 		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);
 
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_DEPENDENCY_DEVICE_GROUP_BIT,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
+
 		// Forward pipeline
 		const uint32_t forwardBatchCount = (m_FrameWidth * m_FrameHeight) / m_Nrc.GetBatchSize();
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ForwardPipeline);
+
 		for (uint32_t batch = 0; batch < forwardBatchCount; batch++)
 		{
-			vkCmdDispatchBase(m_CommandBuffer, forwardBatchCount, 0, 0, 1, 1, 1);
+			vkCmdDispatchBase(m_CommandBuffer, batch, 0, 0, 1, 1, 1);
 		}
 
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_DEPENDENCY_DEVICE_GROUP_BIT,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
+
 		// Backprop pipeline
-		//const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
-		//vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
-		//vkCmdDispatch(m_CommandBuffer, backpropBatchCount, 1, 1);
+		const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
+		for (uint32_t batch = 0; batch < backpropBatchCount; batch++)
+		{
+			vkCmdDispatchBase(m_CommandBuffer, batch, 0, 0, 1, 1, 1);
+		}
+
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_DEPENDENCY_DEVICE_GROUP_BIT,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);

@@ -63,6 +63,10 @@ namespace en
 		float GetMrheLearningRate() const;
 		uint32_t GetBatchSize() const;
 
+		VkBuffer GetNeuronsBufferVulkanHandle() const;
+
+		size_t GetNeuronsBufferSize() const;
+
 		VkDescriptorSet GetDescriptorSet() const;
 
 	private:

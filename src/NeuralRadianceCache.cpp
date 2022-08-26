@@ -340,6 +340,16 @@ namespace en
 		return m_BatchSize;
 	}
 
+	VkBuffer NeuralRadianceCache::GetNeuronsBufferVulkanHandle() const
+	{
+		return m_NeuronsBuffer->GetVulkanHandle();
+	}
+
+	size_t NeuralRadianceCache::GetNeuronsBufferSize() const
+	{
+		return m_NeuronsBufferSize;
+	}
+
 	VkDescriptorSet NeuralRadianceCache::GetDescriptorSet() const
 	{
 		return m_DescSet;

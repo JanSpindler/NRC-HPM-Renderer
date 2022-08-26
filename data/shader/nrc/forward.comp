@@ -224,7 +224,6 @@ void main()
 		neuralRayColor.x = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 0];
 		neuralRayColor.y = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
 		neuralRayColor.z = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
-		//neuralRayColor = vec3(0.2);
 		
 		imageStore(nrcNeuralRayColorImage, imageCoords[sampleIndex], vec4(neuralRayColor, 1.0));
 	}
