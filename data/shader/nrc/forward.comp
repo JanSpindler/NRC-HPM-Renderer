@@ -102,16 +102,45 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 	}
 }
 
+float ReLU(float x)
+{
+	return max(0.0, x);
+}
+
+void ForwardInputToFirstHidden(const uint sampleIndex)
+{
+	for (uint row = 0; row < LAYER_WIDTH; row++)
+	{
+		float sum = 0.0;
+		for (uint col = 0; col < INPUT_FEATURE_COUNT; col++)
+		{
+			const float feature = neurons[(sampleIndex * INPUT_FEATURE_COUNT) + col];
+			const float weight = weights[(col * LAYER_WIDTH) + row];
+			sum += feature * weight;
+		}
+		sum += biases[row];
+		sum = ReLU(sum);
+
+		neurons[(BATCH_SIZE * INPUT_FEATURE_COUNT) + (sampleIndex * LAYER_WIDTH) + row] = sum;
+	}
+}
+
+void ForwardHiddenToNextHidden(const uint sampleIndex, const uint hiddenLayerIndex)
+{
+}
+
+void ForwardLastHiddenToOutput(const uint sampleIndex)
+{
+}
+
 void Forward(const uint sampleIndex)
 {
-	// Input to first hidden
-
-	// Hidden to next hidden
+	ForwardInputToFirstHidden(sampleIndex);
 	for (uint hiddenLayerIndex = 0; hiddenLayerIndex < LAYER_COUNT; hiddenLayerIndex++)
 	{
+		ForwardHiddenToNextHidden(sampleIndex, hiddenLayerIndex);
 	}
-
-	// Last hidden to output
+	ForwardLastHiddenToOutput(sampleIndex);
 }
 
 void Forward()
