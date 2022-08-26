@@ -1,6 +1,6 @@
 #include "extensions.glsl"
-#include "constants.glsl"
 #include "descriptors.glsl"
+#include "constants.glsl"
 #include "defines.glsl"
 #include "random.glsl"
 #include "volume.glsl"

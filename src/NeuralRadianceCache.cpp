@@ -500,7 +500,7 @@ namespace en
 		m_MrheBufferSize = mrheCount * sizeof(float);
 		m_MrheBufferSize = std::max(m_MrheBufferSize, static_cast<size_t>(1)); // need minimum size > 0
 
-		m_MrheResolutionsBufferSize = m_PosLevelCount * sizeof(float);
+		m_MrheResolutionsBufferSize = m_PosLevelCount * sizeof(uint32_t);
 
 		// Create buffers
 		m_MrheBuffer = new vk::Buffer(
@@ -554,7 +554,7 @@ namespace en
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			{});
 
-		float* mrheResolutions = reinterpret_cast<float*>(malloc(m_MrheResolutionsBufferSize));
+		uint32_t* mrheResolutions = reinterpret_cast<uint32_t*>(malloc(m_MrheResolutionsBufferSize));
 
 		// Init mrhe resolutions
 		float b = std::exp(

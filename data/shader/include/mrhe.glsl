@@ -20,7 +20,7 @@ void EncodePosMrhe(const vec3 pos)
 	for (uint level = 0; level < POS_LEVEL_COUNT; level++)
 	{
 		// Get level resolution
-		const uint res = mrhe.resolutions[level];
+		const uint res = mrheResolutions[level];
 		const vec3 resPos = normPos * float(res);
 
 		// Get all 8 neighbours
@@ -46,8 +46,8 @@ void EncodePosMrhe(const vec3 pos)
 			const uint index = HashFunc(uvec3(neighbours[neigh]));
 			neighbourIndices[neigh] = index;
 			
-			const uint linearIndex = (level * 8) + neigh;
-			allNeighbourIndices[linearIndex] = index;
+			//const uint linearIndex = (level * 8) + neigh;
+			//allNeighbourIndices[linearIndex] = index;
 		}
 
 		// Extract neighbour features
@@ -60,7 +60,7 @@ void EncodePosMrhe(const vec3 pos)
 
 		// Linearly interpolate neightbour features
 		vec3 lerpFactors = pos - neighbours[0];
-		allLerpFactors[level] = lerpFactors;
+		//allLerpFactors[level] = lerpFactors;
 
 		vec2 zLerpFeatures[4];
 		for (uint i = 0; i < 4; i++)
@@ -83,12 +83,12 @@ void EncodePosMrhe(const vec3 pos)
 			(yLerpFeatures[1] * lerpFactors.x);
 
 		// Store in feature array
-		mrheFeatures[(level * mrhe.featureCount) + 0] = xLerpFeatures.x;
-		mrheFeatures[(level * mrhe.featureCount) + 1] = xLerpFeatures.y;
+		neurons[(level * POS_FEATURE_COUNT) + 0] = xLerpFeatures.x;
+		neurons[(level * POS_FEATURE_COUNT) + 1] = xLerpFeatures.y;
 	}
 }
 
-void BackpropMrhe()
+/*void BackpropMrhe()
 {
 	for (uint level = 0; level < 16; level++)
 	{
@@ -124,4 +124,4 @@ void BackpropMrhe()
 			}
 		}
 	}
-}
+}*/

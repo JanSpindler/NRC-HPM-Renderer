@@ -79,7 +79,7 @@ layout(std430, set = 3, binding = 8) buffer DeltaMrhe
 
 layout(std430, set = 3, binding = 9) buffer MrheRes
 {
-	float mrheRes[POS_LEVEL_COUNT];
+	uint mrheResolutions[];
 };
 
 layout(set = 4, binding = 0) uniform PointLight
