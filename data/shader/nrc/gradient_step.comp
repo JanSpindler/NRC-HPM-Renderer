@@ -1,0 +1,34 @@
+#version 460
+#include "common.glsl"
+
+void StepWeights(const uint index)
+{
+	if (index >= TOTAL_WEIGHTS_COUNT)
+	{
+		return;
+	}
+}
+
+void StepBiases(const uint index)
+{
+	if (index >= TOTAL_BIASES_COUNT)
+	{
+		return;
+	}
+}
+
+void StepMrhe(const uint index)
+{
+	if (index >= TOTAL_MRHE_COUNT)
+	{
+		return;
+	}
+}
+
+void main()
+{
+	const uint index = gl_GlobalInvocationID.x;
+	StepWeights(index);
+	StepBiases(index);
+	StepMrhe(index);
+}

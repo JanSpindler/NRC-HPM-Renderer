@@ -185,9 +185,10 @@ void Forward(const uint sampleIndex)
 	ForwardLastHiddenToOutput(sampleIndex);
 }
 
+const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
+
 void Forward()
 {
-	const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
 	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
 	{
 		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
@@ -201,8 +202,10 @@ void main()
 
 	// Load and encode neural ray
 	ivec2 imageCoords[BATCH_SIZE];
-	for (uint sampleIndex = 0; sampleIndex < BATCH_SIZE; sampleIndex++)
+	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
 	{
+		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
+
 		const ivec2 imageCoord = BatchSampleToImageCoord(batchIndex, sampleIndex);
 		imageCoords[sampleIndex] = imageCoord;
 
@@ -213,11 +216,14 @@ void main()
 		EncodeRay(sampleIndex, rayOrigin, rayDir);
 	}
 
+	subgroupBarrier();
 	Forward();
+	subgroupBarrier();
 
 	// Write neural ray color to image
-	for (uint sampleIndex = 0; sampleIndex < BATCH_SIZE; sampleIndex++)
+	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
 	{
+		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
 		const uint sampleOffset = sampleIndex * 3;
 
 		vec3 neuralRayColor;
