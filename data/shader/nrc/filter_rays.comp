@@ -1,6 +1,107 @@
 #version 460
 #include "common.glsl"
 
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+void LoadNeuralRayFromImages(const ivec2 imageCoord, out vec3 rayOrigin, out vec3 rayDir)
+{
+	rayOrigin = imageLoad(nrcNeuralRayOriginImage, imageCoord).xyz;
+	rayDir = imageLoad(nrcNeuralRayDirImage, imageCoord).xyz;
+}
+
+void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
+{
+	const uint startIndex = sampleIndex * INPUT_FEATURE_COUNT;
+
+	// Norm ray origin
+	const vec3 normRayOrigin = (rayOrigin / skySize) + vec3(0.5);
+
+	// Dir to phi theta
+	const float phi = atan(rayDir.x, rayDir.z);
+	const float theta = atan(length(rayDir.xz), rayDir.y);
+
+	// Encode pos
+	// Always encode direct
+	const uint directPosIndex = startIndex;
+	neurons[directPosIndex + 0] = normRayOrigin.x;
+	neurons[directPosIndex + 1] = normRayOrigin.y;
+	neurons[directPosIndex + 2] = normRayOrigin.z;
+
+	// Encode pos frequency
+	const uint freqPosIndex = directPosIndex + 3;
+	if (POS_ENCODING == 1 || POS_ENCODING == 2)
+	{
+		for (uint freq = 0; freq < POS_FREQ_COUNT; freq++)
+		{
+			const float waveScale = pow(2.0, float(freq)) * PI;
+			neurons[freqPosIndex + (freq * 6) + 0] = sin(waveScale * normRayOrigin.x);
+			neurons[freqPosIndex + (freq * 6) + 1] = cos(waveScale * normRayOrigin.x);
+			neurons[freqPosIndex + (freq * 6) + 2] = sin(waveScale * normRayOrigin.y);
+			neurons[freqPosIndex + (freq * 6) + 3] = cos(waveScale * normRayOrigin.y);
+			neurons[freqPosIndex + (freq * 6) + 4] = sin(waveScale * normRayOrigin.z);
+			neurons[freqPosIndex + (freq * 6) + 5] = cos(waveScale * normRayOrigin.z);
+		}
+	}
+
+	// Encode pos mrhe
+	const uint mrhePosIndex = freqPosIndex + (POS_FREQ_COUNT * 6);
+	if (POS_ENCODING == 2)
+	{
+		EncodePosMrhe(normRayOrigin, mrhePosIndex);
+	}
+
+	// Encode dir
+	uint directDirIndex = directPosIndex + 3;
+	if (POS_ENCODING == 1)
+	{
+		directDirIndex += POS_FREQ_COUNT * 6;
+	}
+	else if (POS_ENCODING == 2)
+	{
+		directDirIndex += (POS_FREQ_COUNT * 6) + (POS_LEVEL_COUNT * POS_FEATURE_COUNT);
+	}
+
+	// Encode dir direct
+	neurons[directDirIndex + 0] = phi;
+	neurons[directDirIndex + 1] = theta;
+
+	// Encode dir freq
+	const uint freqDirIndex = directDirIndex + 2;
+	if (DIR_ENCODING == 1 || DIR_ENCODING == 2)
+	{
+		for (uint freq = 0; freq < DIR_FREQ_COUNT; freq++)
+		{
+			const float waveScale = pow(2.0, float(freq)); // No PI because PI is in phi and theta
+			neurons[freqDirIndex + (freq * 4) + 0] = sin(waveScale * phi);
+			neurons[freqDirIndex + (freq * 4) + 1] = cos(waveScale * phi);
+			neurons[freqDirIndex + (freq * 4) + 2] = sin(waveScale * theta);
+			neurons[freqDirIndex + (freq * 4) + 3] = cos(waveScale * theta);
+		}
+	}
+
+	// Encode dir one blob
+	const uint oneBlobDirIndex = freqDirIndex + (DIR_FREQ_COUNT * 4);
+	if (DIR_ENCODING == 2)
+	{
+		const float normPhi = (phi / (2.0 * PI)) + 0.5;
+		const float normTheta = (theta / PI) + 0.5;
+
+		for (uint feature = 0; feature < DIR_FEATURE_COUNT; feature++)
+		{
+			const float angleSample = float(feature) / float(DIR_FEATURE_COUNT);
+			neurons[oneBlobDirIndex + (feature * 2) + 0] = NormGauss(angleSample, normPhi, ONE_OVER_DIR_FEATURE_COUNT);
+			neurons[oneBlobDirIndex + (feature * 2) + 1] = NormGauss(angleSample, normTheta, ONE_OVER_DIR_FEATURE_COUNT);
+		}
+	}
+}
+
 void main()
 {
+	const ivec2 imageCoord = ivec2(gl_WorkGroupID.xy);
+	const uint linearPixelIndex = (imageCoord.y * RENDER_WIDTH) + imageCoord.x;
+
+	vec3 rayOrigin;
+	vec3 rayDir;
+	LoadNeuralRayFromImages(imageCoord, rayOrigin, rayDir);
+	EncodeRay(linearPixelIndex, rayOrigin, rayDir);
 }
