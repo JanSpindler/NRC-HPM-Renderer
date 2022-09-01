@@ -63,6 +63,10 @@ namespace en
 		float GetMrheLearningRate() const;
 		uint32_t GetBatchSize() const;
 
+		size_t GetWeightsCount() const;
+		size_t GetBiasesCount() const;
+		size_t GetMrheCount() const;
+
 		VkBuffer GetNeuronsBufferVulkanHandle() const;
 
 		size_t GetNeuronsBufferSize() const;
@@ -106,6 +110,10 @@ namespace en
 		vk::Buffer* m_MrheBuffer;
 		vk::Buffer* m_DeltaMrheBuffer;
 		vk::Buffer* m_MrheResolutionsBuffer;
+
+		size_t m_WeightsCount;
+		size_t m_BiasesCount;
+		size_t m_MrheCount;
 
 		size_t m_NeuronsBufferSize;
 		size_t m_WeightsBufferSize;

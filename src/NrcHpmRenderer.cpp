@@ -1411,6 +1411,11 @@ namespace en
 		//	0, nullptr,
 		//	0, nullptr);
 
+		// Gradient step pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientStepPipeline);
+		const size_t gradientStepCount = std::max(m_Nrc.GetWeightsCount(), std::max(m_Nrc.GetBiasesCount(), m_Nrc.GetMrheCount()));
+		vkCmdDispatch(m_CommandBuffer, static_cast<uint32_t>(gradientStepCount), 1, 1);
+
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
 		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);

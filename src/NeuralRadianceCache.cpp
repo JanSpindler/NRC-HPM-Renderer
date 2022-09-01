@@ -340,6 +340,21 @@ namespace en
 		return m_BatchSize;
 	}
 
+	size_t NeuralRadianceCache::GetWeightsCount() const
+	{
+		return m_WeightsCount;
+	}
+
+	size_t NeuralRadianceCache::GetBiasesCount() const
+	{
+		return m_BiasesCount;
+	}
+
+	size_t NeuralRadianceCache::GetMrheCount() const
+	{
+		return m_MrheCount;
+	}
+
 	VkBuffer NeuralRadianceCache::GetNeuronsBufferVulkanHandle() const
 	{
 		return m_NeuronsBuffer->GetVulkanHandle();
@@ -360,14 +375,14 @@ namespace en
 		m_NeuronsBufferSize = m_InputFeatureCount + (m_LayerCount * m_LayerWidth) + 3;
 		m_NeuronsBufferSize *= m_BatchSize * sizeof(float);
 
-		m_WeightsBufferSize = 
+		m_WeightsCount = 
 			(m_InputFeatureCount * m_LayerWidth) + 
 			(m_LayerWidth * m_LayerWidth * (m_LayerCount - 1)) +
 			(m_LayerWidth * 3);
-		m_WeightsBufferSize *= sizeof(float);
+		m_WeightsBufferSize = m_WeightsCount * sizeof(float);
 
-		m_BiasesBufferSize = ((m_LayerCount) * m_LayerWidth) + 3;
-		m_BiasesBufferSize *= sizeof(float);
+		m_BiasesCount = ((m_LayerCount) * m_LayerWidth) + 3;
+		m_BiasesBufferSize = m_BiasesCount * sizeof(float);
 
 		CreateNnBuffers();
 		FillNnBuffers();
@@ -506,8 +521,8 @@ namespace en
 		std::default_random_engine generator((std::random_device()()));
 
 		// Calc size
-		const size_t mrheCount = m_PosFeatureCount * m_PosLevelCount * m_PosHashTableSize;
-		m_MrheBufferSize = mrheCount * sizeof(float);
+		m_MrheCount = m_PosFeatureCount * m_PosLevelCount * m_PosHashTableSize;
+		m_MrheBufferSize = m_MrheCount * sizeof(float);
 		m_MrheBufferSize = std::max(m_MrheBufferSize, static_cast<size_t>(1)); // need minimum size > 0
 
 		m_MrheResolutionsBufferSize = std::max(static_cast<size_t>(1), m_PosLevelCount * sizeof(uint32_t)); // need minimum size > 0
@@ -540,14 +555,14 @@ namespace en
 		float* mrheData = reinterpret_cast<float*>(malloc(m_MrheBufferSize));
 		std::normal_distribution<float> mrheDist(0.0, 0.5f);
 
-		for (size_t i = 0; i < mrheCount; i++)
+		for (size_t i = 0; i < m_MrheCount; i++)
 		{
 			mrheData[i] = mrheDist(generator);
 		}
 		mrheStagingBuffer.SetData(m_MrheBufferSize, mrheData, 0, 0);
 		vk::Buffer::Copy(&mrheStagingBuffer, m_MrheBuffer, m_MrheBufferSize);
 
-		for (size_t i = 0; i < mrheCount; i++)
+		for (size_t i = 0; i < m_MrheCount; i++)
 		{
 			mrheData[i] = 0.0f;
 		}
