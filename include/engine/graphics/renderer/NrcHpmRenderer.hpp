@@ -25,7 +25,7 @@ namespace en
 			const DirLight& dirLight,
 			const PointLight& pointLight,
 			const HdrEnvMap& hdrEnvMap,
-			const NeuralRadianceCache& nrc);
+			NeuralRadianceCache& nrc);
 
 		void Render(VkQueue queue) const;
 		void Destroy();
@@ -79,7 +79,7 @@ namespace en
 		const DirLight& m_DirLight;
 		const PointLight& m_PointLight;
 		const HdrEnvMap& m_HdrEnvMap;
-		const NeuralRadianceCache& m_Nrc;
+		NeuralRadianceCache& m_Nrc;
 
 		VkPipelineLayout m_PipelineLayout;
 

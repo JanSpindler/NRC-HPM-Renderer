@@ -2,7 +2,7 @@
 #include "common.glsl"
 
 // Set to nvidia subgroup count
-layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 // Row major
 ivec2 BatchSampleToImageCoord(const uint batchIndex, const uint sampleIndex)

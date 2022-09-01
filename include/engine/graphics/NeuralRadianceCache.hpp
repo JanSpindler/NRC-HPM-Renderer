@@ -39,7 +39,7 @@ namespace en
 		void SetDirFrequencyEncoding(uint32_t freqCount);
 		void SetDirOneBlobEncoding(uint32_t featureCount);
 
-		void Init();
+		void Init(size_t pixelCount);
 
 		void Destroy();
 
@@ -123,7 +123,7 @@ namespace en
 
 		VkDescriptorSet m_DescSet;
 
-		void InitNn();
+		void InitNn(size_t pixelCount);
 		void CreateNnBuffers();
 		void FillNnBuffers();
 		

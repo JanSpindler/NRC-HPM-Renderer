@@ -105,7 +105,7 @@ namespace en
 		const DirLight& dirLight,
 		const PointLight& pointLight,
 		const HdrEnvMap& hdrEnvMap,
-		const NeuralRadianceCache& nrc)
+		NeuralRadianceCache& nrc)
 		:
 		m_FrameWidth(width),
 		m_FrameHeight(height),
@@ -130,6 +130,8 @@ namespace en
 		{
 			Log::Error("Pixel count of rendering or training is not a multiple of the batch size", true);
 		}
+
+		m_Nrc.Init(static_cast<size_t>(m_FrameWidth * m_FrameHeight));
 
 		VkDevice device = VulkanAPI::GetDevice();
 

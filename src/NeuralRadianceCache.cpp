@@ -199,7 +199,7 @@ namespace en
 		m_DirFeatureCount = featureCount;
 	}
 	
-	void NeuralRadianceCache::Init()
+	void NeuralRadianceCache::Init(size_t pixelCount)
 	{
 		// Calc input feature count
 		m_InputFeatureCount = 5;
@@ -230,7 +230,7 @@ namespace en
 		Log::Info("NeuralRadianceCache has " + std::to_string(m_InputFeatureCount) + " input features");
 
 		// Init
-		InitNn();
+		InitNn(pixelCount);
 		InitMrhe();
 
 		AllocateAndUpdateDescSet();
@@ -370,10 +370,10 @@ namespace en
 		return m_DescSet;
 	}
 
-	void NeuralRadianceCache::InitNn()
+	void NeuralRadianceCache::InitNn(size_t pixelCount)
 	{
 		m_NeuronsBufferSize = m_InputFeatureCount + (m_LayerCount * m_LayerWidth) + 3;
-		m_NeuronsBufferSize *= m_BatchSize * sizeof(float);
+		m_NeuronsBufferSize *= pixelCount * sizeof(float);
 
 		m_WeightsCount = 
 			(m_InputFeatureCount * m_LayerWidth) + 
