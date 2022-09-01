@@ -1423,11 +1423,7 @@ namespace en
 		// Forward pipeline
 		const uint32_t forwardBatchCount = (m_FrameWidth * m_FrameHeight) / m_Nrc.GetBatchSize();
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ForwardPipeline);
-
-		for (uint32_t batch = 0; batch < forwardBatchCount; batch++)
-		{
-			vkCmdDispatchBase(m_CommandBuffer, batch, 0, 0, 1, 1, 1);
-		}
+		vkCmdDispatch(m_CommandBuffer, forwardBatchCount, 1, 1);
 
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,
