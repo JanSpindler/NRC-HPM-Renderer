@@ -90,6 +90,9 @@ namespace en
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
+		vk::Shader m_FilterRaysShader;
+		VkPipeline m_FilterRaysPipeline;
+
 		vk::Shader m_ForwardShader;
 		VkPipeline m_ForwardPipeline;
 
@@ -136,6 +139,7 @@ namespace en
 		void InitSpecializationConstants();
 
 		void CreateGenRaysPipeline(VkDevice device);
+		void CreateFilterRaysPipeline(VkDevice device);
 		void CreateForwardPipeline(VkDevice device);
 		void CreateBackpropPipeline(VkDevice device);
 		void CreateGradientStepPipeline(VkDevice device);

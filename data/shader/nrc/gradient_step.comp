@@ -7,6 +7,9 @@ void StepWeights(const uint index)
 	{
 		return;
 	}
+
+	weights[index] += NRC_LEARNING_RATE * deltaWeights[index];
+	deltaWeights[index] = 0.0;
 }
 
 void StepBiases(const uint index)
@@ -15,6 +18,9 @@ void StepBiases(const uint index)
 	{
 		return;
 	}
+
+	biases[index] += NRC_LEARNING_RATE * deltaBiases[index];
+	deltaBiases[index] = 0.0;
 }
 
 void StepMrhe(const uint index)
@@ -23,6 +29,9 @@ void StepMrhe(const uint index)
 	{
 		return;
 	}
+
+	mrhe[index] += MRHE_LEARNING_RATE * deltaMrhe[index];
+	deltaMrhe[index] = 0.0;
 }
 
 void main()

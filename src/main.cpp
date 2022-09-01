@@ -145,7 +145,7 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(4, 32, 0.001f, 4096); // Batch size is multiple of 128
+	en::NeuralRadianceCache nrc(4, 32, 0.001f, 1024); // Batch size is multiple of 128
 	nrc.SetPosFrequencyEncoding(4);
 	nrc.SetPosMrheEncoding(16, 512, 8, 16384, 4, 0.01f);
 	nrc.SetDirFrequencyEncoding(4);

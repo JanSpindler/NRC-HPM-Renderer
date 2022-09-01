@@ -2,7 +2,7 @@
 #include "common.glsl"
 
 // Set to nvidia subgroup count
-layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
 // Row major
 ivec2 BatchSampleToImageCoord(const uint batchIndex, const uint sampleIndex)
@@ -198,8 +198,8 @@ void Forward()
 
 void main()
 {
-	const uint batchIndex = gl_GlobalInvocationID.x;
-
+	const uint batchIndex = gl_WorkGroupID.x;
+	
 	// Load and encode neural ray
 	ivec2 imageCoords[BATCH_SIZE];
 	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
@@ -231,6 +231,9 @@ void main()
 		neuralRayColor.y = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
 		neuralRayColor.z = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
 		
+		//neuralRayColor = vec3(float(imageCoords[sampleIndex].x) / float(RENDER_WIDTH), float(imageCoords[sampleIndex].y) / float(RENDER_HEIGHT), 0.0);
+		//neuralRayColor = vec3(1.0, 0.0, 0.0);
+
 		imageStore(nrcNeuralRayColorImage, imageCoords[sampleIndex], vec4(neuralRayColor, 1.0));
 	}
 }
