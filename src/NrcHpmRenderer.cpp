@@ -52,13 +52,21 @@ namespace en
 		neuralRayColorImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		neuralRayColorImageBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding neuralRayTargetImageBinding;
+		neuralRayTargetImageBinding.binding = 6;
+		neuralRayTargetImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		neuralRayTargetImageBinding.descriptorCount = 1;
+		neuralRayTargetImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		neuralRayTargetImageBinding.pImmutableSamplers = nullptr;
+
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
 			outputImageBinding,
 			primaryRayColorImageBinding,
 			primaryRayInfoImageBinding,
 			neuralRayOriginImageBinding,
 			neuralRayDirImageBinding,
-			neuralRayColorImageBinding };
+			neuralRayColorImageBinding,
+			neuralRayTargetImageBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -73,7 +81,7 @@ namespace en
 		// Create desc pool
 		VkDescriptorPoolSize storageImagePoolSize;
 		storageImagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageImagePoolSize.descriptorCount = 6;
+		storageImagePoolSize.descriptorCount = 7;
 
 		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePoolSize };
 
@@ -155,6 +163,7 @@ namespace en
 		CreateNeuralRayOriginImage(device);
 		CreateNeuralRayDirImage(device);
 		CreateNeuralRayColorImage(device);
+		CreateNeuralRayTargetImage(device);
 
 		AllocateAndUpdateDescriptorSet(device);
 
@@ -183,6 +192,10 @@ namespace en
 		VkDevice device = VulkanAPI::GetDevice();
 
 		m_CommandPool.Destroy();
+
+		vkDestroyImageView(device, m_NeuralRayTargetImageView, nullptr);
+		vkFreeMemory(device, m_NeuralRayTargetImageMemory, nullptr);
+		vkDestroyImage(device, m_NeuralRayTargetImage, nullptr);
 
 		vkDestroyImageView(device, m_NeuralRayColorImageView, nullptr);
 		vkFreeMemory(device, m_NeuralRayColorImageMemory, nullptr);
@@ -1206,6 +1219,111 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
+	void NrcHpmRenderer::CreateNeuralRayTargetImage(VkDevice device)
+	{
+		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+		// Create Image
+		VkImageCreateInfo imageCI;
+		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCI.pNext = nullptr;
+		imageCI.flags = 0;
+		imageCI.imageType = VK_IMAGE_TYPE_2D;
+		imageCI.format = format;
+		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
+		imageCI.mipLevels = 1;
+		imageCI.arrayLayers = 1;
+		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCI.queueFamilyIndexCount = 0;
+		imageCI.pQueueFamilyIndices = nullptr;
+		imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+
+		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_NeuralRayTargetImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_NeuralRayTargetImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_NeuralRayTargetImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_NeuralRayTargetImage, m_NeuralRayTargetImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create image view
+		VkImageViewCreateInfo imageViewCI;
+		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCI.pNext = nullptr;
+		imageViewCI.flags = 0;
+		imageViewCI.image = m_NeuralRayTargetImage;
+		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCI.format = format;
+		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCI.subresourceRange.baseMipLevel = 0;
+		imageViewCI.subresourceRange.levelCount = 1;
+		imageViewCI.subresourceRange.baseArrayLayer = 0;
+		imageViewCI.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_NeuralRayTargetImageView);
+		ASSERT_VULKAN(result);
+
+		// Change image layout
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			m_CommandBuffer,
+			m_NeuralRayTargetImage,
+			VK_IMAGE_LAYOUT_PREINITIALIZED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_ACCESS_NONE,
+			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		result = vkEndCommandBuffer(m_CommandBuffer);
+		ASSERT_VULKAN(result);
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		VkQueue queue = VulkanAPI::GetGraphicsQueue();
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+	}
+
 	void NrcHpmRenderer::AllocateAndUpdateDescriptorSet(VkDevice device)
 	{
 		// Allocate
@@ -1322,13 +1440,31 @@ namespace en
 		neuralRayColorImageWrite.pBufferInfo = nullptr;
 		neuralRayColorImageWrite.pTexelBufferView = nullptr;
 
+		VkDescriptorImageInfo neuralRayTargetImageInfo;
+		neuralRayTargetImageInfo.sampler = VK_NULL_HANDLE;
+		neuralRayTargetImageInfo.imageView = m_NeuralRayTargetImageView;
+		neuralRayTargetImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet neuralRayTargetImageWrite;
+		neuralRayTargetImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		neuralRayTargetImageWrite.pNext = nullptr;
+		neuralRayTargetImageWrite.dstSet = m_DescSet;
+		neuralRayTargetImageWrite.dstBinding = 6;
+		neuralRayTargetImageWrite.dstArrayElement = 0;
+		neuralRayTargetImageWrite.descriptorCount = 1;
+		neuralRayTargetImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		neuralRayTargetImageWrite.pImageInfo = &neuralRayDirImageInfo;
+		neuralRayTargetImageWrite.pBufferInfo = nullptr;
+		neuralRayTargetImageWrite.pTexelBufferView = nullptr;
+
 		std::vector<VkWriteDescriptorSet> writes = { 
 			outputImageWrite,
 			primaryRayColorImageWrite,
 			primaryRayInfoImageWrite,
 			neuralRayOriginImageWrite,
 			neuralRayDirImageWrite,
-			neuralRayColorImageWrite };
+			neuralRayColorImageWrite,
+			neuralRayTargetImageWrite };
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
