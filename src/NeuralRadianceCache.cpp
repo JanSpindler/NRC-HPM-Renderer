@@ -365,16 +365,6 @@ namespace en
 		return m_MrheCount;
 	}
 
-	//VkBuffer NeuralRadianceCache::GetRenderNeuronsBufferVulkanHandle() const
-	//{
-	//	return m_RenderNeuronsBuffer->GetVulkanHandle();
-	//}
-	//
-	//size_t NeuralRadianceCache::GetRenderNeuronsBufferSize() const
-	//{
-	//	return m_RenderNeuronsBufferSize;
-	//}
-
 	VkDescriptorSet NeuralRadianceCache::GetDescriptorSet() const
 	{
 		return m_DescSet;

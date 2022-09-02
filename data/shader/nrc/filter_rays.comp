@@ -95,6 +95,15 @@ void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 ra
 	}
 }
 
+void CopyToTrainInputs(const uint globalSampleIndex, const uint trainSampleIndex)
+{
+	for (uint inputFeature = 0; inputFeature < INPUT_FEATURE_COUNT; inputFeature++)
+	{
+		trainNeurons[(trainSampleIndex * INPUT_FEATURE_COUNT) + inputFeature] = 
+			renderNeurons[(globalSampleIndex * INPUT_FEATURE_COUNT) + inputFeature];
+	}
+}
+
 void main()
 {
 	const ivec2 imageCoord = ivec2(gl_GlobalInvocationID.xy);
@@ -104,4 +113,11 @@ void main()
 	vec3 rayDir;
 	LoadNeuralRayFromImages(imageCoord, rayOrigin, rayDir);
 	EncodeRay(linearPixelIndex, rayOrigin, rayDir);
+
+	if (imageCoord.x % RENDER_OVER_TRAIN_WIDTH == 0 && imageCoord.y % RENDER_OVER_TRAIN_HEIGHT == 0)
+	{
+		const ivec2 trainImageCoord = imageCoord / ivec2(RENDER_OVER_TRAIN_WIDTH, RENDER_OVER_TRAIN_HEIGHT);
+		const uint trainSampleIndex = (trainImageCoord.y * TRAIN_WIDTH) + trainImageCoord.x;
+		CopyToTrainInputs(linearPixelIndex, trainSampleIndex);
+	}
 }

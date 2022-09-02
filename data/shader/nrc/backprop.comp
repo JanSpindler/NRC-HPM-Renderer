@@ -62,10 +62,10 @@ void Backprop(
 
 void BackpropOutputLayer(const uint globalSampleIndex)
 {
-	const uint inputNeuronOffset = RENDER_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
+	const uint inputNeuronOffset = TRAIN_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
 	const uint weightsOffset =  (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * LAYER_COUNT);
 	const uint biasesOffset = LAYER_WIDTH * LAYER_COUNT;
-	const uint outputNeuronOffset = inputNeuronOffset + (RENDER_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint outputNeuronOffset = inputNeuronOffset + (TRAIN_SAMPLE_COUNT * LAYER_WIDTH);
 	const uint inputLayerWidth = LAYER_WIDTH;
 	const uint outputLayerWidth = 3;
 
@@ -81,10 +81,10 @@ void BackpropOutputLayer(const uint globalSampleIndex)
 
 void BackpropHiddenLayer(const uint globalSampleIndex, const uint hiddenLayerIndex)
 {
-	const uint inputNeuronOffset = RENDER_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * hiddenLayerIndex));
+	const uint inputNeuronOffset = TRAIN_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * hiddenLayerIndex));
 	const uint weightsOffset = (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * hiddenLayerIndex);
 	const uint biasesOffset = LAYER_WIDTH * (hiddenLayerIndex + 1);
-	const uint outputNeuronOffset = inputNeuronOffset + (RENDER_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint outputNeuronOffset = inputNeuronOffset + (TRAIN_SAMPLE_COUNT * LAYER_WIDTH);
 	const uint inputLayerWidth = LAYER_WIDTH;
 	const uint outputLayerWidth = LAYER_WIDTH;
 
@@ -103,7 +103,7 @@ void BackpropInputLayer(const uint globalSampleIndex)
 	const uint inputNeuronOffset = 0;
 	const uint weightsOffset = 0;
 	const uint biasesOffset = 0;
-	const uint outputNeuronOffset = INPUT_FEATURE_COUNT * RENDER_SAMPLE_COUNT;
+	const uint outputNeuronOffset = INPUT_FEATURE_COUNT * TRAIN_SAMPLE_COUNT;
 	const uint inputLayerWidth = INPUT_FEATURE_COUNT;
 	const uint outputLayerWidth = LAYER_WIDTH;
 

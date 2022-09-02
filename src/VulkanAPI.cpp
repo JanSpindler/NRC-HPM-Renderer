@@ -1,6 +1,5 @@
 #include <engine/graphics/VulkanAPI.hpp>
 #include <vector>
-#include <map>
 #include <engine/util/Log.hpp>
 #include <engine/graphics/Window.hpp>
 #include <engine/graphics/Camera.hpp>
@@ -11,7 +10,6 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
-#include <engine/graphics/MRHE.hpp>
 
 namespace en
 {

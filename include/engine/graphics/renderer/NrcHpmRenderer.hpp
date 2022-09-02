@@ -30,8 +30,6 @@ namespace en
 		void Render(VkQueue queue) const;
 		void Destroy();
 
-		//void ResizeFrame(uint32_t width, uint32_t height);
-
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 

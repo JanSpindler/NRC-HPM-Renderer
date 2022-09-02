@@ -229,31 +229,6 @@ namespace en
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 	}
 
-//	void NrcHpmRenderer::ResizeFrame(uint32_t width, uint32_t height)
-//	{
-//		m_FrameWidth = width;
-//		m_FrameHeight = height;
-//
-//		VkDevice device = VulkanAPI::GetDevice();
-//
-//		// Destroy
-//		m_CommandPool.FreeBuffers();
-//		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
-//
-//		vkDestroyImageView(device, m_ColorImageView, nullptr);
-//		vkFreeMemory(device, m_ColorImageMemory, nullptr);
-//		vkDestroyImage(device, m_ColorImage, nullptr);
-//
-//		// Create
-//		CreateColorImage(device);
-//		CreateFramebuffer(device);
-//
-//		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-//		m_CommandBuffer = m_CommandPool.GetBuffer(0);
-//
-//		RecordCommandBuffer();
-//	}
-
 	VkImage NrcHpmRenderer::GetImage() const
 	{
 		return m_OutputImage;

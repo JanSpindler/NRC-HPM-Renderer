@@ -67,10 +67,6 @@ namespace en
 		size_t GetBiasesCount() const;
 		size_t GetMrheCount() const;
 
-		//VkBuffer GetRenderNeuronsBufferVulkanHandle() const;
-
-		//size_t GetRenderNeuronsBufferSize() const;
-
 		VkDescriptorSet GetDescriptorSet() const;
 
 	private:
