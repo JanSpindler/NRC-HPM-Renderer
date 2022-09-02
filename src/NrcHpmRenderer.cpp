@@ -1452,7 +1452,7 @@ namespace en
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientStepPipeline);
 		const size_t gradientStepCount = std::max(m_Nrc.GetWeightsCount(), std::max(m_Nrc.GetBiasesCount(), m_Nrc.GetMrheCount()));
 		vkCmdDispatch(m_CommandBuffer, static_cast<uint32_t>(gradientStepCount) / 32, 1, 1);
-
+		
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,

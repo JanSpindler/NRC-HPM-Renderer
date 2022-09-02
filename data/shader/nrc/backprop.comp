@@ -5,16 +5,116 @@ layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
 
-void BackpropOutputLayer(const uint globalSampleIndex)
+float ReLUDeriv(const float x)
 {
+	return x > 0.0 ? 1.0 : 0.0;
 }
 
-void BackpropHiddenLayer(const uint globalSampleIndex, const uint hiddenIndex)
+void Backprop(
+	const uint globalSampleIndex,
+	const uint inputNeuronOffset,
+	const uint weightsOffset,
+	const uint biasesOffset,
+	const uint outputNeuronOffset,
+	const uint inputLayerWidth,
+	const uint outputLayerWidth)
 {
+	// Backprop through activation
+	for (uint outputNeuron = 0; outputNeuron < outputLayerWidth; outputNeuron++)
+	{
+		const uint neuronIndex = outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + outputNeuron;
+		const float activatedValue = neurons[neuronIndex];
+		neurons[neuronIndex] *= ReLUDeriv(activatedValue);
+	}
+
+	// Calc delta weights and biases
+	for (uint row = 0; row < outputLayerWidth; row++)
+	{
+		const float outputVal = neurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
+
+		// Delta weights
+		for (uint col = 0; col < inputLayerWidth; col++)
+		{
+			const float inputVal = neurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
+			const float delta = -inputVal * outputVal;
+
+			const uint weightIndex = weightsOffset + (col * outputLayerWidth) + row;
+			atomicAdd(deltaWeights[weightIndex], delta);
+		}
+
+		// Delta biases
+		atomicAdd(deltaBiases[biasesOffset + row], -outputVal);
+	}
+
+	// Backprop through weights
+	for (uint col = 0; col < inputLayerWidth; col++)
+	{
+		float sum = 0.0;
+		for (uint row = 0; row < outputLayerWidth; row++)
+		{
+			const float outputVal = neurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
+			const float weightVal = weights[weightsOffset + (col * outputLayerWidth) + row];
+			sum += weightVal * outputVal;
+		}
+		neurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col] = sum;
+	}
+}
+
+void BackpropOutputLayer(const uint globalSampleIndex)
+{
+	const uint inputNeuronOffset = RENDER_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
+	const uint weightsOffset =  (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * LAYER_COUNT);
+	const uint biasesOffset = LAYER_WIDTH * LAYER_COUNT;
+	const uint outputNeuronOffset = inputNeuronOffset + (RENDER_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint inputLayerWidth = LAYER_WIDTH;
+	const uint outputLayerWidth = 3;
+
+	Backprop(
+		globalSampleIndex,
+		inputNeuronOffset,
+		weightsOffset,
+		biasesOffset,
+		outputNeuronOffset,
+		inputLayerWidth,
+		outputLayerWidth);
+}
+
+void BackpropHiddenLayer(const uint globalSampleIndex, const uint hiddenLayerIndex)
+{
+	const uint inputNeuronOffset = RENDER_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * hiddenLayerIndex));
+	const uint weightsOffset = (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * hiddenLayerIndex);
+	const uint biasesOffset = LAYER_WIDTH * (hiddenLayerIndex + 1);
+	const uint outputNeuronOffset = inputNeuronOffset + (RENDER_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint inputLayerWidth = LAYER_WIDTH;
+	const uint outputLayerWidth = LAYER_WIDTH;
+
+	Backprop(
+		globalSampleIndex,
+		inputNeuronOffset,
+		weightsOffset,
+		biasesOffset,
+		outputNeuronOffset,
+		inputLayerWidth,
+		outputLayerWidth);
 }
 
 void BackpropInputLayer(const uint globalSampleIndex)
 {
+	const uint inputNeuronOffset = 0;
+	const uint weightsOffset = 0;
+	const uint biasesOffset = 0;
+	const uint outputNeuronOffset = INPUT_FEATURE_COUNT * RENDER_SAMPLE_COUNT;
+	const uint inputLayerWidth = INPUT_FEATURE_COUNT;
+	const uint outputLayerWidth = LAYER_WIDTH;
+
+	Backprop(
+		globalSampleIndex,
+		inputNeuronOffset,
+		weightsOffset,
+		biasesOffset,
+		outputNeuronOffset,
+		inputLayerWidth,
+		outputLayerWidth);
 }
 
 void Backprop(const uint batchIndex, const uint sampleIndex)

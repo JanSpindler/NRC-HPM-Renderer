@@ -3,43 +3,47 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-void StepWeights(const uint index)
+void StepWeights(const uint index, const float learningRate)
 {
 	if (index >= TOTAL_WEIGHTS_COUNT)
 	{
 		return;
 	}
 
-	weights[index] += NRC_LEARNING_RATE * deltaWeights[index];
+	weights[index] += learningRate * deltaWeights[index];
 	deltaWeights[index] = 0.0;
 }
 
-void StepBiases(const uint index)
+void StepBiases(const uint index, const float learningRate)
 {
 	if (index >= TOTAL_BIASES_COUNT)
 	{
 		return;
 	}
 
-	biases[index] += NRC_LEARNING_RATE * deltaBiases[index];
+	biases[index] += learningRate * deltaBiases[index];
 	deltaBiases[index] = 0.0;
 }
 
-void StepMrhe(const uint index)
+void StepMrhe(const uint index, const float learningRate)
 {
 	if (index >= TOTAL_MRHE_COUNT)
 	{
 		return;
 	}
 
-	mrhe[index] += MRHE_LEARNING_RATE * deltaMrhe[index];
+	mrhe[index] += learningRate * deltaMrhe[index];
 	deltaMrhe[index] = 0.0;
 }
 
 void main()
 {
 	const uint index = gl_GlobalInvocationID.x;
-	StepWeights(index);
-	StepBiases(index);
-	StepMrhe(index);
+
+	const float nrcLearningRate = NRC_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT;
+	const float mrheLearningRate = MRHE_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT;
+
+	StepWeights(index, nrcLearningRate);
+	StepBiases(index, nrcLearningRate);
+	StepMrhe(index, mrheLearningRate);
 }
