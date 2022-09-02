@@ -9,78 +9,86 @@ namespace en
 	void NeuralRadianceCache::Init(VkDevice device)
 	{
 		// Create layout
-		VkDescriptorSetLayoutBinding neuronsBufferBinding;
-		neuronsBufferBinding.binding = 0;
-		neuronsBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		neuronsBufferBinding.descriptorCount = 1;
-		neuronsBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		neuronsBufferBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding renderNeuronsBufferBinding;
+		renderNeuronsBufferBinding.binding = 0;
+		renderNeuronsBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		renderNeuronsBufferBinding.descriptorCount = 1;
+		renderNeuronsBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		renderNeuronsBufferBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding trainNeuronsBufferBinding;
+		trainNeuronsBufferBinding.binding = 1;
+		trainNeuronsBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		trainNeuronsBufferBinding.descriptorCount = 1;
+		trainNeuronsBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		trainNeuronsBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding weightsBufferBinding;
-		weightsBufferBinding.binding = 1;
+		weightsBufferBinding.binding = 2;
 		weightsBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		weightsBufferBinding.descriptorCount = 1;
 		weightsBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		weightsBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding deltaWeightsBufferBinding;
-		deltaWeightsBufferBinding.binding = 2;
+		deltaWeightsBufferBinding.binding = 3;
 		deltaWeightsBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		deltaWeightsBufferBinding.descriptorCount = 1;
 		deltaWeightsBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		deltaWeightsBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding momentumWeightsBufferBinding;
-		momentumWeightsBufferBinding.binding = 3;
+		momentumWeightsBufferBinding.binding = 4;
 		momentumWeightsBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		momentumWeightsBufferBinding.descriptorCount = 1;
 		momentumWeightsBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		momentumWeightsBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding biasesBufferBinding;
-		biasesBufferBinding.binding = 4;
+		biasesBufferBinding.binding = 5;
 		biasesBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		biasesBufferBinding.descriptorCount = 1;
 		biasesBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		biasesBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding deltaBiasesBufferBinding;
-		deltaBiasesBufferBinding.binding = 5;
+		deltaBiasesBufferBinding.binding = 6;
 		deltaBiasesBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		deltaBiasesBufferBinding.descriptorCount = 1;
 		deltaBiasesBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		deltaBiasesBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding momentumBiasesBufferBinding;
-		momentumBiasesBufferBinding.binding = 6;
+		momentumBiasesBufferBinding.binding = 7;
 		momentumBiasesBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		momentumBiasesBufferBinding.descriptorCount = 1;
 		momentumBiasesBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		momentumBiasesBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding mrheBufferBinding;
-		mrheBufferBinding.binding = 7;
+		mrheBufferBinding.binding = 8;
 		mrheBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		mrheBufferBinding.descriptorCount = 1;
 		mrheBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		mrheBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding deltaMrheBufferBinding;
-		deltaMrheBufferBinding.binding = 8;
+		deltaMrheBufferBinding.binding = 9;
 		deltaMrheBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		deltaMrheBufferBinding.descriptorCount = 1;
 		deltaMrheBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		deltaMrheBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding mrheResBufferBinding;
-		mrheResBufferBinding.binding = 9;
+		mrheResBufferBinding.binding = 10;
 		mrheResBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		mrheResBufferBinding.descriptorCount = 1;
 		mrheResBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		mrheResBufferBinding.pImmutableSamplers = nullptr;
 
 		std::vector<VkDescriptorSetLayoutBinding> bindings = {
-			neuronsBufferBinding,
+			renderNeuronsBufferBinding,
+			trainNeuronsBufferBinding,
 			weightsBufferBinding,
 			deltaWeightsBufferBinding,
 			momentumWeightsBufferBinding,
@@ -104,7 +112,7 @@ namespace en
 		// Create pool
 		VkDescriptorPoolSize storagePoolSize;
 		storagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		storagePoolSize.descriptorCount = 10;
+		storagePoolSize.descriptorCount = 11;
 
 		std::vector<VkDescriptorPoolSize> poolSizes = { storagePoolSize };
 
@@ -199,7 +207,7 @@ namespace en
 		m_DirFeatureCount = featureCount;
 	}
 	
-	void NeuralRadianceCache::Init(size_t pixelCount)
+	void NeuralRadianceCache::Init(size_t renderSampleCount, size_t trainSampleCount)
 	{
 		// Calc input feature count
 		m_InputFeatureCount = 5;
@@ -230,7 +238,7 @@ namespace en
 		Log::Info("NeuralRadianceCache has " + std::to_string(m_InputFeatureCount) + " input features");
 
 		// Init
-		InitNn(pixelCount);
+		InitNn(renderSampleCount, trainSampleCount);
 		InitMrhe();
 
 		AllocateAndUpdateDescSet();
@@ -238,7 +246,8 @@ namespace en
 	
 	void NeuralRadianceCache::Destroy()
 	{
-		m_NeuronsBuffer->Destroy();
+		m_RenderNeuronsBuffer->Destroy();
+		m_TrainNeuronsBuffer->Destroy();
 		m_WeightsBuffer->Destroy();
 		m_DeltaWeightsBuffer->Destroy();
 		m_MomentumWeightsBuffer->Destroy();
@@ -249,7 +258,8 @@ namespace en
 		m_DeltaMrheBuffer->Destroy();
 		m_MrheResolutionsBuffer->Destroy();
 
-		delete m_NeuronsBuffer;
+		delete m_RenderNeuronsBuffer;
+		delete m_TrainNeuronsBuffer;
 		delete m_WeightsBuffer;
 		delete m_DeltaWeightsBuffer;
 		delete m_MomentumWeightsBuffer;
@@ -355,25 +365,26 @@ namespace en
 		return m_MrheCount;
 	}
 
-	VkBuffer NeuralRadianceCache::GetNeuronsBufferVulkanHandle() const
-	{
-		return m_NeuronsBuffer->GetVulkanHandle();
-	}
-
-	size_t NeuralRadianceCache::GetNeuronsBufferSize() const
-	{
-		return m_NeuronsBufferSize;
-	}
+	//VkBuffer NeuralRadianceCache::GetRenderNeuronsBufferVulkanHandle() const
+	//{
+	//	return m_RenderNeuronsBuffer->GetVulkanHandle();
+	//}
+	//
+	//size_t NeuralRadianceCache::GetRenderNeuronsBufferSize() const
+	//{
+	//	return m_RenderNeuronsBufferSize;
+	//}
 
 	VkDescriptorSet NeuralRadianceCache::GetDescriptorSet() const
 	{
 		return m_DescSet;
 	}
 
-	void NeuralRadianceCache::InitNn(size_t pixelCount)
+	void NeuralRadianceCache::InitNn(size_t renderSampleCount, size_t trainSampleCount)
 	{
-		m_NeuronsBufferSize = m_InputFeatureCount + (m_LayerCount * m_LayerWidth) + 3;
-		m_NeuronsBufferSize *= pixelCount * sizeof(float);
+		const size_t neuronsPerSample = m_InputFeatureCount + (m_LayerCount * m_LayerWidth) + 3;
+		m_RenderNeuronsBufferSize = neuronsPerSample * renderSampleCount * sizeof(float);
+		m_TrainNeuronsBufferSize = neuronsPerSample * trainSampleCount * sizeof(float);
 
 		m_WeightsCount = 
 			(m_InputFeatureCount * m_LayerWidth) + 
@@ -391,10 +402,16 @@ namespace en
 	void NeuralRadianceCache::CreateNnBuffers()
 	{
 		// Neurons
-		m_NeuronsBuffer = new vk::Buffer(
-			m_NeuronsBufferSize, 
+		m_RenderNeuronsBuffer = new vk::Buffer(
+			m_RenderNeuronsBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			{});
+
+		m_TrainNeuronsBuffer = new vk::Buffer(
+			m_TrainNeuronsBufferSize,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
 		// Weights
@@ -440,21 +457,40 @@ namespace en
 	{
 		std::default_random_engine generator((std::random_device()()));
 
-		// Neurons
+		// Render neurons
 		vk::Buffer neuronsStagingBuffer(
-			m_NeuronsBufferSize,
+			m_RenderNeuronsBufferSize,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			{});
-		float* neuronsData = reinterpret_cast<float*>(malloc(m_NeuronsBufferSize));
-		const size_t neuronsCount = m_NeuronsBufferSize / sizeof(float);
+		float* neuronsData = reinterpret_cast<float*>(malloc(m_RenderNeuronsBufferSize));
+		const size_t renderNeuronsCount = m_RenderNeuronsBufferSize / sizeof(float);
 		
-		for (size_t i = 0; i < neuronsCount; i++)
+		for (size_t i = 0; i < renderNeuronsCount; i++)
 		{
 			neuronsData[i] = 0.0f;
 		}
-		neuronsStagingBuffer.SetData(m_NeuronsBufferSize, neuronsData, 0, 0);
-		vk::Buffer::Copy(&neuronsStagingBuffer, m_NeuronsBuffer, m_NeuronsBufferSize);
+		neuronsStagingBuffer.SetData(m_RenderNeuronsBufferSize, neuronsData, 0, 0);
+		vk::Buffer::Copy(&neuronsStagingBuffer, m_RenderNeuronsBuffer, m_RenderNeuronsBufferSize);
+
+		free(neuronsData);
+		neuronsStagingBuffer.Destroy();
+
+		// Train neurons
+		neuronsStagingBuffer = vk::Buffer(
+			m_TrainNeuronsBufferSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+		neuronsData = reinterpret_cast<float*>(malloc(m_TrainNeuronsBufferSize));
+		const size_t trainNeuronsCount = m_TrainNeuronsBufferSize / sizeof(float);
+
+		for (size_t i = 0; i < trainNeuronsCount; i++)
+		{
+			neuronsData[i] = 0.0f;
+		}
+		neuronsStagingBuffer.SetData(m_TrainNeuronsBufferSize, neuronsData, 0, 0);
+		vk::Buffer::Copy(&neuronsStagingBuffer, m_TrainNeuronsBuffer, m_TrainNeuronsBufferSize);
 
 		free(neuronsData);
 		neuronsStagingBuffer.Destroy();
@@ -616,35 +652,37 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Update desc set
-		std::vector<VkDescriptorBufferInfo> bufferInfos(10);
+		std::vector<VkDescriptorBufferInfo> bufferInfos(11);
 		for (size_t i = 0; i < bufferInfos.size(); i++)
 		{
 			bufferInfos[i].offset = 0;
 		}
 
-		bufferInfos[0].buffer = m_NeuronsBuffer->GetVulkanHandle();
-		bufferInfos[0].range = m_NeuronsBufferSize;
+		bufferInfos[0].buffer = m_RenderNeuronsBuffer->GetVulkanHandle();
+		bufferInfos[0].range = m_RenderNeuronsBufferSize;
+		bufferInfos[1].buffer = m_TrainNeuronsBuffer->GetVulkanHandle();
+		bufferInfos[1].range = m_TrainNeuronsBufferSize;
 
-		bufferInfos[1].buffer = m_WeightsBuffer->GetVulkanHandle();
-		bufferInfos[1].range = m_WeightsBufferSize;
-		bufferInfos[2].buffer = m_DeltaWeightsBuffer->GetVulkanHandle();
+		bufferInfos[2].buffer = m_WeightsBuffer->GetVulkanHandle();
 		bufferInfos[2].range = m_WeightsBufferSize;
-		bufferInfos[3].buffer = m_MomentumWeightsBuffer->GetVulkanHandle();
+		bufferInfos[3].buffer = m_DeltaWeightsBuffer->GetVulkanHandle();
 		bufferInfos[3].range = m_WeightsBufferSize;
+		bufferInfos[4].buffer = m_MomentumWeightsBuffer->GetVulkanHandle();
+		bufferInfos[4].range = m_WeightsBufferSize;
 
-		bufferInfos[4].buffer = m_BiasesBuffer->GetVulkanHandle();
-		bufferInfos[4].range = m_BiasesBufferSize;
-		bufferInfos[5].buffer = m_DeltaBiasesBuffer->GetVulkanHandle();
+		bufferInfos[5].buffer = m_BiasesBuffer->GetVulkanHandle();
 		bufferInfos[5].range = m_BiasesBufferSize;
-		bufferInfos[6].buffer = m_MomentumBiasesBuffer->GetVulkanHandle();
+		bufferInfos[6].buffer = m_DeltaBiasesBuffer->GetVulkanHandle();
 		bufferInfos[6].range = m_BiasesBufferSize;
+		bufferInfos[7].buffer = m_MomentumBiasesBuffer->GetVulkanHandle();
+		bufferInfos[7].range = m_BiasesBufferSize;
 
-		bufferInfos[7].buffer = m_MrheBuffer->GetVulkanHandle();
-		bufferInfos[7].range = m_MrheBufferSize;
-		bufferInfos[8].buffer = m_DeltaMrheBuffer->GetVulkanHandle();
+		bufferInfos[8].buffer = m_MrheBuffer->GetVulkanHandle();
 		bufferInfos[8].range = m_MrheBufferSize;
-		bufferInfos[9].buffer = m_MrheResolutionsBuffer->GetVulkanHandle();
-		bufferInfos[9].range = m_MrheResolutionsBufferSize;
+		bufferInfos[9].buffer = m_DeltaMrheBuffer->GetVulkanHandle();
+		bufferInfos[9].range = m_MrheBufferSize;
+		bufferInfos[10].buffer = m_MrheResolutionsBuffer->GetVulkanHandle();
+		bufferInfos[10].range = m_MrheResolutionsBufferSize;
 
 		std::vector<VkWriteDescriptorSet> writes(bufferInfos.size());
 		for (size_t i = 0; i < writes.size(); i++)

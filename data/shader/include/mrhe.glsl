@@ -76,7 +76,7 @@ void EncodePosMrhe(const vec3 normPos, const uint mrheInputBaseIndex)
 			{
 				sum += linearLerpFactor[neigh] * neighbourFeatures[(neigh * POS_FEATURE_COUNT) + feature];
 			}
-			neurons[levelBaseIndex + feature] = sum;
+			renderNeurons[levelBaseIndex + feature] = sum;
 		}
 	}
 }

@@ -35,7 +35,7 @@ void Forward(
 		// Weights
 		for (uint col = 0; col < inputLayerWidth; col++)
 		{
-			const float inputNeuronValue = neurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
+			const float inputNeuronValue = renderNeurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
 			const float weight = weights[weightsOffset + (col * outputLayerWidth) + row];
 			sum += inputNeuronValue * weight;
 		}
@@ -48,7 +48,7 @@ void Forward(
 		sum = ReLU(sum);
 
 		// Store
-		neurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row] = sum;
+		renderNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row] = sum;
 	}
 }
 
@@ -150,9 +150,9 @@ void main()
 		const ivec2 imageCoord = GlobalSampleIndexToImageCoord(globalSampleIndex);
 
 		vec3 neuralRayColor;
-		neuralRayColor.x = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 0];
-		neuralRayColor.y = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
-		neuralRayColor.z = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
+		neuralRayColor.x = renderNeurons[OUTPUT_NEURONS_INDEX + sampleOffset + 0];
+		neuralRayColor.y = renderNeurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
+		neuralRayColor.z = renderNeurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
 		
 		//neuralRayColor = vec3(float(imageCoord.x) / float(RENDER_WIDTH), float(imageCoord.y) / float(RENDER_HEIGHT), 0.0);
 		//neuralRayColor = vec3(1.0, 0.0, 0.0);

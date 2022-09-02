@@ -131,7 +131,7 @@ namespace en
 			Log::Error("Pixel count of rendering or training is not a multiple of the batch size", true);
 		}
 
-		m_Nrc.Init(static_cast<size_t>(m_FrameWidth * m_FrameHeight));
+		m_Nrc.Init(static_cast<size_t>(m_FrameWidth * m_FrameHeight), static_cast<size_t>(m_TrainWidth * m_TrainHeight));
 
 		VkDevice device = VulkanAPI::GetDevice();
 
@@ -1435,6 +1435,8 @@ namespace en
 			0, nullptr);
 
 		// Backprop pipeline
+#define NRC_HPM_BACKPROP
+#ifdef NRC_HPM_BACKPROP
 		const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
 		vkCmdDispatch(m_CommandBuffer, backpropBatchCount, 1, 1);
@@ -1461,7 +1463,7 @@ namespace en
 			1, &memoryBarrier,
 			0, nullptr,
 			0, nullptr);
-
+#endif
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
 		vkCmdDispatch(m_CommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);

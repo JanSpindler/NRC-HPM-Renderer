@@ -23,19 +23,19 @@ void Backprop(
 	for (uint outputNeuron = 0; outputNeuron < outputLayerWidth; outputNeuron++)
 	{
 		const uint neuronIndex = outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + outputNeuron;
-		const float activatedValue = neurons[neuronIndex];
-		neurons[neuronIndex] *= ReLUDeriv(activatedValue);
+		const float activatedValue = trainNeurons[neuronIndex];
+		trainNeurons[neuronIndex] *= ReLUDeriv(activatedValue);
 	}
 
 	// Calc delta weights and biases
 	for (uint row = 0; row < outputLayerWidth; row++)
 	{
-		const float outputVal = neurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
+		const float outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
 
 		// Delta weights
 		for (uint col = 0; col < inputLayerWidth; col++)
 		{
-			const float inputVal = neurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
+			const float inputVal = trainNeurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
 			const float delta = -inputVal * outputVal;
 
 			const uint weightIndex = weightsOffset + (col * outputLayerWidth) + row;
@@ -52,11 +52,11 @@ void Backprop(
 		float sum = 0.0;
 		for (uint row = 0; row < outputLayerWidth; row++)
 		{
-			const float outputVal = neurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
+			const float outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
 			const float weightVal = weights[weightsOffset + (col * outputLayerWidth) + row];
 			sum += weightVal * outputVal;
 		}
-		neurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col] = sum;
+		trainNeurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col] = sum;
 	}
 }
 

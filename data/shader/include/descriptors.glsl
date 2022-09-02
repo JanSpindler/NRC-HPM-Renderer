@@ -32,52 +32,57 @@ layout(set = 2, binding = 0) uniform dir_light_t
 } dir_light;
 
 // NN buffers
-layout(std430, set = 3, binding = 0) buffer Neurons
+layout(std430, set = 3, binding = 0) buffer RenderNeurons
 {
-	float neurons[];
+	float renderNeurons[];
 };
 
-layout(std430, set = 3, binding = 1) buffer Weights
+layout(std430, set = 3, binding = 1) buffer TrainNeurons
+{
+	float trainNeurons[];
+};
+
+layout(std430, set = 3, binding = 2) buffer Weights
 {
 	float weights[];
 };
 
-layout(std430, set = 3, binding = 2) buffer DeltaWeights
+layout(std430, set = 3, binding = 3) buffer DeltaWeights
 {
 	float deltaWeights[];
 };
 
-layout(std430, set = 3, binding = 3) buffer MomentumWeights
+layout(std430, set = 3, binding = 4) buffer MomentumWeights
 {
 	float momentumWeights[];
 };
 
-layout(std430, set = 3, binding = 4) buffer Biases
+layout(std430, set = 3, binding = 5) buffer Biases
 {
 	float biases[];
 };
 
-layout(std430, set = 3, binding = 5) buffer DeltaBiases
+layout(std430, set = 3, binding = 6) buffer DeltaBiases
 {
 	float deltaBiases[];
 };
 
-layout(std430, set = 3, binding = 6) buffer MomentumBiases
+layout(std430, set = 3, binding = 7) buffer MomentumBiases
 {
 	float momentumBiases[];
 };
 
-layout(std430, set = 3, binding = 7) buffer Mrhe
+layout(std430, set = 3, binding = 8) buffer Mrhe
 {
 	float mrhe[];
 };
 
-layout(std430, set = 3, binding = 8) buffer DeltaMrhe
+layout(std430, set = 3, binding = 9) buffer DeltaMrhe
 {
 	float deltaMrhe[];
 };
 
-layout(std430, set = 3, binding = 9) buffer MrheRes
+layout(std430, set = 3, binding = 10) buffer MrheRes
 {
 	uint mrheResolutions[];
 };

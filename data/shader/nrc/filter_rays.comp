@@ -23,9 +23,9 @@ void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 ra
 	// Encode pos
 	// Always encode direct
 	const uint directPosIndex = startIndex;
-	neurons[directPosIndex + 0] = normRayOrigin.x;
-	neurons[directPosIndex + 1] = normRayOrigin.y;
-	neurons[directPosIndex + 2] = normRayOrigin.z;
+	renderNeurons[directPosIndex + 0] = normRayOrigin.x;
+	renderNeurons[directPosIndex + 1] = normRayOrigin.y;
+	renderNeurons[directPosIndex + 2] = normRayOrigin.z;
 
 	// Encode pos frequency
 	const uint freqPosIndex = directPosIndex + 3;
@@ -34,12 +34,12 @@ void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 ra
 		for (uint freq = 0; freq < POS_FREQ_COUNT; freq++)
 		{
 			const float waveScale = pow(2.0, float(freq)) * PI;
-			neurons[freqPosIndex + (freq * 6) + 0] = sin(waveScale * normRayOrigin.x);
-			neurons[freqPosIndex + (freq * 6) + 1] = cos(waveScale * normRayOrigin.x);
-			neurons[freqPosIndex + (freq * 6) + 2] = sin(waveScale * normRayOrigin.y);
-			neurons[freqPosIndex + (freq * 6) + 3] = cos(waveScale * normRayOrigin.y);
-			neurons[freqPosIndex + (freq * 6) + 4] = sin(waveScale * normRayOrigin.z);
-			neurons[freqPosIndex + (freq * 6) + 5] = cos(waveScale * normRayOrigin.z);
+			renderNeurons[freqPosIndex + (freq * 6) + 0] = sin(waveScale * normRayOrigin.x);
+			renderNeurons[freqPosIndex + (freq * 6) + 1] = cos(waveScale * normRayOrigin.x);
+			renderNeurons[freqPosIndex + (freq * 6) + 2] = sin(waveScale * normRayOrigin.y);
+			renderNeurons[freqPosIndex + (freq * 6) + 3] = cos(waveScale * normRayOrigin.y);
+			renderNeurons[freqPosIndex + (freq * 6) + 4] = sin(waveScale * normRayOrigin.z);
+			renderNeurons[freqPosIndex + (freq * 6) + 5] = cos(waveScale * normRayOrigin.z);
 		}
 	}
 
@@ -62,8 +62,8 @@ void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 ra
 	}
 
 	// Encode dir direct
-	neurons[directDirIndex + 0] = phi;
-	neurons[directDirIndex + 1] = theta;
+	renderNeurons[directDirIndex + 0] = phi;
+	renderNeurons[directDirIndex + 1] = theta;
 
 	// Encode dir freq
 	const uint freqDirIndex = directDirIndex + 2;
@@ -72,10 +72,10 @@ void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 ra
 		for (uint freq = 0; freq < DIR_FREQ_COUNT; freq++)
 		{
 			const float waveScale = pow(2.0, float(freq)); // No PI because PI is in phi and theta
-			neurons[freqDirIndex + (freq * 4) + 0] = sin(waveScale * phi);
-			neurons[freqDirIndex + (freq * 4) + 1] = cos(waveScale * phi);
-			neurons[freqDirIndex + (freq * 4) + 2] = sin(waveScale * theta);
-			neurons[freqDirIndex + (freq * 4) + 3] = cos(waveScale * theta);
+			renderNeurons[freqDirIndex + (freq * 4) + 0] = sin(waveScale * phi);
+			renderNeurons[freqDirIndex + (freq * 4) + 1] = cos(waveScale * phi);
+			renderNeurons[freqDirIndex + (freq * 4) + 2] = sin(waveScale * theta);
+			renderNeurons[freqDirIndex + (freq * 4) + 3] = cos(waveScale * theta);
 		}
 	}
 
@@ -89,8 +89,8 @@ void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 ra
 		for (uint feature = 0; feature < DIR_FEATURE_COUNT; feature++)
 		{
 			const float angleSample = float(feature) / float(DIR_FEATURE_COUNT);
-			neurons[oneBlobDirIndex + (feature * 2) + 0] = NormGauss(angleSample, normPhi, ONE_OVER_DIR_FEATURE_COUNT);
-			neurons[oneBlobDirIndex + (feature * 2) + 1] = NormGauss(angleSample, normTheta, ONE_OVER_DIR_FEATURE_COUNT);
+			renderNeurons[oneBlobDirIndex + (feature * 2) + 0] = NormGauss(angleSample, normPhi, ONE_OVER_DIR_FEATURE_COUNT);
+			renderNeurons[oneBlobDirIndex + (feature * 2) + 1] = NormGauss(angleSample, normTheta, ONE_OVER_DIR_FEATURE_COUNT);
 		}
 	}
 }

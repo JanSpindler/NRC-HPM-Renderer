@@ -39,7 +39,7 @@ namespace en
 		void SetDirFrequencyEncoding(uint32_t freqCount);
 		void SetDirOneBlobEncoding(uint32_t featureCount);
 
-		void Init(size_t pixelCount);
+		void Init(size_t renderSampleCount, size_t trainSampleCount);
 
 		void Destroy();
 
@@ -67,9 +67,9 @@ namespace en
 		size_t GetBiasesCount() const;
 		size_t GetMrheCount() const;
 
-		VkBuffer GetNeuronsBufferVulkanHandle() const;
+		//VkBuffer GetRenderNeuronsBufferVulkanHandle() const;
 
-		size_t GetNeuronsBufferSize() const;
+		//size_t GetRenderNeuronsBufferSize() const;
 
 		VkDescriptorSet GetDescriptorSet() const;
 
@@ -97,7 +97,8 @@ namespace en
 		float m_MrheLearningRate;
 		uint32_t m_BatchSize;
 
-		vk::Buffer* m_NeuronsBuffer;
+		vk::Buffer* m_RenderNeuronsBuffer;
+		vk::Buffer* m_TrainNeuronsBuffer;
 
 		vk::Buffer* m_WeightsBuffer;
 		vk::Buffer* m_DeltaWeightsBuffer;
@@ -115,7 +116,8 @@ namespace en
 		size_t m_BiasesCount;
 		size_t m_MrheCount;
 
-		size_t m_NeuronsBufferSize;
+		size_t m_RenderNeuronsBufferSize;
+		size_t m_TrainNeuronsBufferSize;
 		size_t m_WeightsBufferSize;
 		size_t m_BiasesBufferSize;
 		size_t m_MrheBufferSize;
@@ -123,7 +125,7 @@ namespace en
 
 		VkDescriptorSet m_DescSet;
 
-		void InitNn(size_t pixelCount);
+		void InitNn(size_t renderSampleCount, size_t trainSampleCount);
 		void CreateNnBuffers();
 		void FillNnBuffers();
 		
