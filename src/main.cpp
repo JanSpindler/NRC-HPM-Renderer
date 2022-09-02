@@ -147,7 +147,7 @@ void RunNrcHpm()
 
 	en::NeuralRadianceCache nrc(32, 16, 0.001f, 128); // Batch size is multiple of 128
 	nrc.SetPosFrequencyEncoding(4);
-	//nrc.SetPosMrheEncoding(16, 512, 8, 16384, 4, 0.01f);
+	nrc.SetPosMrheEncoding(16, 512, 8, 16384, 4, 0.01f);
 	nrc.SetDirFrequencyEncoding(4);
 	nrc.SetDirOneBlobEncoding(4);
 	

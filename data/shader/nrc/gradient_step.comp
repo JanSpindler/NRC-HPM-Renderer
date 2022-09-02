@@ -1,6 +1,8 @@
 #version 460
 #include "common.glsl"
 
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
 void StepWeights(const uint index)
 {
 	if (index >= TOTAL_WEIGHTS_COUNT)

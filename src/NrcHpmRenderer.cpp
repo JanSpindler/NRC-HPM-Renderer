@@ -1396,7 +1396,7 @@ namespace en
 
 		// Gen rays pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);
+		vkCmdDispatch(m_CommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
 
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,
@@ -1454,7 +1454,7 @@ namespace en
 		// Gradient step pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientStepPipeline);
 		const size_t gradientStepCount = std::max(m_Nrc.GetWeightsCount(), std::max(m_Nrc.GetBiasesCount(), m_Nrc.GetMrheCount()));
-		vkCmdDispatch(m_CommandBuffer, static_cast<uint32_t>(gradientStepCount), 1, 1);
+		vkCmdDispatch(m_CommandBuffer, static_cast<uint32_t>(gradientStepCount) / 32, 1, 1);
 
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,
@@ -1467,7 +1467,7 @@ namespace en
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);
+		vkCmdDispatch(m_CommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
 
 		// End
 		result = vkEndCommandBuffer(m_CommandBuffer);

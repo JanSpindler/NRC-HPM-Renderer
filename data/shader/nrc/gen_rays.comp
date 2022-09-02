@@ -1,6 +1,8 @@
 #version 460
 #include "common.glsl"
 
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
 ivec2 imageCoord;
 
 #define TRUE_TRACE_SAMPLE_COUNT 32
