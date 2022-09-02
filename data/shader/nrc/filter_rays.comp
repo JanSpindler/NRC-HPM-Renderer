@@ -9,9 +9,9 @@ void LoadNeuralRayFromImages(const ivec2 imageCoord, out vec3 rayOrigin, out vec
 	rayDir = imageLoad(nrcNeuralRayDirImage, imageCoord).xyz;
 }
 
-void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
+void EncodeRay(const uint globalSampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 {
-	const uint startIndex = sampleIndex * INPUT_FEATURE_COUNT;
+	const uint startIndex = globalSampleIndex * INPUT_FEATURE_COUNT;
 
 	// Norm ray origin
 	const vec3 normRayOrigin = (rayOrigin / skySize) + vec3(0.5);
