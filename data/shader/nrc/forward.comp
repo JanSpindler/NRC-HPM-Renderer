@@ -4,11 +4,10 @@
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 // Row major
-ivec2 BatchSampleToImageCoord(const uint batchIndex, const uint sampleIndex)
+ivec2 GlobalSampleIndexToImageCoord(const uint globalSampleIndex)
 {
-	const uint linearIndex = (batchIndex * BATCH_SIZE) + sampleIndex;
-	const uint y = linearIndex / RENDER_WIDTH;
-	const uint x = linearIndex % RENDER_WIDTH;
+	const uint y = globalSampleIndex / RENDER_WIDTH;
+	const uint x = globalSampleIndex % RENDER_WIDTH;
 	const ivec2 imageCoord = ivec2(x, y);
 	return imageCoord;
 }
@@ -18,88 +17,118 @@ float ReLU(float x)
 	return max(0.0, x);
 }
 
-void ForwardInputToFirstHidden(const uint sampleIndex)
+void Forward(
+	const uint globalSampleIndex,
+	const uint inputNeuronOffset,
+	const uint weightsOffset,
+	const uint biasesOffset,
+	const uint outputNeuronOffset,
+	const uint inputLayerWidth,
+	const uint outputLayerWidth)
 {
-	for (uint row = 0; row < LAYER_WIDTH; row++)
+	// Row and col are relative to weight matrix
+	for (uint row = 0; row < outputLayerWidth; row++)
 	{
+		// Init
 		float sum = 0.0;
-		for (uint col = 0; col < INPUT_FEATURE_COUNT; col++)
+
+		// Weights
+		for (uint col = 0; col < inputLayerWidth; col++)
 		{
-			const float feature = neurons[(sampleIndex * INPUT_FEATURE_COUNT) + col];
-			const float weight = weights[(col * LAYER_WIDTH) + row];
-			sum += feature * weight;
+			const float inputNeuronValue = neurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
+			const float weight = weights[weightsOffset + (col * outputLayerWidth) + row];
+			sum += inputNeuronValue * weight;
 		}
-		sum += biases[row];
+		
+		// Biases
+		const float bias = biases[biasesOffset + row];
+		sum += bias;
+
+		// Activation
 		sum = ReLU(sum);
 
-		neurons[(BATCH_SIZE * INPUT_FEATURE_COUNT) + (sampleIndex * LAYER_WIDTH) + row] = sum;
+		// Store
+		neurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row] = sum;
 	}
 }
 
-void ForwardHiddenToNextHidden(const uint sampleIndex, const uint hiddenLayerIndex)
+void ForwardInputToFirstHidden(const uint globalSampleIndex)
 {
-	const uint inputNeuronsOffset = BATCH_SIZE * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * hiddenLayerIndex));
+	const uint inputNeuronOffset = 0;
+	const uint weightsOffset = 0;
+	const uint biasesOffset = 0;
+	const uint outputNeuronOffset = INPUT_FEATURE_COUNT * RENDER_SAMPLE_COUNT;
+	const uint inputLayerWidth = INPUT_FEATURE_COUNT;
+	const uint outputLayerWidth = LAYER_WIDTH;
+
+	Forward(
+		globalSampleIndex,
+		inputNeuronOffset,
+		weightsOffset,
+		biasesOffset,
+		outputNeuronOffset,
+		inputLayerWidth,
+		outputLayerWidth);
+}
+
+void ForwardHiddenToNextHidden(const uint globalSampleIndex, const uint hiddenLayerIndex)
+{
+	const uint inputNeuronOffset = RENDER_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * hiddenLayerIndex));
 	const uint weightsOffset = (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * hiddenLayerIndex);
 	const uint biasesOffset = LAYER_WIDTH * (hiddenLayerIndex + 1);
-	const uint outputNeuronsOffset = inputNeuronsOffset + (BATCH_SIZE * LAYER_WIDTH);
+	const uint outputNeuronOffset = inputNeuronOffset + (RENDER_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint inputLayerWidth = LAYER_WIDTH;
+	const uint outputLayerWidth = LAYER_WIDTH;
 
-	for (uint row = 0; row < LAYER_WIDTH; row++)
-	{
-		float sum = 0.0;
-		for (uint col = 0; col < LAYER_WIDTH; col++)
-		{
-			const float feature = neurons[inputNeuronsOffset + (sampleIndex * LAYER_WIDTH) + col];
-			const float weight = weights[weightsOffset + (col * LAYER_WIDTH) + row];
-			sum += feature * weight;
-		}
-		sum += biases[biasesOffset + row];
-		sum = ReLU(sum);
-
-		neurons[outputNeuronsOffset + (sampleIndex * LAYER_WIDTH) + row] = sum;
-	}
+	Forward(
+		globalSampleIndex,
+		inputNeuronOffset,
+		weightsOffset,
+		biasesOffset,
+		outputNeuronOffset,
+		inputLayerWidth,
+		outputLayerWidth);
 }
 
-void ForwardLastHiddenToOutput(const uint sampleIndex)
+void ForwardLastHiddenToOutput(const uint globalSampleIndex)
 {
-	const uint inputNeuronsOffset = BATCH_SIZE * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
-	const uint weightsOffset = (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * LAYER_COUNT);
+	const uint inputNeuronOffset = RENDER_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
+	const uint weightsOffset =  (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * LAYER_COUNT);
 	const uint biasesOffset = LAYER_WIDTH * LAYER_COUNT;
-	const uint outputNeuronsOffset = inputNeuronsOffset + (BATCH_SIZE * LAYER_WIDTH);
+	const uint outputNeuronOffset = inputNeuronOffset + (RENDER_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint inputLayerWidth = LAYER_WIDTH;
+	const uint outputLayerWidth = 3;
 
-	for (uint row = 0; row < 3; row++)
-	{
-		float sum = 0.0;
-		for (uint col = 0; col < LAYER_WIDTH; col++)
-		{
-			const float feature = neurons[inputNeuronsOffset + (sampleIndex * LAYER_WIDTH) + col];
-			const float weight = weights[weightsOffset + (col * 3) + row];
-			sum += feature * weight;
-		}
-		sum += biases[biasesOffset + row];
-		sum = ReLU(sum);
-
-		neurons[outputNeuronsOffset + (sampleIndex * 3) + row] = sum;
-	}
+	Forward(
+		globalSampleIndex,
+		inputNeuronOffset,
+		weightsOffset,
+		biasesOffset,
+		outputNeuronOffset,
+		inputLayerWidth,
+		outputLayerWidth);
 }
 
-void Forward(const uint sampleIndex)
+void Forward(const uint batchIndex, const uint sampleIndex)
 {
-	ForwardInputToFirstHidden(sampleIndex);
+	const uint globalSampleIndex = (batchIndex * BATCH_SIZE) + sampleIndex;
+
+	ForwardInputToFirstHidden(globalSampleIndex);
 	for (uint hiddenLayerIndex = 0; hiddenLayerIndex < LAYER_COUNT - 1; hiddenLayerIndex++)
 	{
-		ForwardHiddenToNextHidden(sampleIndex, hiddenLayerIndex);
+		ForwardHiddenToNextHidden(globalSampleIndex, hiddenLayerIndex);
 	}
-	ForwardLastHiddenToOutput(sampleIndex);
+	ForwardLastHiddenToOutput(globalSampleIndex);
 }
 
 const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
 
-void Forward()
+void Forward(const uint batchIndex)
 {
 	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
 	{
 		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
-		Forward(sampleIndex);
+		Forward(batchIndex, sampleIndex);
 	}
 }
 
@@ -108,22 +137,24 @@ void main()
 	const uint batchIndex = gl_WorkGroupID.x;
 
 	subgroupBarrier();
-	Forward();
+	Forward(batchIndex);
 	subgroupBarrier();
 
 	// Write neural ray color to image
 	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
 	{
 		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
+		const uint globalSampleIndex = (batchIndex * BATCH_SIZE) + sampleIndex;
+		
 		const uint sampleOffset = sampleIndex * 3;
-		const ivec2 imageCoord = BatchSampleToImageCoord(batchIndex, sampleIndex);
+		const ivec2 imageCoord = GlobalSampleIndexToImageCoord(globalSampleIndex);
 
 		vec3 neuralRayColor;
 		neuralRayColor.x = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 0];
 		neuralRayColor.y = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
 		neuralRayColor.z = neurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
 		
-		//neuralRayColor = vec3(float(imageCoords[sampleIndex].x) / float(RENDER_WIDTH), float(imageCoords[sampleIndex].y) / float(RENDER_HEIGHT), 0.0);
+		//neuralRayColor = vec3(float(imageCoord.x) / float(RENDER_WIDTH), float(imageCoord.y) / float(RENDER_HEIGHT), 0.0);
 		//neuralRayColor = vec3(1.0, 0.0, 0.0);
 
 		imageStore(nrcNeuralRayColorImage, imageCoord, vec4(neuralRayColor, 1.0));

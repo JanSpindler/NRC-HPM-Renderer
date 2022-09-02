@@ -1,6 +1,45 @@
 #version 460
 #include "common.glsl"
 
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
+
+void BackpropOutputLayer(const uint globalSampleIndex)
+{
+}
+
+void BackpropHiddenLayer(const uint globalSampleIndex, const uint hiddenIndex)
+{
+}
+
+void BackpropInputLayer(const uint globalSampleIndex)
+{
+}
+
+void Backprop(const uint batchIndex, const uint sampleIndex)
+{
+	const uint globalSampleIndex = (batchIndex * BATCH_SIZE) + sampleIndex;
+		
+	BackpropOutputLayer(globalSampleIndex);
+	for (int hiddenLayerIndex = int(LAYER_COUNT - 2); hiddenLayerIndex >= 0; hiddenLayerIndex--)
+	{
+		BackpropHiddenLayer(globalSampleIndex, hiddenLayerIndex);
+	}
+	BackpropInputLayer(globalSampleIndex);
+}
+
+void Backprop(const uint batchIndex)
+{
+	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
+	{
+		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
+		Backprop(batchIndex, sampleIndex);
+	}
+}
+
 void main()
 {
+	const uint batchIndex = gl_WorkGroupID.x;
+	Backprop(batchIndex);
 }

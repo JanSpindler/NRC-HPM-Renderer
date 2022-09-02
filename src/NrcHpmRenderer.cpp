@@ -1435,21 +1435,18 @@ namespace en
 			0, nullptr);
 
 		// Backprop pipeline
-		//const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
-		//vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
-		//for (uint32_t batch = 0; batch < backpropBatchCount; batch++)
-		//{
-		//	vkCmdDispatchBase(m_CommandBuffer, batch, 0, 0, 1, 1, 1);
-		//}
-		//
-		//vkCmdPipelineBarrier(
-		//	m_CommandBuffer,
-		//	VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		//	VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		//	VK_DEPENDENCY_DEVICE_GROUP_BIT,
-		//	1, &memoryBarrier,
-		//	0, nullptr,
-		//	0, nullptr);
+		const uint32_t backpropBatchCount = (m_TrainWidth * m_TrainHeight) / m_Nrc.GetBatchSize();
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_BackpropPipeline);
+		vkCmdDispatch(m_CommandBuffer, backpropBatchCount, 1, 1);
+		
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_DEPENDENCY_DEVICE_GROUP_BIT,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
 
 		// Gradient step pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientStepPipeline);
