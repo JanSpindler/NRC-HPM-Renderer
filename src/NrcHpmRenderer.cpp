@@ -1230,7 +1230,7 @@ namespace en
 		imageCI.flags = 0;
 		imageCI.imageType = VK_IMAGE_TYPE_2D;
 		imageCI.format = format;
-		imageCI.extent = { m_FrameWidth, m_FrameHeight, 1 };
+		imageCI.extent = { m_TrainWidth, m_TrainHeight, 1 };
 		imageCI.mipLevels = 1;
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;

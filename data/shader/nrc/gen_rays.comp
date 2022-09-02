@@ -5,7 +5,7 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 ivec2 imageCoord;
 
-#define TRUE_TRACE_SAMPLE_COUNT 32
+#define PATH_SAMPLE_COUNT 32
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 {
 	vec3 scatteredLight = vec3(0.0);
@@ -22,7 +22,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 	float totalTermProb = 1.0;
 
 	didScatter = false;
-	for (uint i = 0; i < TRUE_TRACE_SAMPLE_COUNT; i++)
+	for (uint i = 0; i < PATH_SAMPLE_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
 
