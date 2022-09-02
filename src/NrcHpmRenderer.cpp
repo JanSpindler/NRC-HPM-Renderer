@@ -1409,7 +1409,7 @@ namespace en
 
 		// Filter rays pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_FilterRaysPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_FrameWidth, m_FrameHeight, 1);
+		vkCmdDispatch(m_CommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1); // Divided by 32 because of subgroup
 
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,

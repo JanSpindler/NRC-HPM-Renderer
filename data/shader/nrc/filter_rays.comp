@@ -97,7 +97,7 @@ void EncodeRay(const uint sampleIndex, const vec3 rayOrigin, const vec3 rayDir)
 
 void main()
 {
-	const ivec2 imageCoord = ivec2(gl_WorkGroupID.xy);
+	const ivec2 imageCoord = ivec2(gl_GlobalInvocationID.xy);
 	const uint linearPixelIndex = (imageCoord.y * RENDER_WIDTH) + imageCoord.x;
 
 	vec3 rayOrigin;
