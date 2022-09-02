@@ -150,9 +150,9 @@ void main()
 		const ivec2 imageCoord = GlobalSampleIndexToImageCoord(globalSampleIndex);
 
 		vec3 neuralRayColor;
-		neuralRayColor.x = renderNeurons[OUTPUT_NEURONS_INDEX + sampleOffset + 0];
-		neuralRayColor.y = renderNeurons[OUTPUT_NEURONS_INDEX + sampleOffset + 1];
-		neuralRayColor.z = renderNeurons[OUTPUT_NEURONS_INDEX + sampleOffset + 2];
+		neuralRayColor.x = renderNeurons[RENDER_OUTPUT_NEURONS_INDEX + sampleOffset + 0];
+		neuralRayColor.y = renderNeurons[RENDER_OUTPUT_NEURONS_INDEX + sampleOffset + 1];
+		neuralRayColor.z = renderNeurons[RENDER_OUTPUT_NEURONS_INDEX + sampleOffset + 2];
 		
 		//neuralRayColor = vec3(float(imageCoord.x) / float(RENDER_WIDTH), float(imageCoord.y) / float(RENDER_HEIGHT), 0.0);
 		//neuralRayColor = vec3(1.0, 0.0, 0.0);
