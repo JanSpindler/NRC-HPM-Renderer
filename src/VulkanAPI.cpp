@@ -10,6 +10,7 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
+#include <engine/graphics/renderer/RestirHpmRenderer.hpp>
 
 namespace en
 {
@@ -47,12 +48,16 @@ namespace en
 		PointLight::Init(m_Device);
 		HdrEnvMap::Init(m_Device);
 		NrcHpmRenderer::Init(m_Device);
+		RestirHpmRenderer::Init(m_Device);
+		VolumeReservoir::Init(m_Device);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
+		VolumeReservoir::Shutdown(m_Device);
+		RestirHpmRenderer::Shutdown(m_Device);
 		NrcHpmRenderer::Shutdown(m_Device);
 		HdrEnvMap::Shutdown(m_Device);
 		PointLight::Shutdown(m_Device);

@@ -1,0 +1,7 @@
+#version 460
+#define RESTIR
+#include "common.glsl"
+
+void main()
+{
+}

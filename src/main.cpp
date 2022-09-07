@@ -16,8 +16,18 @@
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
+#include <engine/graphics/renderer/RestirHpmRenderer.hpp>
 
-en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
+//#define NRC
+#define RESTIR
+
+#ifdef NRC
+en::NrcHpmRenderer* hpmRenderer = nullptr;
+#endif
+
+#ifdef RESTIR
+en::RestirHpmRenderer* hpmRenderer = nullptr;
+#endif
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -44,7 +54,7 @@ void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	if (nrcHpmRenderer != nullptr && en::ImGuiRenderer::IsInitialized())
+	if (hpmRenderer != nullptr && en::ImGuiRenderer::IsInitialized())
 	{
 		VkImageCopy imageCopy;
 		imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -93,9 +103,10 @@ void SwapchainResizeCallback()
 	uint32_t height = en::Window::GetHeight();
 	//nrcHpmRenderer->ResizeFrame(width, height);
 	en::ImGuiRenderer::Resize(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
 }
 
+#ifdef NRC
 void RunNrcHpm()
 {
 	std::string appName("NRC-HPM-Renderer");
@@ -151,7 +162,7 @@ void RunNrcHpm()
 	nrc.SetDirFrequencyEncoding(4);
 	nrc.SetDirOneBlobEncoding(4);
 	
-	nrcHpmRenderer = new en::NrcHpmRenderer(
+	hpmRenderer = new en::NrcHpmRenderer(
 		width, height,
 		128, 128, // Multiple of 128
 		camera,
@@ -160,7 +171,7 @@ void RunNrcHpm()
 		nrc);
 
 	en::ImGuiRenderer::Init(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
 
 	swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
 
@@ -207,7 +218,7 @@ void RunNrcHpm()
 		camera.UpdateUniformBuffer();
 
 		//nrc.ResetStats();
-		nrcHpmRenderer->Render(graphicsQueue);
+		hpmRenderer->Render(graphicsQueue);
 		result = vkQueueWaitIdle(graphicsQueue);
 		ASSERT_VULKAN(result);
 
@@ -246,8 +257,8 @@ void RunNrcHpm()
 	// End
 	en::ImGuiRenderer::Shutdown();
 
-	nrcHpmRenderer->Destroy();
-	delete nrcHpmRenderer;
+	hpmRenderer->Destroy();
+	delete hpmRenderer;
 	
 	nrc.Destroy();
 
@@ -268,10 +279,168 @@ void RunNrcHpm()
 
 	en::Log::Info("Ending " + appName);
 }
+#endif
+
+#ifdef RESTIR
+void RunRestirHpm()
+{
+	std::string appName("NRC-HPM-Renderer");
+	uint32_t width = 768; // Multiple of 128 for nrc batch size
+	uint32_t height = width;
+
+	// Start engine
+	en::Log::Info("Starting " + appName);
+
+	en::Window::Init(width, height, false, appName);
+	en::Input::Init(en::Window::GetGLFWHandle());
+	en::VulkanAPI::Init(appName);
+
+	// Lighting
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 1.5f);
+	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
+
+	int hdrWidth, hdrHeight;
+	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
+	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
+	en::HdrEnvMap hdrEnvMap(
+		0.0f,
+		hdrWidth,
+		hdrHeight,
+		hdr4fData,
+		hdrCdf[0],
+		hdrCdf[1]);
+
+	// Load data
+	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
+	en::vk::Texture3D density3DTex(
+		density3D,
+		VK_FILTER_LINEAR,
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+		VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+	en::VolumeData volumeData(&density3DTex);
+
+	// Setup rendering
+	en::Camera camera(
+		glm::vec3(0.0f, 0.0f, -64.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		static_cast<float>(width) / static_cast<float>(height),
+		glm::radians(60.0f),
+		0.1f,
+		100.0f);
+
+	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
+	
+	en::VolumeReservoir volumeReservoir;
+	hpmRenderer = new en::RestirHpmRenderer(width, height, camera, volumeData, dirLight, pointLight, hdrEnvMap, volumeReservoir);
+
+	en::ImGuiRenderer::Init(width, height);
+	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
+
+	swapchain.Resize(width, height); // Rerecords commandbuffers (needs to be called if renderer are created)
+
+	// Main loop
+	bool cameraTraining = false;
+	bool nrcTraining = true;
+
+	VkDevice device = en::VulkanAPI::GetDevice();
+	VkQueue graphicsQueue = en::VulkanAPI::GetGraphicsQueue();
+	VkResult result;
+	size_t counter = 0;
+	while (!en::Window::IsClosed())
+	{
+		if (counter % 100 == 0)
+		{
+			//nrc.PrintWeights();
+			//mrhe.PrintHashTables();
+		}
+
+		// Update
+		en::Window::Update();
+		en::Input::Update();
+		en::Time::Update();
+
+		width = en::Window::GetWidth();
+		height = en::Window::GetHeight();
+
+		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
+		uint32_t fps = en::Time::GetFps();
+
+		if (cameraTraining)
+		{
+			camera.RotateAroundOrigin(glm::vec3(0.0, 1.0, 0.0), 0.1f);
+		}
+		else
+		{
+			en::Input::HandleUserCamInput(&camera, deltaTime);
+		}
+
+		en::Window::SetTitle(appName + " | Delta time: " + std::to_string(deltaTime) + "s | Fps: " + std::to_string(fps));
+
+		// Physics
+		camera.SetAspectRatio(width, height);
+		camera.UpdateUniformBuffer();
+
+		// ImGui
+		en::ImGuiRenderer::StartFrame();
+
+		volumeData.RenderImGui();
+		volumeData.Update(camera.HasChanged());
+		dirLight.RenderImgui();
+		pointLight.RenderImGui();
+		hdrEnvMap.RenderImGui();
+
+		ImGui::Begin("Train Nrc");
+
+		ImGui::Checkbox("Camera Training", &cameraTraining);
+
+		ImGui::End();
+
+		en::ImGuiRenderer::EndFrame(graphicsQueue);
+		result = vkQueueWaitIdle(graphicsQueue);
+		ASSERT_VULKAN(result);
+
+		swapchain.DrawAndPresent();
+
+		counter++;
+	}
+	result = vkDeviceWaitIdle(device);
+	ASSERT_VULKAN(result);
+
+	// End
+	en::ImGuiRenderer::Shutdown();
+
+	swapchain.Destroy(true);
+
+	hpmRenderer->Destroy();
+
+	volumeReservoir.Destroy();
+
+	camera.Destroy();
+
+	density3DTex.Destroy();
+	volumeData.Destroy();
+
+	hdrEnvMap.Destroy();
+	pointLight.Destroy();
+	dirLight.Destroy();
+
+	en::VulkanAPI::Shutdown();
+	en::Window::Shutdown();
+
+	en::Log::Info("Ending " + appName);
+}
+#endif
 
 int main()
 {
+#ifdef NRC
 	RunNrcHpm();
-	
+#endif
+
+#ifdef RESTIR
+	RunRestirHpm();
+#endif
+
 	return 0;
 }

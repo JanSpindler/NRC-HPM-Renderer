@@ -1,3 +1,5 @@
+#pragma once
+
 #include <engine/graphics/Camera.hpp>
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/DirLight.hpp>

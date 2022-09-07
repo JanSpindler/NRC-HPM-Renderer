@@ -1,6 +1,17 @@
 #include "extensions.glsl"
-#include "descriptors.glsl"
-#include "constants.glsl"
+
+#ifdef NRC
+#include "nrc-descriptors.glsl"
+#include "nrc-constants.glsl"
+#include "mrhe.glsl"
+#include "oneblob.glsl"
+#endif
+
+#ifdef RESTIR
+#include "restir-descriptors.glsl"
+#include "restir-constants.glsl"
+#endif
+
 #include "defines.glsl"
 #include "random.glsl"
 #include "volume.glsl"
@@ -8,5 +19,3 @@
 #include "path_trace.glsl"
 #include "nvnn.glsl"
 //#include "nn.glsl"
-#include "mrhe.glsl"
-#include "oneblob.glsl"
