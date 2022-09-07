@@ -161,6 +161,24 @@ namespace en
 
 	void RestirHpmRenderer::InitSpecializationConstants()
 	{
+		// Fill specialization data
+		m_SpecData.renderWidth = m_Width;
+		m_SpecData.renderHeight = m_Height;
+
+		// Fill map entries
+		VkSpecializationMapEntry renderWidthEntry;
+		renderWidthEntry.constantID = 0;
+		renderWidthEntry.offset = offsetof(SpecializationData, SpecializationData::renderWidth);
+		renderWidthEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry renderHeightEntry;
+		renderHeightEntry.constantID = 1;
+		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
+		renderHeightEntry.size = sizeof(uint32_t);
+
+		m_SpecMapEntries = { renderWidthEntry, renderHeightEntry };
+
+		// Update specialization info
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
 		m_SpecInfo.pMapEntries = m_SpecMapEntries.data();
 		m_SpecInfo.dataSize = sizeof(SpecializationData);
