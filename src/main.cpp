@@ -349,12 +349,6 @@ void RunRestirHpm()
 	size_t counter = 0;
 	while (!en::Window::IsClosed())
 	{
-		if (counter % 100 == 0)
-		{
-			//nrc.PrintWeights();
-			//mrhe.PrintHashTables();
-		}
-
 		// Update
 		en::Window::Update();
 		en::Input::Update();
@@ -380,6 +374,11 @@ void RunRestirHpm()
 		// Physics
 		camera.SetAspectRatio(width, height);
 		camera.UpdateUniformBuffer();
+
+		// Render hpm
+		hpmRenderer->Render(graphicsQueue);
+		result = vkQueueWaitIdle(graphicsQueue);
+		ASSERT_VULKAN(result);
 
 		// ImGui
 		en::ImGuiRenderer::StartFrame();

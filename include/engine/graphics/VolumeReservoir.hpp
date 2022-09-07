@@ -26,5 +26,7 @@ namespace en
 		VkDescriptorSet m_DescSet;
 
 		void InitReservoir();
+
+		void AllocateAndUpdateDescriptorSet(VkDevice device);
 	};
 }

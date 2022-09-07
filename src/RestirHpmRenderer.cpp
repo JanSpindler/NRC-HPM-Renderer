@@ -86,6 +86,10 @@ namespace en
 		CreateRenderPipeline(device);
 
 		CreateOutputImage(device);
+
+		AllocateAndUpdateDescriptorSet(device);
+	
+		RecordCommandBuffer();
 	}
 
 	void RestirHpmRenderer::Render(VkQueue queue)
@@ -294,7 +298,37 @@ namespace en
 
 	void RestirHpmRenderer::AllocateAndUpdateDescriptorSet(VkDevice device)
 	{
-		std::vector<VkWriteDescriptorSet> writes = {};
+		// Allocate descriptor set
+		VkDescriptorSetAllocateInfo descSetAI;
+		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descSetAI.pNext = nullptr;
+		descSetAI.descriptorPool = m_DescPool;
+		descSetAI.descriptorSetCount = 1;
+		descSetAI.pSetLayouts = &m_DescSetLayout;
+
+		VkResult result = vkAllocateDescriptorSets(device, &descSetAI, &m_DescSet);
+		ASSERT_VULKAN(result);
+
+		// Output image
+		VkDescriptorImageInfo outputImageInfo;
+		outputImageInfo.sampler = VK_NULL_HANDLE;
+		outputImageInfo.imageView = m_OutputImageView;
+		outputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet outputImageWrite;
+		outputImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		outputImageWrite.pNext = nullptr;
+		outputImageWrite.dstSet = m_DescSet;
+		outputImageWrite.dstBinding = 0;
+		outputImageWrite.dstArrayElement = 0;
+		outputImageWrite.descriptorCount = 1;
+		outputImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		outputImageWrite.pImageInfo = &outputImageInfo;
+		outputImageWrite.pBufferInfo = nullptr;
+		outputImageWrite.pTexelBufferView = nullptr;
+
+		// Update descriptor set
+		std::vector<VkWriteDescriptorSet> writes = { outputImageWrite };
 		
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
@@ -337,7 +371,7 @@ namespace en
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_Width / 32, m_Height, 1);
+		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 8, 1);
 
 		// End
 		result = vkEndCommandBuffer(m_CommandBuffer);

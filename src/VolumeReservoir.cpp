@@ -60,6 +60,7 @@ namespace en
 	VolumeReservoir::VolumeReservoir()
 	{
 		InitReservoir();
+		AllocateAndUpdateDescriptorSet(VulkanAPI::GetDevice());
 	}
 
 	void VolumeReservoir::Destroy()
@@ -80,5 +81,42 @@ namespace en
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
 			{});
+	}
+
+	void VolumeReservoir::AllocateAndUpdateDescriptorSet(VkDevice device)
+	{
+		// Allocate descriptor set
+		VkDescriptorSetAllocateInfo descSetAI;
+		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descSetAI.pNext = nullptr;
+		descSetAI.descriptorPool = m_DescPool;
+		descSetAI.descriptorSetCount = 1;
+		descSetAI.pSetLayouts = &m_DescSetLayout;
+
+		VkResult result = vkAllocateDescriptorSets(device, &descSetAI, &m_DescSet);
+		ASSERT_VULKAN(result);
+
+		// Reservoir buffer
+		VkDescriptorBufferInfo reservoirBufferInfo;
+		reservoirBufferInfo.buffer = m_ReservoirBuffer->GetVulkanHandle();
+		reservoirBufferInfo.offset = 0;
+		reservoirBufferInfo.range = 1;
+
+		VkWriteDescriptorSet reservoirBufferWrite;
+		reservoirBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		reservoirBufferWrite.pNext = nullptr;
+		reservoirBufferWrite.dstSet = m_DescSet;
+		reservoirBufferWrite.dstBinding = 0;
+		reservoirBufferWrite.dstArrayElement = 0;
+		reservoirBufferWrite.descriptorCount = 1;
+		reservoirBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		reservoirBufferWrite.pImageInfo = nullptr;
+		reservoirBufferWrite.pBufferInfo = &reservoirBufferInfo;
+		reservoirBufferWrite.pTexelBufferView = nullptr;
+
+		// Update descriptor set
+		std::vector<VkWriteDescriptorSet> writes = { reservoirBufferWrite };
+
+		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
 }

@@ -2,6 +2,10 @@
 #define RESTIR
 #include "common.glsl"
 
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
 void main()
 {
+	const ivec2 imageCoord = ivec2(gl_GlobalInvocationID);
+	imageStore(outputImage, imageCoord, vec4(1.0));
 }
