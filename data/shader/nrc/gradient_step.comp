@@ -10,6 +10,11 @@ void StepWeights(const uint index, const float learningRate)
 		return;
 	}
 
+	if (deltaWeights[index] != 0.0)
+	{
+		debugPrintfEXT("%f", deltaWeights[index]);
+	}
+
 	weights[index] += learningRate * deltaWeights[index];
 	deltaWeights[index] = 0.0;
 }
@@ -40,7 +45,7 @@ void main()
 {
 	const uint index = gl_GlobalInvocationID.x;
 
-	const float nrcLearningRate = NRC_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT;
+	const float nrcLearningRate = NRC_LEARNING_RATE;// * ONE_OVER_TRAIN_SAMPLE_COUNT;
 	const float mrheLearningRate = MRHE_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT;
 
 	StepWeights(index, nrcLearningRate);

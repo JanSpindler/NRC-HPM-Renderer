@@ -157,7 +157,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 void CalcTrainTarget(const ivec2 trainImageCoord, const vec3 rayOrigin, const vec3 rayDir)
 {
-	vec3 target = TracePath(rayOrigin, rayDir).xyz;
+	vec3 target = vec3(1.0, 0.0, 1.0);//TracePath(rayOrigin, rayDir).xyz;
 	imageStore(nrcNeuralRayTargetImage, trainImageCoord, vec4(target, 0.0));
 }
 

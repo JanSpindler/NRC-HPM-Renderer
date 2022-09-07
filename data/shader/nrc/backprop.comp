@@ -31,7 +31,7 @@ void Backprop(
 	for (uint row = 0; row < outputLayerWidth; row++)
 	{
 		const float outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
-
+		
 		// Delta weights
 		for (uint col = 0; col < inputLayerWidth; col++)
 		{
@@ -65,7 +65,7 @@ void BackpropOutputLayer(const uint globalSampleIndex)
 	const uint inputNeuronOffset = TRAIN_SAMPLE_COUNT * (INPUT_FEATURE_COUNT + (LAYER_WIDTH * (LAYER_COUNT - 1)));
 	const uint weightsOffset =  (INPUT_FEATURE_COUNT * LAYER_WIDTH) + (LAYER_WIDTH * LAYER_WIDTH * LAYER_COUNT);
 	const uint biasesOffset = LAYER_WIDTH * LAYER_COUNT;
-	const uint outputNeuronOffset = inputNeuronOffset + (TRAIN_SAMPLE_COUNT * LAYER_WIDTH);
+	const uint outputNeuronOffset = TRAIN_OUTPUT_NEURONS_INDEX;//inputNeuronOffset + (TRAIN_SAMPLE_COUNT * LAYER_WIDTH);
 	const uint inputLayerWidth = LAYER_WIDTH;
 	const uint outputLayerWidth = 3;
 
@@ -155,6 +155,7 @@ void CalcError(const uint batchIndex, const uint sampleIndex)
 	trainNeurons[errorIndex + 0] -= target.x;
 	trainNeurons[errorIndex + 1] -= target.y;
 	trainNeurons[errorIndex + 2] -= target.z;
+	// TODO: other error
 }
 
 void CalcError(const uint batchIndex)
