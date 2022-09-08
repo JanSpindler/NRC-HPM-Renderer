@@ -43,6 +43,31 @@ layout(std430, set = 3, binding = 0) buffer PathReservoir
 	Vec3f pathReservoir[];
 };
 
+void StorePathVertex(const ivec2 imageCoord, const uint vertexIndex, const vec3 vertex)
+{
+	const uint linearVertexIndex = ((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + vertexIndex;
+	
+	Vec3f vertexFormatted;
+	vertexFormatted.x = vertex.x;
+	vertexFormatted.y = vertex.y;
+	vertexFormatted.z = vertex.z;
+
+	pathReservoir[linearVertexIndex] = vertexFormatted;
+}
+
+vec3 LoadPathVertex(const ivec2 imageCoord, const uint vertexIndex)
+{
+	const uint linearVertexIndex = ((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + vertexIndex;
+	
+	vec3 vertex;
+	Vec3f vertexFormatted = pathReservoir[linearVertexIndex];
+	vertex.x = vertexFormatted.x;
+	vertex.y = vertexFormatted.y;
+	vertex.z = vertexFormatted.z;
+
+	return vertex;
+}
+
 layout(set = 4, binding = 0) uniform PointLight
 {
 	vec3 pos;

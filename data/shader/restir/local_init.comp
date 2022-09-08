@@ -4,9 +4,9 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-/*void GenPath(const vec3 rayOrigin, const vec3 rayDir, const uint reservoirIndex)
+void GenPath(const vec3 rayOrigin, const vec3 rayDir, const ivec2 imageCoord, out bool didScatter)
 {
-	pathReservoir[reservoirIndex + 0] = rayOrigin;
+	StorePathVertex(imageCoord, 0, rayOrigin);
 
 	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
 
@@ -16,12 +16,16 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
+	didScatter = false;
+
 	for (uint i = 0; i < PATH_VERTEX_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
+			didScatter = true;
+
 			// Update last
 			lastPoint = currentPoint;
 			lastDir = currentDir;
@@ -30,7 +34,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 			currentDir = NewRayDir(currentDir);
 		}
 
-		pathReservoir[reservoirIndex + i] = currentPoint;
+		StorePathVertex(imageCoord, i, currentPoint);
 
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
@@ -38,14 +42,15 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 		const float nextDistance = RandFloat(maxDistance);
 		currentPoint = currentPoint + (currentDir * nextDistance);
 	}
-}*/
+}
 
 void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
+	const ivec2 imageCoord = ivec2(x, y);
 
-	/*// Fraguv and world pos
+	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
 	const vec4 screenCoord = vec4((fragUV * 2.0) - vec2(1.0), 0.0, 1.0);
 	const vec4 worldPos = camMat.invProjView * screenCoord;
@@ -64,16 +69,20 @@ void main()
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
-	vec4 primaryRayColor;
+	bool didScatter;
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		primaryRayColor = vec4(vec3(0.0), 1.0);
+		didScatter = false;
 	}
 	else
 	{
-		primaryRayColor = TracePath(ro, rd, );
+		GenPath(ro, rd, imageCoord, didScatter);
 	}
 
-	const ivec2 imageCoord = ivec2(x, y);
-	imageStore(outputImage, imageCoord, primaryRayColor);*/
+	const vec4 pixelInfo = vec4(
+		didScatter ? 1.0 : 0.0,
+		0.0,
+		0.0,
+		0.0 );
+	imageStore(pixelInfoImage, imageCoord, pixelInfo);
 }

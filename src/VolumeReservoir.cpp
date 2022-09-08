@@ -67,7 +67,7 @@ namespace en
 		const size_t reservoirBufferSize = static_cast<size_t>(pixelCount * m_PathVertexCount) * 3 * sizeof(float);
 
 		InitReservoir(reservoirBufferSize);
-		AllocateAndUpdateDescriptorSet(VulkanAPI::GetDevice());
+		AllocateAndUpdateDescriptorSet(VulkanAPI::GetDevice(), reservoirBufferSize);
 	}
 
 	void VolumeReservoir::Destroy()
@@ -95,7 +95,7 @@ namespace en
 			{});
 	}
 
-	void VolumeReservoir::AllocateAndUpdateDescriptorSet(VkDevice device)
+	void VolumeReservoir::AllocateAndUpdateDescriptorSet(VkDevice device, size_t reservoirBufferSize)
 	{
 		// Allocate descriptor set
 		VkDescriptorSetAllocateInfo descSetAI;
@@ -112,7 +112,7 @@ namespace en
 		VkDescriptorBufferInfo reservoirBufferInfo;
 		reservoirBufferInfo.buffer = m_ReservoirBuffer->GetVulkanHandle();
 		reservoirBufferInfo.offset = 0;
-		reservoirBufferInfo.range = 1;
+		reservoirBufferInfo.range = reservoirBufferSize;
 
 		VkWriteDescriptorSet reservoirBufferWrite;
 		reservoirBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

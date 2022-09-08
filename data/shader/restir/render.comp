@@ -40,20 +40,20 @@ void GenPath(const vec3 rayOrigin, const vec3 rayDir, out vec3 path[PATH_VERTEX_
 	}
 }
 
-vec4 ShadePath(const vec3 path[PATH_VERTEX_COUNT])
+vec4 ShadePath(const ivec2 imageCoord)
 {
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
 
 	vec3 currentPoint;
-	vec3 lastPoint = path[0];
+	vec3 lastPoint = LoadPathVertex(imageCoord, 0);
 	
 	vec3 currentDir;
 	vec3 lastDir = vec3(0.0);
 
 	for (uint i = 1; i < PATH_VERTEX_COUNT; i++)
 	{
-		currentPoint = path[i];
+		currentPoint = LoadPathVertex(imageCoord, i);
 		currentDir = normalize(currentPoint - lastPoint);
 
 		const float density = getDensity(currentPoint);
@@ -82,11 +82,9 @@ vec4 ShadePath(const vec3 path[PATH_VERTEX_COUNT])
 	return vec4(scatteredLight, transmittance);
 }
 
-vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
-{
-	vec3 path[PATH_VERTEX_COUNT];
-	GenPath(rayOrigin, rayDir, path);
-	const vec4 pathOutput = ShadePath(path);
+vec4 TracePath(const ivec2 imageCoord)
+{	
+	const vec4 pathOutput = ShadePath(imageCoord);
 	return pathOutput;
 }
 
@@ -94,6 +92,7 @@ void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
+	const ivec2 imageCoord = ivec2(x, y);
 
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
@@ -109,19 +108,19 @@ void main()
 	const vec3 ro = camera.pos;
 	vec3 rd = normalize(pixelWorldPos - ro);
 
-	// SDF + render
-	const vec3[2] entry_exit = find_entry_exit(ro, rd);
-	const vec3 entry = entry_exit[0];
-	const vec3 exit = entry_exit[1];
+	// Load pixel info
+	const vec4 pixelInfo = imageLoad(pixelInfoImage, imageCoord);
+	const bool didScatter = pixelInfo.x == 1.0;
 
+	// Shading
 	vec4 primaryRayColor;
-	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
+	if (didScatter)
 	{
-		primaryRayColor = vec4(vec3(0.0), 1.0);
+		primaryRayColor = TracePath(imageCoord);
 	}
 	else
 	{
-		primaryRayColor = TracePath(ro, rd);
+		primaryRayColor = vec4(vec3(0.0), 1.0);
 	}
 
 	if (primaryRayColor.w == 1.0)

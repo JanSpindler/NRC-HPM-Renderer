@@ -33,6 +33,6 @@ namespace en
 
 		void InitReservoir(size_t reservoirBufferSize);
 
-		void AllocateAndUpdateDescriptorSet(VkDevice device);
+		void AllocateAndUpdateDescriptorSet(VkDevice device, size_t reservoirBufferSize);
 	};
 }

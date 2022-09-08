@@ -568,6 +568,19 @@ namespace en
 			0, descSets.size(), descSets.data(),
 			0, nullptr);
 
+		// Local init pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_LocalInitPipeline);
+		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 8, 1);
+
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_DEPENDENCY_DEVICE_GROUP_BIT,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
+
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
 		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 8, 1);

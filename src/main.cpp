@@ -296,7 +296,7 @@ void RunRestirHpm()
 	en::VulkanAPI::Init(appName);
 
 	// Lighting
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 4.0f);
 	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	int hdrWidth, hdrHeight;
