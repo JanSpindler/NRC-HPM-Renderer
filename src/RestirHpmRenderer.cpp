@@ -164,6 +164,8 @@ namespace en
 		// Fill specialization data
 		m_SpecData.renderWidth = m_Width;
 		m_SpecData.renderHeight = m_Height;
+		
+		m_SpecData.pathVertexCount = 32;
 
 		// Fill map entries
 		VkSpecializationMapEntry renderWidthEntry;
@@ -176,7 +178,16 @@ namespace en
 		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
 		renderHeightEntry.size = sizeof(uint32_t);
 
-		m_SpecMapEntries = { renderWidthEntry, renderHeightEntry };
+		VkSpecializationMapEntry pathVertexCountEntry;
+		pathVertexCountEntry.constantID = 2;
+		pathVertexCountEntry.offset = offsetof(SpecializationData, SpecializationData::pathVertexCount);
+		pathVertexCountEntry.size = sizeof(uint32_t);
+
+		m_SpecMapEntries = { 
+			renderWidthEntry, 
+			renderHeightEntry, 
+			
+			pathVertexCountEntry };
 
 		// Update specialization info
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();

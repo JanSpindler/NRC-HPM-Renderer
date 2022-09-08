@@ -296,14 +296,14 @@ void RunRestirHpm()
 	en::VulkanAPI::Init(appName);
 
 	// Lighting
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 1.5f);
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
 	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	int hdrWidth, hdrHeight;
 	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
 	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(
-		0.0f,
+		1.0f,
 		hdrWidth,
 		hdrHeight,
 		hdr4fData,

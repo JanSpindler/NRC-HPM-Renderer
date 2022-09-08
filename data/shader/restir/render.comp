@@ -4,7 +4,6 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-#define PATH_SAMPLE_COUNT 32
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
 	vec3 scatteredLight = vec3(0.0);
@@ -18,7 +17,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
-	for (uint i = 0; i < PATH_SAMPLE_COUNT; i++)
+	for (uint i = 0; i < PATH_VERTEX_COUNT; i++)
 	{
 		const float density = getDensity(currentPoint);
 
@@ -55,6 +54,11 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	return vec4(scatteredLight, transmittance);
 }
 
+vec4 ShadePath(const vec3 path[PATH_VERTEX_COUNT])
+{
+	return vec4(0.0);
+}
+
 void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
@@ -87,6 +91,11 @@ void main()
 	else
 	{
 		primaryRayColor = TracePath(ro, rd);
+	}
+
+	if (primaryRayColor.w == 1.0)
+	{
+		primaryRayColor.xyz = SampleHdrEnvMap(rd, false);
 	}
 
 	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - (y + 1));

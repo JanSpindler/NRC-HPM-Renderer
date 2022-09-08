@@ -38,6 +38,8 @@ namespace en
 		{
 			uint32_t renderWidth;
 			uint32_t renderHeight;
+
+			uint32_t pathVertexCount;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
