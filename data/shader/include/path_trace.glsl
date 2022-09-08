@@ -28,7 +28,7 @@ vec3 TraceDirLight(const vec3 pos, const vec3 dir)
 		return vec3(0.0);
 	}
 
-	const float transmittance = GetTransmittance(pos, find_entry_exit(pos, -normalize(dir_light.dir))[1], 32);
+	const float transmittance = GetTransmittance(pos, find_entry_exit(pos, -normalize(dir_light.dir))[1], 16);
 	const float phase = hg_phase_func(dot(dir_light.dir, -dir));
 	const vec3 dirLighting = vec3(1.0f) * transmittance * dir_light.strength * phase;
 	return dirLighting;
@@ -41,7 +41,7 @@ vec3 TracePointLight(const vec3 pos, const vec3 dir)
 		return vec3(0.0);
 	}
 
-	const float transmittance = GetTransmittance(pointLight.pos, pos, 32);
+	const float transmittance = GetTransmittance(pointLight.pos, pos, 16);
 	const float phase = hg_phase_func(dot(normalize(pointLight.pos - pos), -dir));
 	const vec3 pointLighting = pointLight.color * pointLight.strength * transmittance * phase;
 	return pointLighting;
