@@ -4,42 +4,6 @@
 
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 
-void GenPath(const vec3 rayOrigin, const vec3 rayDir, out vec3 path[PATH_VERTEX_COUNT])
-{
-	path[0] = rayOrigin;
-
-	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
-
-	vec3 currentPoint = entry;
-	vec3 lastPoint = entry;
-	
-	vec3 currentDir = rayDir;
-	vec3 lastDir = vec3(0.0);
-
-	for (uint i = 0; i < PATH_VERTEX_COUNT; i++)
-	{
-		const float density = getDensity(currentPoint);
-
-		if (density > 0.0)
-		{
-			// Update last
-			lastPoint = currentPoint;
-			lastDir = currentDir;
-
-			// Generate new direction
-			currentDir = NewRayDir(currentDir);
-		}
-
-		path[i] = currentPoint;
-
-		// Generate new point
-		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint) * 0.1;
-		const float nextDistance = RandFloat(maxDistance);
-		currentPoint = currentPoint + (currentDir * nextDistance);
-	}
-}
-
 vec4 ShadePath(const ivec2 imageCoord)
 {
 	vec3 scatteredLight = vec3(0.0);

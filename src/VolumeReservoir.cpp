@@ -58,11 +58,11 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	VolumeReservoir::VolumeReservoir(uint32_t pathVertexCount, uint32_t spacialKernelSize) :
+	VolumeReservoir::VolumeReservoir(uint32_t pathVertexCount, uint32_t spatialKernelSize) :
 		m_PathVertexCount(pathVertexCount),
-		m_SpacialKernelSize(spacialKernelSize)
+		m_SpatialKernelSize(spatialKernelSize)
 	{
-		if (m_SpacialKernelSize % 2 != 1)
+		if (m_SpatialKernelSize % 2 != 1)
 		{
 			Log::Error("VolumeReservoir spacial kernel size must be an odd number", true);
 		}
@@ -87,9 +87,9 @@ namespace en
 		return m_PathVertexCount;
 	}
 
-	uint32_t VolumeReservoir::GetSpacialKernelSize() const
+	uint32_t VolumeReservoir::GetSpatialKernelSize() const
 	{
-		return m_SpacialKernelSize;
+		return m_SpatialKernelSize;
 	}
 
 	VkDescriptorSet VolumeReservoir::GetDescriptorSet() const

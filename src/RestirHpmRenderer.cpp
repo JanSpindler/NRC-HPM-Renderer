@@ -193,7 +193,7 @@ namespace en
 		
 		m_SpecData.pathVertexCount = m_VolumeReservoir.GetPathVertexCount();
 
-		m_SpecData.spacialKernelSize = m_VolumeReservoir.GetSpacialKernelSize();
+		m_SpecData.spatialKernelSize = m_VolumeReservoir.GetSpatialKernelSize();
 
 		// Fill map entries
 		VkSpecializationMapEntry renderWidthEntry;
@@ -211,10 +211,10 @@ namespace en
 		pathVertexCountEntry.offset = offsetof(SpecializationData, SpecializationData::pathVertexCount);
 		pathVertexCountEntry.size = sizeof(uint32_t);
 
-		VkSpecializationMapEntry spacialKernelSizeEntry;
-		spacialKernelSizeEntry.constantID = 3;
-		spacialKernelSizeEntry.offset = offsetof(SpecializationData, SpecializationData::spacialKernelSize);
-		spacialKernelSizeEntry.size = sizeof(uint32_t);
+		VkSpecializationMapEntry spatialKernelSizeEntry;
+		spatialKernelSizeEntry.constantID = 3;
+		spatialKernelSizeEntry.offset = offsetof(SpecializationData, SpecializationData::spatialKernelSize);
+		spatialKernelSizeEntry.size = sizeof(uint32_t);
 
 		m_SpecMapEntries = { 
 			renderWidthEntry, 
@@ -222,7 +222,7 @@ namespace en
 			
 			pathVertexCountEntry,
 		
-			spacialKernelSizeEntry };
+			spatialKernelSizeEntry };
 
 		// Update specialization info
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
@@ -620,17 +620,20 @@ namespace en
 			0, nullptr);
 
 		// Spacial reuse pipeline
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_SpatialReusePipeline);
-		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 4, 1);
+		if (m_SpecData.spatialKernelSize != 1)
+		{
+			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_SpatialReusePipeline);
+			vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 4, 1);
 
-		vkCmdPipelineBarrier(
-			m_CommandBuffer,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_DEPENDENCY_DEVICE_GROUP_BIT,
-			1, &memoryBarrier,
-			0, nullptr,
-			0, nullptr);
+			vkCmdPipelineBarrier(
+				m_CommandBuffer,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_DEPENDENCY_DEVICE_GROUP_BIT,
+				1, &memoryBarrier,
+				0, nullptr,
+				0, nullptr);
+		}
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);

@@ -41,7 +41,7 @@ namespace en
 
 			uint32_t pathVertexCount;
 			
-			uint32_t spacialKernelSize;
+			uint32_t spatialKernelSize;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
