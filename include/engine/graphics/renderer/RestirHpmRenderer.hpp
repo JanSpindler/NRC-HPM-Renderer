@@ -51,6 +51,8 @@ namespace en
 		const uint32_t m_Width;
 		const uint32_t m_Height;
 
+		uint32_t m_FrameCounter;
+
 		const Camera& m_Camera;
 		const VolumeData& m_VolumeData;
 		const DirLight& m_DirLight;

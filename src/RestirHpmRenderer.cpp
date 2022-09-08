@@ -74,6 +74,7 @@ namespace en
 		:
 		m_Width(width),
 		m_Height(height),
+		m_FrameCounter(0),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
 		m_DirLight(dirLight),
@@ -112,6 +113,8 @@ namespace en
 
 	void RestirHpmRenderer::Render(VkQueue queue)
 	{
+		m_FrameCounter++;
+
 		VkSubmitInfo submitInfo;
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
@@ -177,14 +180,19 @@ namespace en
 			HdrEnvMap::GetDescriptorSetLayout(),
 			m_DescSetLayout };
 
+		VkPushConstantRange frameCounterRange;
+		frameCounterRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		frameCounterRange.offset = 0;
+		frameCounterRange.size = sizeof(uint32_t);
+
 		VkPipelineLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutCI.pNext = nullptr;
 		layoutCI.flags = 0;
 		layoutCI.setLayoutCount = descSetLayouts.size();
 		layoutCI.pSetLayouts = descSetLayouts.data();
-		layoutCI.pushConstantRangeCount = 0;
-		layoutCI.pPushConstantRanges = nullptr;
+		layoutCI.pushConstantRangeCount = 1;
+		layoutCI.pPushConstantRanges = &frameCounterRange;
 
 		VkResult result = vkCreatePipelineLayout(device, &layoutCI, nullptr, &m_PipelineLayout);
 		ASSERT_VULKAN(result);
@@ -629,6 +637,9 @@ namespace en
 			m_HdrEnvMap.GetDescriptorSet(),
 			m_DescSet };
 
+		// Push constants
+		vkCmdPushConstants(m_CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &m_FrameCounter);
+
 		// Create memory barrier
 		VkMemoryBarrier memoryBarrier;
 		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -655,7 +666,7 @@ namespace en
 			0, nullptr,
 			0, nullptr);
 
-		// Spacial reuse pipeline
+		// Temporal reuse pipeline
 		if (m_SpecData.temporalKernelSize != 0)
 		{
 			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TemporalReusePipeline);
