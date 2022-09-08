@@ -1,4 +1,5 @@
 #include <engine/graphics/VolumeReservoir.hpp>
+#include <engine/util/Log.hpp>
 
 namespace en
 {
@@ -57,9 +58,14 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	VolumeReservoir::VolumeReservoir(uint32_t pathVertexCount) :
-		m_PathVertexCount(pathVertexCount)
+	VolumeReservoir::VolumeReservoir(uint32_t pathVertexCount, uint32_t spacialKernelSize) :
+		m_PathVertexCount(pathVertexCount),
+		m_SpacialKernelSize(spacialKernelSize)
 	{
+		if (m_SpacialKernelSize % 2 != 1)
+		{
+			Log::Error("VolumeReservoir spacial kernel size must be an odd number", true);
+		}
 	}
 
 	void VolumeReservoir::Init(uint32_t pixelCount)
@@ -79,6 +85,11 @@ namespace en
 	uint32_t VolumeReservoir::GetPathVertexCount() const
 	{
 		return m_PathVertexCount;
+	}
+
+	uint32_t VolumeReservoir::GetSpacialKernelSize() const
+	{
+		return m_SpacialKernelSize;
 	}
 
 	VkDescriptorSet VolumeReservoir::GetDescriptorSet() const

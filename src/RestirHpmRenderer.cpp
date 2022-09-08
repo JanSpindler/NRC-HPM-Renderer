@@ -82,6 +82,7 @@ namespace en
 		m_VolumeReservoir(volumeReservoir),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
 		m_RenderShader("restir/render.comp", false),
+		m_SpatialReuseShader("restir/spatial_reuse.comp", false),
 		m_LocalInitShader("restir/local_init.comp", false)
 	{
 		m_VolumeReservoir.Init(m_Width * m_Height);
@@ -96,6 +97,7 @@ namespace en
 		InitSpecializationConstants();
 
 		CreateLocalInitPipeline(device);
+		CreateSpatialReusePipeline(device);
 		CreateRenderPipeline(device);
 
 		CreateOutputImage(device);
@@ -139,6 +141,9 @@ namespace en
 
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
 		m_RenderShader.Destroy();
+
+		vkDestroyPipeline(device, m_SpatialReusePipeline, nullptr);
+		m_SpatialReuseShader.Destroy();
 
 		vkDestroyPipeline(device, m_LocalInitPipeline, nullptr);
 		m_LocalInitShader.Destroy();
@@ -188,6 +193,8 @@ namespace en
 		
 		m_SpecData.pathVertexCount = m_VolumeReservoir.GetPathVertexCount();
 
+		m_SpecData.spacialKernelSize = m_VolumeReservoir.GetSpacialKernelSize();
+
 		// Fill map entries
 		VkSpecializationMapEntry renderWidthEntry;
 		renderWidthEntry.constantID = 0;
@@ -204,11 +211,18 @@ namespace en
 		pathVertexCountEntry.offset = offsetof(SpecializationData, SpecializationData::pathVertexCount);
 		pathVertexCountEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry spacialKernelSizeEntry;
+		spacialKernelSizeEntry.constantID = 3;
+		spacialKernelSizeEntry.offset = offsetof(SpecializationData, SpecializationData::spacialKernelSize);
+		spacialKernelSizeEntry.size = sizeof(uint32_t);
+
 		m_SpecMapEntries = { 
 			renderWidthEntry, 
 			renderHeightEntry, 
 			
-			pathVertexCountEntry };
+			pathVertexCountEntry,
+		
+			spacialKernelSizeEntry };
 
 		// Update specialization info
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
@@ -238,6 +252,30 @@ namespace en
 		pipelineCI.basePipelineIndex = 0;
 
 		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_LocalInitPipeline);
+		ASSERT_VULKAN(result);
+	}
+
+	void RestirHpmRenderer::CreateSpatialReusePipeline(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStageCI;
+		shaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStageCI.pNext = nullptr;
+		shaderStageCI.flags = 0;
+		shaderStageCI.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStageCI.module = m_SpatialReuseShader.GetVulkanModule();
+		shaderStageCI.pName = "main";
+		shaderStageCI.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStageCI;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_SpatialReusePipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -570,7 +608,20 @@ namespace en
 
 		// Local init pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_LocalInitPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 8, 1);
+		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 4, 1);
+
+		vkCmdPipelineBarrier(
+			m_CommandBuffer,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_DEPENDENCY_DEVICE_GROUP_BIT,
+			1, &memoryBarrier,
+			0, nullptr,
+			0, nullptr);
+
+		// Spacial reuse pipeline
+		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_SpatialReusePipeline);
+		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 4, 1);
 
 		vkCmdPipelineBarrier(
 			m_CommandBuffer,
@@ -583,7 +634,7 @@ namespace en
 
 		// Render pipeline
 		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 8, 1);
+		vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 4, 1);
 
 		// End
 		result = vkEndCommandBuffer(m_CommandBuffer);

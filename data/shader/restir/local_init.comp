@@ -2,7 +2,7 @@
 #define RESTIR
 #include "common.glsl"
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 
 void GenPath(const vec3 rayOrigin, const vec3 rayDir, const ivec2 imageCoord, out bool didScatter)
 {
