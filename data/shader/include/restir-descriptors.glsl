@@ -43,6 +43,16 @@ layout(std430, set = 3, binding = 0) buffer PathReservoir
 	Vec3f pathReservoir[];
 };
 
+layout(std430, set = 3, binding = 1) buffer OldViewProjMat
+{
+	mat4 oldViewProjMat[];
+};
+
+layout(std430, set = 3, binding = 2) buffer OldPathReservoirs
+{
+	Vec3f oldPathReversoirs[];
+};
+
 void StorePathVertex(const ivec2 imageCoord, const uint vertexIndex, const vec3 vertex)
 {
 	const uint linearVertexIndex = ((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + vertexIndex;

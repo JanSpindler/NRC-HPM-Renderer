@@ -11,7 +11,7 @@ namespace en
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		VolumeReservoir(uint32_t pathVertexCount, uint32_t spatialKernelSize);
+		VolumeReservoir(uint32_t pathVertexCount, uint32_t spatialKernelSize, uint32_t temporalKernelSize);
 
 		void Init(uint32_t pixelCount);
 
@@ -19,6 +19,7 @@ namespace en
 
 		uint32_t GetPathVertexCount() const;
 		uint32_t GetSpatialKernelSize() const;
+		uint32_t GetTemporalKernelSize() const;
 
 		VkDescriptorSet GetDescriptorSet() const;
 
@@ -28,13 +29,20 @@ namespace en
 
 		uint32_t m_PathVertexCount;
 		uint32_t m_SpatialKernelSize;
+		uint32_t m_TemporalKernelSize;
+
+		size_t m_ReservoirBufferSize;
+		size_t m_OldViewProjMatBufferSize;
+		size_t m_OldReservoirsBufferSize;
 
 		vk::Buffer* m_ReservoirBuffer;
+		vk::Buffer* m_OldViewProjMatBuffer;
+		vk::Buffer* m_OldReservoirsBuffer;
 
 		VkDescriptorSet m_DescSet;
 
-		void InitReservoir(size_t reservoirBufferSize);
+		void InitBuffers();
 
-		void AllocateAndUpdateDescriptorSet(VkDevice device, size_t reservoirBufferSize);
+		void AllocateAndUpdateDescriptorSet(VkDevice device);
 	};
 }
