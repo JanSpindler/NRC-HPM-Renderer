@@ -331,7 +331,7 @@ void RunRestirHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 	
-	en::VolumeReservoir volumeReservoir;
+	en::VolumeReservoir volumeReservoir(32);
 	hpmRenderer = new en::RestirHpmRenderer(width, height, camera, volumeData, dirLight, pointLight, hdrEnvMap, volumeReservoir);
 
 	en::ImGuiRenderer::Init(width, height);

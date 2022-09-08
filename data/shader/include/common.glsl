@@ -8,8 +8,8 @@
 #endif
 
 #ifdef RESTIR
-#include "restir-descriptors.glsl"
 #include "restir-constants.glsl"
+#include "restir-descriptors.glsl"
 #endif
 
 #include "defines.glsl"

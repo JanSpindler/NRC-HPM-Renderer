@@ -1,0 +1,79 @@
+#version 460
+#define RESTIR
+#include "common.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+/*void GenPath(const vec3 rayOrigin, const vec3 rayDir, const uint reservoirIndex)
+{
+	pathReservoir[reservoirIndex + 0] = rayOrigin;
+
+	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
+
+	vec3 currentPoint = entry;
+	vec3 lastPoint = entry;
+	
+	vec3 currentDir = rayDir;
+	vec3 lastDir = vec3(0.0);
+
+	for (uint i = 0; i < PATH_VERTEX_COUNT; i++)
+	{
+		const float density = getDensity(currentPoint);
+
+		if (density > 0.0)
+		{
+			// Update last
+			lastPoint = currentPoint;
+			lastDir = currentDir;
+
+			// Generate new direction
+			currentDir = NewRayDir(currentDir);
+		}
+
+		pathReservoir[reservoirIndex + i] = currentPoint;
+
+		// Generate new point
+		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
+		const float maxDistance = distance(exit, currentPoint) * 0.1;
+		const float nextDistance = RandFloat(maxDistance);
+		currentPoint = currentPoint + (currentDir * nextDistance);
+	}
+}*/
+
+void main()
+{
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+
+	/*// Fraguv and world pos
+	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
+	const vec4 screenCoord = vec4((fragUV * 2.0) - vec2(1.0), 0.0, 1.0);
+	const vec4 worldPos = camMat.invProjView * screenCoord;
+	const vec3 pixelWorldPos = worldPos.xyz / worldPos.w;
+
+	// Setup random
+	preRand = volumeData.random.x * fragUV.x;
+	prePreRand = volumeData.random.y * fragUV.y;
+
+	// Setup ray
+	const vec3 ro = camera.pos;
+	vec3 rd = normalize(pixelWorldPos - ro);
+
+	// SDF + render
+	const vec3[2] entry_exit = find_entry_exit(ro, rd);
+	const vec3 entry = entry_exit[0];
+	const vec3 exit = entry_exit[1];
+
+	vec4 primaryRayColor;
+	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
+	{
+		primaryRayColor = vec4(vec3(0.0), 1.0);
+	}
+	else
+	{
+		primaryRayColor = TracePath(ro, rd, );
+	}
+
+	const ivec2 imageCoord = ivec2(x, y);
+	imageStore(outputImage, imageCoord, primaryRayColor);*/
+}

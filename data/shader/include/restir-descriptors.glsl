@@ -31,6 +31,18 @@ layout(set = 2, binding = 0) uniform dir_light_t
 	float strength;
 } dir_light;
 
+struct Vec3f
+{
+	float x;
+	float y;
+	float z;
+};
+
+layout(std430, set = 3, binding = 0) buffer PathReservoir
+{
+	Vec3f pathReservoir[];
+};
+
 layout(set = 4, binding = 0) uniform PointLight
 {
 	vec3 pos;
@@ -51,3 +63,5 @@ layout(set = 5, binding = 3) uniform HdrEnvMapData
 } hdrEnvMapData;
 
 layout(set = 6, binding = 0, rgba32f) uniform image2D outputImage;
+
+layout(set = 6, binding = 1, rgba32f) uniform image2D pixelInfoImage;

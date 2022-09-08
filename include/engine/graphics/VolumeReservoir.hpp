@@ -11,9 +11,13 @@ namespace en
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		VolumeReservoir();
+		VolumeReservoir(uint32_t pathVertexCount);
+
+		void Init(uint32_t pixelCount);
 
 		void Destroy();
+
+		uint32_t GetPathVertexCount() const;
 
 		VkDescriptorSet GetDescriptorSet() const;
 
@@ -21,11 +25,13 @@ namespace en
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
 
+		uint32_t m_PathVertexCount;
+
 		vk::Buffer* m_ReservoirBuffer;
 
 		VkDescriptorSet m_DescSet;
 
-		void InitReservoir();
+		void InitReservoir(size_t reservoirBufferSize);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 	};

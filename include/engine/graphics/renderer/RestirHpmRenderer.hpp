@@ -61,12 +61,19 @@ namespace en
 		std::vector<VkSpecializationMapEntry> m_SpecMapEntries;
 		VkSpecializationInfo m_SpecInfo;
 
+		vk::Shader m_LocalInitShader;
+		VkPipeline m_LocalInitPipeline;
+
 		vk::Shader m_RenderShader;
 		VkPipeline m_RenderPipeline;
 
 		VkImage m_OutputImage; // rgba32f output color
 		VkDeviceMemory m_OutputImageMemory;
 		VkImageView m_OutputImageView;
+
+		VkImage m_PixelInfoImage;
+		VkDeviceMemory m_PixelInfoImageMemory;
+		VkImageView m_PixelInfoImageView;
 
 		VkDescriptorSet m_DescSet;
 
@@ -77,9 +84,11 @@ namespace en
 
 		void InitSpecializationConstants();
 
+		void CreateLocalInitPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
+		void CreatePixelInfoImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 

@@ -57,9 +57,16 @@ namespace en
 		return m_DescSetLayout;
 	}
 
-	VolumeReservoir::VolumeReservoir()
+	VolumeReservoir::VolumeReservoir(uint32_t pathVertexCount) :
+		m_PathVertexCount(pathVertexCount)
 	{
-		InitReservoir();
+	}
+
+	void VolumeReservoir::Init(uint32_t pixelCount)
+	{
+		const size_t reservoirBufferSize = static_cast<size_t>(pixelCount * m_PathVertexCount) * 3 * sizeof(float);
+
+		InitReservoir(reservoirBufferSize);
 		AllocateAndUpdateDescriptorSet(VulkanAPI::GetDevice());
 	}
 
@@ -69,17 +76,22 @@ namespace en
 		delete m_ReservoirBuffer;
 	}
 
+	uint32_t VolumeReservoir::GetPathVertexCount() const
+	{
+		return m_PathVertexCount;
+	}
+
 	VkDescriptorSet VolumeReservoir::GetDescriptorSet() const
 	{
 		return m_DescSet;
 	}
 
-	void VolumeReservoir::InitReservoir()
+	void VolumeReservoir::InitReservoir(size_t reservoirBufferSize)
 	{
 		m_ReservoirBuffer = new vk::Buffer(
-			1, 
+			reservoirBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
 			{});
 	}
 
