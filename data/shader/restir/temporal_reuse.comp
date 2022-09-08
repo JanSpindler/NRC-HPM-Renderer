@@ -1,0 +1,25 @@
+#version 460
+#define RESTIR
+#include "common.glsl"
+
+layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
+
+void main()
+{
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+	const ivec2 imageCoord = ivec2(x, y);
+
+	// Fraguv and world pos
+	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
+
+	// Setup random
+	preRand = volumeData.random.x * fragUV.x;
+	prePreRand = volumeData.random.y * fragUV.y;
+
+	// Resample
+	ivec2 neighbourCoord;
+	uint vertexIndex;
+	//ResampleNeighbours(imageCoord, neighbourCoord, vertexIndex);
+	//UpdateReservoir(imageCoord, neighbourCoord, vertexIndex);
+}

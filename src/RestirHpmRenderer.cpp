@@ -82,6 +82,7 @@ namespace en
 		m_VolumeReservoir(volumeReservoir),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
 		m_RenderShader("restir/render.comp", false),
+		m_TemporalReuseShader("restir/temporal_reuse.comp", false),
 		m_SpatialReuseShader("restir/spatial_reuse.comp", false),
 		m_LocalInitShader("restir/local_init.comp", false)
 	{
@@ -97,6 +98,7 @@ namespace en
 		InitSpecializationConstants();
 
 		CreateLocalInitPipeline(device);
+		CreateTemporalReusePipeline(device);
 		CreateSpatialReusePipeline(device);
 		CreateRenderPipeline(device);
 
@@ -144,6 +146,9 @@ namespace en
 
 		vkDestroyPipeline(device, m_SpatialReusePipeline, nullptr);
 		m_SpatialReuseShader.Destroy();
+
+		vkDestroyPipeline(device, m_TemporalReusePipeline, nullptr);
+		m_TemporalReuseShader.Destroy();
 
 		vkDestroyPipeline(device, m_LocalInitPipeline, nullptr);
 		m_LocalInitShader.Destroy();
@@ -194,6 +199,7 @@ namespace en
 		m_SpecData.pathVertexCount = m_VolumeReservoir.GetPathVertexCount();
 
 		m_SpecData.spatialKernelSize = m_VolumeReservoir.GetSpatialKernelSize();
+		m_SpecData.temporalKernelSize = m_VolumeReservoir.GetTemporalKernelSize();
 
 		// Fill map entries
 		VkSpecializationMapEntry renderWidthEntry;
@@ -216,13 +222,19 @@ namespace en
 		spatialKernelSizeEntry.offset = offsetof(SpecializationData, SpecializationData::spatialKernelSize);
 		spatialKernelSizeEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry temporalKernelSizeEntry;
+		temporalKernelSizeEntry.constantID = 4;
+		temporalKernelSizeEntry.offset = offsetof(SpecializationData, SpecializationData::temporalKernelSize);
+		temporalKernelSizeEntry.size = sizeof(uint32_t);
+
 		m_SpecMapEntries = { 
 			renderWidthEntry, 
 			renderHeightEntry, 
 			
 			pathVertexCountEntry,
 		
-			spatialKernelSizeEntry };
+			spatialKernelSizeEntry,
+			temporalKernelSizeEntry };
 
 		// Update specialization info
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
@@ -252,6 +264,30 @@ namespace en
 		pipelineCI.basePipelineIndex = 0;
 
 		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_LocalInitPipeline);
+		ASSERT_VULKAN(result);
+	}
+
+	void RestirHpmRenderer::CreateTemporalReusePipeline(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStageCI;
+		shaderStageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStageCI.pNext = nullptr;
+		shaderStageCI.flags = 0;
+		shaderStageCI.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStageCI.module = m_TemporalReuseShader.GetVulkanModule();
+		shaderStageCI.pName = "main";
+		shaderStageCI.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStageCI;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_TemporalReusePipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -618,6 +654,22 @@ namespace en
 			1, &memoryBarrier,
 			0, nullptr,
 			0, nullptr);
+
+		// Spacial reuse pipeline
+		if (m_SpecData.temporalKernelSize != 0)
+		{
+			vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_TemporalReusePipeline);
+			vkCmdDispatch(m_CommandBuffer, m_Width / 8, m_Height / 4, 1);
+
+			vkCmdPipelineBarrier(
+				m_CommandBuffer,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_DEPENDENCY_DEVICE_GROUP_BIT,
+				1, &memoryBarrier,
+				0, nullptr,
+				0, nullptr);
+		}
 
 		// Spacial reuse pipeline
 		if (m_SpecData.spatialKernelSize != 1)

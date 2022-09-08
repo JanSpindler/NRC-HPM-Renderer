@@ -42,6 +42,7 @@ namespace en
 			uint32_t pathVertexCount;
 			
 			uint32_t spatialKernelSize;
+			uint32_t temporalKernelSize;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -65,6 +66,9 @@ namespace en
 
 		vk::Shader m_LocalInitShader;
 		VkPipeline m_LocalInitPipeline;
+
+		vk::Shader m_TemporalReuseShader;
+		VkPipeline m_TemporalReusePipeline;
 
 		vk::Shader m_SpatialReuseShader;
 		VkPipeline m_SpatialReusePipeline;
@@ -90,6 +94,7 @@ namespace en
 		void InitSpecializationConstants();
 
 		void CreateLocalInitPipeline(VkDevice device);
+		void CreateTemporalReusePipeline(VkDevice device);
 		void CreateSpatialReusePipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 

@@ -50,7 +50,7 @@ layout(std430, set = 3, binding = 1) buffer OldViewProjMat
 
 layout(std430, set = 3, binding = 2) buffer OldPathReservoirs
 {
-	Vec3f oldPathReversoirs[];
+	Vec3f oldPathReservoirs[];
 };
 
 void StorePathVertex(const ivec2 imageCoord, const uint vertexIndex, const vec3 vertex)
@@ -71,6 +71,24 @@ vec3 LoadPathVertex(const ivec2 imageCoord, const uint vertexIndex)
 	
 	vec3 vertex;
 	Vec3f vertexFormatted = pathReservoir[linearVertexIndex];
+	vertex.x = vertexFormatted.x;
+	vertex.y = vertexFormatted.y;
+	vertex.z = vertexFormatted.z;
+
+	return vertex;
+}
+
+vec3 LoadOldPathVertex(const int currTemporalIndex, const int relTemporalIndex, const ivec2 imageCoord, const uint vertexIndex)
+{
+	const int absTemporalIndex = (currTemporalIndex - relTemporalIndex) % int(TEMPORAL_KERNEL_SIZE);
+
+	const uint linearVertexIndex = 
+		(absTemporalIndex * RESERVOIR_SIZE) +
+		((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + 
+		vertexIndex;
+	
+	vec3 vertex;
+	Vec3f vertexFormatted = oldPathReservoirs[linearVertexIndex];
 	vertex.x = vertexFormatted.x;
 	vertex.y = vertexFormatted.y;
 	vertex.z = vertexFormatted.z;
