@@ -79,10 +79,6 @@ void main()
 		GenPath(ro, rd, imageCoord, didScatter);
 	}
 
-	const vec4 pixelInfo = vec4(
-		didScatter ? 1.0 : 0.0,
-		0.0,
-		0.0,
-		0.0 );
+	const vec4 pixelInfo = vec4(SampleHdrEnvMap(rd, false), didScatter ? 1.0 : 0.0);
 	imageStore(pixelInfoImage, imageCoord, pixelInfo);
 }

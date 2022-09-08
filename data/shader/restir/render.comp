@@ -96,21 +96,15 @@ void main()
 
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
-	const vec4 screenCoord = vec4((fragUV * 2.0) - vec2(1.0), 0.0, 1.0);
-	const vec4 worldPos = camMat.invProjView * screenCoord;
-	const vec3 pixelWorldPos = worldPos.xyz / worldPos.w;
 
 	// Setup random
 	preRand = volumeData.random.x * fragUV.x;
 	prePreRand = volumeData.random.y * fragUV.y;
 
-	// Setup ray
-	const vec3 ro = camera.pos;
-	vec3 rd = normalize(pixelWorldPos - ro);
-
 	// Load pixel info
 	const vec4 pixelInfo = imageLoad(pixelInfoImage, imageCoord);
-	const bool didScatter = pixelInfo.x == 1.0;
+	const vec3 backgroundColor = pixelInfo.xyz;
+	const bool didScatter = pixelInfo.w == 1.0;
 
 	// Shading
 	vec4 primaryRayColor;
@@ -125,7 +119,7 @@ void main()
 
 	if (primaryRayColor.w == 1.0)
 	{
-		primaryRayColor.xyz = SampleHdrEnvMap(rd, false);
+		primaryRayColor.xyz = backgroundColor;
 	}
 
 	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - (y + 1));
