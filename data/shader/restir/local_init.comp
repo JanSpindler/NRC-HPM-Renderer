@@ -6,7 +6,7 @@ layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 
 void GenPath(const vec3 rayOrigin, const vec3 rayDir, const ivec2 imageCoord, out bool didScatter)
 {
-	StorePathVertex(imageCoord, 0, rayOrigin);
+	StorePathVertex(imageCoord, 0, rayOrigin, vec3(0.0));
 
 	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
 
@@ -31,10 +31,10 @@ void GenPath(const vec3 rayOrigin, const vec3 rayDir, const ivec2 imageCoord, ou
 			lastDir = currentDir;
 
 			// Generate new direction
-			currentDir = NewRayDir(currentDir);
+			currentDir = NewRayDir(currentDir, true);
 		}
 
-		StorePathVertex(imageCoord, i, currentPoint);
+		StorePathVertex(imageCoord, i, currentPoint, NewRayDir(currentDir, false));
 
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];

@@ -76,12 +76,10 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 
 	vec3 light = vec3(0.0);
 
-	// Half ray importance sampled
-	const uint halfSampleCount = sampleCount;//sampleCount / 2;
-	for (uint i = 0; i < halfSampleCount; i++)
+	for (uint i = 0; i < sampleCount; i++)
 	{
-		const vec3 randomDir = NewRayDir(dir);
-		const float phase = 1.0;//hg_phase_func(dot(randomDir, -dir));
+		const vec3 randomDir = NewRayDir(dir, false);
+		const float phase = hg_phase_func(dot(randomDir, -dir));
 		const vec3 exit = find_entry_exit(pos, randomDir)[1];
 		const float transmittance = GetTransmittance(pos, exit, 16);
 		const vec3 sampleLight = SampleHdrEnvMap(randomDir, true) * phase * transmittance;
@@ -90,23 +88,23 @@ vec3 SampleHdrEnvMap(const vec3 pos, const vec3 dir, uint sampleCount)
 	}
 
 	// Half env map importance sampled
-	for (uint i = 0; i < sampleCount - halfSampleCount; i++)
-	{
-		const float thetaNorm = texture(hdrEnvMapInvCdfY, RandFloat(1.0)).x;
-		const float phiNorm = texture(hdrEnvMapInvCdfX, vec2(RandFloat(1.0), thetaNorm)).x;
-
-		//const float thetaNorm = 0.458;
-		//const float phiNorm = 0.477;
-
-		const vec3 randomDir = sin(thetaNorm * PI) * vec3(cos(phiNorm * 2.0 * PI), 1.0, sin(phiNorm * 2.0 * PI));
-
-		const float phase = hg_phase_func(dot(randomDir, -dir));
-		const vec3 exit = find_entry_exit(pos, randomDir)[1];
-		const float transmittance = GetTransmittance(pos, exit, 16);
-		const vec3 sampleLight = texture(hdrEnvMap, vec2(phiNorm, thetaNorm)).xyz * hdrEnvMapData.hpmStrength * phase * transmittance;
-
-		light += sampleLight;
-	}
+//	for (uint i = 0; i < sampleCount - halfSampleCount; i++)
+//	{
+//		const float thetaNorm = texture(hdrEnvMapInvCdfY, RandFloat(1.0)).x;
+//		const float phiNorm = texture(hdrEnvMapInvCdfX, vec2(RandFloat(1.0), thetaNorm)).x;
+//
+//		//const float thetaNorm = 0.458;
+//		//const float phiNorm = 0.477;
+//
+//		const vec3 randomDir = sin(thetaNorm * PI) * vec3(cos(phiNorm * 2.0 * PI), 1.0, sin(phiNorm * 2.0 * PI));
+//
+//		const float phase = hg_phase_func(dot(randomDir, -dir));
+//		const vec3 exit = find_entry_exit(pos, randomDir)[1];
+//		const float transmittance = GetTransmittance(pos, exit, 16);
+//		const vec3 sampleLight = texture(hdrEnvMap, vec2(phiNorm, thetaNorm)).xyz * hdrEnvMapData.hpmStrength * phase * transmittance;
+//
+//		light += sampleLight;
+//	}
 
 	light /= float(sampleCount);
 

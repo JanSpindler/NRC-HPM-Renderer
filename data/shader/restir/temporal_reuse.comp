@@ -52,14 +52,19 @@ void UpdateReservoir(int temporalIndex, const ivec2 imageCoord, const uint verte
 	// Move current local reservoir to old local reservoir
 	for (uint v = 0; v < PATH_VERTEX_COUNT; v++)
 	{
-		StoreOldPathVertex(currentFrameReservoirIndex, imageCoord, v, LoadPathVertex(imageCoord, v));
+		vec3 vertexPos;
+		vec3 vertexDir;
+		LoadPathVertex(imageCoord, v, vertexPos, vertexDir);
+		StoreOldPathVertex(currentFrameReservoirIndex, imageCoord, v, vertexPos, vertexDir);
 	}
 
 	// Update current local reservoir
 	for (uint v = vertexIndex; v < PATH_VERTEX_COUNT; v++)
 	{
-		const vec3 oldVertex = LoadOldPathVertex(lastFrameReservoirIndex, imageCoord, v);
-		StorePathVertex(imageCoord, v, oldVertex);
+		vec3 vertexPos;
+		vec3 vertexDir;
+		LoadOldPathVertex(lastFrameReservoirIndex, imageCoord, v, vertexPos, vertexDir);
+		StorePathVertex(imageCoord, v, vertexPos, vertexDir);
 	}
 }
 

@@ -44,7 +44,10 @@ void UpdateReservoir(const ivec2 imageCoord, const ivec2 neighbourCoord, const u
 {
 	for (uint v = vertexIndex; v < PATH_VERTEX_COUNT; v++)
 	{
-		StorePathVertex(imageCoord, v, LoadPathVertex(neighbourCoord, v));
+		vec3 vertexPos;
+		vec3 vertexDir;
+		LoadPathVertex(neighbourCoord, v, vertexPos, vertexDir);
+		StorePathVertex(imageCoord, v, vertexPos, vertexDir);
 	}
 }
 

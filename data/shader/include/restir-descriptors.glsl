@@ -38,9 +38,19 @@ struct Vec3f
 	float z;
 };
 
+struct PathVertex
+{
+	float posX;
+	float posY;
+	float posZ;
+	float dirX;
+	float dirY;
+	float dirZ;
+};
+
 layout(std430, set = 3, binding = 0) buffer PathReservoir
 {
-	Vec3f pathReservoir[];
+	PathVertex pathReservoir[];
 };
 
 layout(std430, set = 3, binding = 1) buffer OldViewProjMat
@@ -50,63 +60,65 @@ layout(std430, set = 3, binding = 1) buffer OldViewProjMat
 
 layout(std430, set = 3, binding = 2) buffer OldPathReservoirs
 {
-	Vec3f oldPathReservoirs[];
+	PathVertex oldPathReservoirs[];
 };
 
-void StorePathVertex(const ivec2 imageCoord, const uint vertexIndex, const vec3 vertex)
+void StorePathVertex(const ivec2 imageCoord, const uint vertexIndex, const vec3 pos, const vec3 dir)
+{
+	const uint linearVertexIndex = ((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + vertexIndex;
+
+	pathReservoir[linearVertexIndex].posX = pos.x;
+	pathReservoir[linearVertexIndex].posY = pos.y;
+	pathReservoir[linearVertexIndex].posZ = pos.z;
+
+	pathReservoir[linearVertexIndex].dirX = dir.x;
+	pathReservoir[linearVertexIndex].dirY = dir.y;
+	pathReservoir[linearVertexIndex].dirZ = dir.z;
+}
+
+void LoadPathVertex(const ivec2 imageCoord, const uint vertexIndex, out vec3 pos, out vec3 dir)
 {
 	const uint linearVertexIndex = ((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + vertexIndex;
 	
-	Vec3f vertexFormatted;
-	vertexFormatted.x = vertex.x;
-	vertexFormatted.y = vertex.y;
-	vertexFormatted.z = vertex.z;
+	pos.x = pathReservoir[linearVertexIndex].posX;
+	pos.y = pathReservoir[linearVertexIndex].posY;
+	pos.z = pathReservoir[linearVertexIndex].posZ;
 
-	pathReservoir[linearVertexIndex] = vertexFormatted;
+	dir.x = pathReservoir[linearVertexIndex].dirX;
+	dir.y = pathReservoir[linearVertexIndex].dirY;
+	dir.z = pathReservoir[linearVertexIndex].dirZ;
 }
 
-vec3 LoadPathVertex(const ivec2 imageCoord, const uint vertexIndex)
-{
-	const uint linearVertexIndex = ((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + vertexIndex;
-	
-	vec3 vertex;
-	Vec3f vertexFormatted = pathReservoir[linearVertexIndex];
-	vertex.x = vertexFormatted.x;
-	vertex.y = vertexFormatted.y;
-	vertex.z = vertexFormatted.z;
-
-	return vertex;
-}
-
-void StoreOldPathVertex(const uint reservoirIndex, const ivec2 imageCoord, const uint vertexIndex, const vec3 vertex)
+void StoreOldPathVertex(const uint reservoirIndex, const ivec2 imageCoord, const uint vertexIndex, const vec3 pos, const vec3 dir)
 {
 	const uint linearVertexIndex = 
 		(reservoirIndex * RESERVOIR_SIZE) +
 		((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + 
 		vertexIndex;
 
-	Vec3f vertexFormatted;
-	vertexFormatted.x = vertex.x;
-	vertexFormatted.y = vertex.y;
-	vertexFormatted.z = vertex.z;
-
-	oldPathReservoirs[linearVertexIndex] = vertexFormatted;
+	pathReservoir[linearVertexIndex].posX = pos.x;
+	pathReservoir[linearVertexIndex].posY = pos.y;
+	pathReservoir[linearVertexIndex].posZ = pos.z;
+	
+	pathReservoir[linearVertexIndex].dirX = dir.x;
+	pathReservoir[linearVertexIndex].dirY = dir.y;
+	pathReservoir[linearVertexIndex].dirZ = dir.z;
 }
 
-vec3 LoadOldPathVertex(const uint reservoirIndex, const ivec2 imageCoord, const uint vertexIndex)
+void LoadOldPathVertex(const uint reservoirIndex, const ivec2 imageCoord, const uint vertexIndex, out vec3 pos, out vec3 dir)
 {
 	const uint linearVertexIndex = 
 		(reservoirIndex * RESERVOIR_SIZE) +
 		((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + 
 		vertexIndex;
 	
-	vec3 vertex;
-	Vec3f vertexFormatted = oldPathReservoirs[linearVertexIndex];
-	vertex.x = vertexFormatted.x;
-	vertex.y = vertexFormatted.y;
-	vertex.z = vertexFormatted.z;
-
-	return vertex;
+	pos.x = pathReservoir[linearVertexIndex].posX;
+	pos.y = pathReservoir[linearVertexIndex].posY;
+	pos.z = pathReservoir[linearVertexIndex].posZ;
+	
+	dir.x = pathReservoir[linearVertexIndex].dirX;
+	dir.y = pathReservoir[linearVertexIndex].dirY;
+	dir.z = pathReservoir[linearVertexIndex].dirZ;
 }
 
 layout(set = 4, binding = 0) uniform PointLight

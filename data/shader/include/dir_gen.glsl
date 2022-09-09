@@ -19,7 +19,7 @@ mat4 rotationMatrix(vec3 axis, float angle)
                 0.0,                                0.0,                                0.0,                                1.0);
 }
 
-vec3 NewRayDir(vec3 oldRayDir)
+vec3 NewRayDir(vec3 oldRayDir, const bool phaseFuncSampling)
 {
 	// Assert: length(oldRayDir) == 1.0
 	// Assert: rand's are in [0.0, 1.0]
@@ -32,18 +32,26 @@ vec3 NewRayDir(vec3 oldRayDir)
 	orthoDir = normalize(orthoDir);
 
 	// Rotate around that orthoDir
-	float g = volumeData.g;
-	float cosTheta;
-	if (abs(g) < 0.001)
-    {
-		cosTheta = 1 - 2 * RandFloat(1.0);
+	float angle;
+	if (phaseFuncSampling)
+	{
+		float g = volumeData.g;
+		float cosTheta;
+		if (abs(g) < 0.001)
+		{
+			cosTheta = 1 - 2 * RandFloat(1.0);
+		}
+		else
+		{
+			float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
+			cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+		}
+		angle = acos(cosTheta);
 	}
 	else
 	{
-		float sqrTerm = (1 - g * g) / (1 - g + (2 * g * RandFloat(1.0)));
-		cosTheta = (1 + (g * g) - (sqrTerm * sqrTerm)) / (2 * g);
+		angle = RandFloat(PI);
 	}
-	float angle = acos(cosTheta);
 	mat4 rotMat = rotationMatrix(orthoDir, angle);
 	vec3 newRayDir = (rotMat * vec4(oldRayDir, 1.0)).xyz;
 
