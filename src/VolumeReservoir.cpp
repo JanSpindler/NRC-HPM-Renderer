@@ -93,8 +93,8 @@ namespace en
 	void VolumeReservoir::Init(uint32_t pixelCount)
 	{
 		m_ReservoirBufferSize = static_cast<size_t>(pixelCount * m_PathVertexCount) * 3 * sizeof(float);
-		m_OldViewProjMatBufferSize = m_TemporalKernelSize * 16 * sizeof(float);
-		m_OldReservoirsBufferSize = m_ReservoirBufferSize * m_TemporalKernelSize;
+		m_OldViewProjMatBufferSize = std::max(1ull, m_TemporalKernelSize * 16 * sizeof(float));
+		m_OldReservoirsBufferSize = std::max(1ull, m_ReservoirBufferSize * m_TemporalKernelSize);
 
 		InitBuffers();
 		AllocateAndUpdateDescriptorSet(VulkanAPI::GetDevice());

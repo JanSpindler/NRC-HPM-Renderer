@@ -78,12 +78,25 @@ vec3 LoadPathVertex(const ivec2 imageCoord, const uint vertexIndex)
 	return vertex;
 }
 
-vec3 LoadOldPathVertex(const int currTemporalIndex, const int relTemporalIndex, const ivec2 imageCoord, const uint vertexIndex)
+void StoreOldPathVertex(const uint reservoirIndex, const ivec2 imageCoord, const uint vertexIndex, const vec3 vertex)
 {
-	const int absTemporalIndex = (currTemporalIndex - relTemporalIndex) % int(TEMPORAL_KERNEL_SIZE);
-
 	const uint linearVertexIndex = 
-		(absTemporalIndex * RESERVOIR_SIZE) +
+		(reservoirIndex * RESERVOIR_SIZE) +
+		((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + 
+		vertexIndex;
+
+	Vec3f vertexFormatted;
+	vertexFormatted.x = vertex.x;
+	vertexFormatted.y = vertex.y;
+	vertexFormatted.z = vertex.z;
+
+	oldPathReservoirs[linearVertexIndex] = vertexFormatted;
+}
+
+vec3 LoadOldPathVertex(const uint reservoirIndex, const ivec2 imageCoord, const uint vertexIndex)
+{
+	const uint linearVertexIndex = 
+		(reservoirIndex * RESERVOIR_SIZE) +
 		((imageCoord.y * RENDER_WIDTH) + imageCoord.x) * (PATH_VERTEX_COUNT) + 
 		vertexIndex;
 	
@@ -118,3 +131,5 @@ layout(set = 5, binding = 3) uniform HdrEnvMapData
 layout(set = 6, binding = 0, rgba32f) uniform image2D outputImage;
 
 layout(set = 6, binding = 1, rgba32f) uniform image2D pixelInfoImage;
+
+layout(set = 6, binding = 2, rgba32f) uniform image2D restirStatsImage;

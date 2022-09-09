@@ -81,4 +81,8 @@ void main()
 
 	const vec4 pixelInfo = vec4(SampleHdrEnvMap(rd, false), didScatter ? 1.0 : 0.0);
 	imageStore(pixelInfoImage, imageCoord, pixelInfo);
+
+	const uint sampleStreamIndex = 1; // TODO: multiple init samples
+	const vec4 restirStats = vec4(float(sampleStreamIndex), vec3(0.0));
+	imageStore(restirStatsImage, imageCoord, restirStats);
 }

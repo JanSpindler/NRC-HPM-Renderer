@@ -112,7 +112,7 @@ namespace en
 						maxY = y;
 					}
 
-					hdrData[linearIndex] = 0.75f;
+					//hdrData[linearIndex] = 0.75f;
 				}
 			}
 		}

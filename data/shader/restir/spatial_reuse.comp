@@ -6,21 +6,17 @@ layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 
 void ResampleNeighbours(const ivec2 imageCoord, out ivec2 neighbourCoord, out uint vertexIndex)
 {
-	uint sampleStreamIndex = 0;
+	vec4 restirStats = imageLoad(restirStatsImage, imageCoord);
+	uint sampleStreamIndex = uint(restirStats.x);
 
 	for (int x = SPATIAL_KERNEL_MIN; x <= SPATIAL_KERNEL_MAX; x++)
 	{
-		if (x == 0)
-		{
-			continue;
-		}
-
 		for (int y = SPATIAL_KERNEL_MIN; y <= SPATIAL_KERNEL_MAX; y++)
 		{
 			const vec4 pixelInfo = imageLoad(pixelInfoImage, imageCoord);
 			const bool didScatter = pixelInfo.w == 1.0;
 
-			if (y == 0 || !didScatter)
+			if ((x == 0 && y == 0) || !didScatter)
 			{
 				continue;
 			}
@@ -38,6 +34,10 @@ void ResampleNeighbours(const ivec2 imageCoord, out ivec2 neighbourCoord, out ui
 			}
 		}
 	}
+
+	restirStats.x = float(sampleStreamIndex);
+	restirStats.y = float(vertexIndex);
+	imageStore(restirStatsImage, imageCoord, restirStats);
 }
 
 void UpdateReservoir(const ivec2 imageCoord, const ivec2 neighbourCoord, const uint vertexIndex)
@@ -64,6 +64,20 @@ void main()
 	// Resample
 	ivec2 neighbourCoord;
 	uint vertexIndex;
+	
 	ResampleNeighbours(imageCoord, neighbourCoord, vertexIndex);
+
+	// Check if neighbour has been choosen for replacement
+	if (neighbourCoord == imageCoord) 
+	{
+		return;
+	}
+
+	// Check if neighbour is within bounds
+	if (neighbourCoord.x < 0 || neighbourCoord.y < 0 || neighbourCoord.x >= RENDER_WIDTH || neighbourCoord.y >= RENDER_HEIGHT)
+	{
+		return;
+	}
+
 	UpdateReservoir(imageCoord, neighbourCoord, vertexIndex);
 }

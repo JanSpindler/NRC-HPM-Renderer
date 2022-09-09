@@ -9,11 +9,73 @@ layout(push_constant) uniform PushConstants
 	uint frameCounter;
 };
 
+void ResampleTemporal(const ivec2 imageCoord, out int temporalIndex, out uint vertexIndex)
+{
+	vec4 restirStats = imageLoad(restirStatsImage, imageCoord);
+	uint sampleStreamIndex = uint(restirStats.x);
+	
+	temporalIndex = -1;
+	vertexIndex = 0;
+
+	for (int t = 0; t < TEMPORAL_KERNEL_SIZE; t++)
+	{
+		for (uint v = 1; v < PATH_VERTEX_COUNT; v++)
+		{
+			const float prob = 1.0 / float(sampleStreamIndex);
+			sampleStreamIndex++;
+
+			if (RandFloat(1.0) < prob)
+			{
+				temporalIndex = t;
+				vertexIndex = v;
+			}
+		}
+	}
+	
+	restirStats.x = float(sampleStreamIndex);
+	restirStats.y = float(vertexIndex);
+	imageStore(restirStatsImage, imageCoord, restirStats);
+}
+
+void UpdateReservoir(int temporalIndex, const ivec2 imageCoord, const uint vertexIndex)
+{
+	if (frameCounter == 0)
+	{
+		return;
+	}
+
+	temporalIndex = min(temporalIndex, int(frameCounter - 1)) + 1;
+
+	const uint lastFrameReservoirIndex = (frameCounter - temporalIndex) % TEMPORAL_KERNEL_SIZE;
+	const uint currentFrameReservoirIndex = frameCounter % TEMPORAL_KERNEL_SIZE;
+
+	// Move current local reservoir to old local reservoir
+	for (uint v = 0; v < PATH_VERTEX_COUNT; v++)
+	{
+		StoreOldPathVertex(currentFrameReservoirIndex, imageCoord, v, LoadPathVertex(imageCoord, v));
+	}
+
+	// Update current local reservoir
+	for (uint v = vertexIndex; v < PATH_VERTEX_COUNT; v++)
+	{
+		const vec3 oldVertex = LoadOldPathVertex(lastFrameReservoirIndex, imageCoord, v);
+		StorePathVertex(imageCoord, v, oldVertex);
+	}
+}
+
 void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 	const ivec2 imageCoord = ivec2(x, y);
+
+	// Load and process informations from images
+	const vec4 pixelInfo = imageLoad(pixelInfoImage, imageCoord);
+	const bool didScatter = pixelInfo.w == 1.0;
+	if (!didScatter)
+	{
+		return;
+	}
 
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
@@ -23,8 +85,14 @@ void main()
 	prePreRand = volumeData.random.y * fragUV.y;
 
 	// Resample
-	ivec2 neighbourCoord;
+	int temporalIndex;
 	uint vertexIndex;
-	//ResampleNeighbours(imageCoord, neighbourCoord, vertexIndex);
-	//UpdateReservoir(imageCoord, neighbourCoord, vertexIndex);
+
+	ResampleTemporal(imageCoord, temporalIndex, vertexIndex);
+	if (temporalIndex < 0)
+	{
+		return;
+	}
+
+	UpdateReservoir(temporalIndex, imageCoord, vertexIndex);
 }

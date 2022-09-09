@@ -6,6 +6,9 @@ layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 
 vec4 ShadePath(const ivec2 imageCoord)
 {
+	const vec4 restirStats = imageLoad(restirStatsImage, imageCoord);
+	const uint exchangeStartVertex = uint(restirStats.y);
+
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
 
@@ -14,6 +17,8 @@ vec4 ShadePath(const ivec2 imageCoord)
 	
 	vec3 currentDir;
 	vec3 lastDir = vec3(0.0);
+
+	float totalPhaseFactor = 1.0;
 
 	for (uint i = 1; i < PATH_VERTEX_COUNT; i++)
 	{
@@ -28,10 +33,11 @@ vec4 ShadePath(const ivec2 imageCoord)
 			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
 
 			// Phase factor
-			const float phase = 1.0; // Importance sampling
+			const float phase = i == exchangeStartVertex ? hg_phase_func(dot(lastDir, -currentDir)) : 1.0; // Importance sampling
+			totalPhaseFactor *= phase;
 
 			// Transmittance calculation
-			const vec3 s_int = density * sceneLighting * phase;
+			const vec3 s_int = density * sceneLighting * totalPhaseFactor;
 			const float t_r = GetTransmittance(currentPoint, lastPoint, 8);
 
 			scatteredLight += transmittance * s_int;

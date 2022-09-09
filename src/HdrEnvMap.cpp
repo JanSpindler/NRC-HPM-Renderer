@@ -93,7 +93,8 @@ namespace en
 	}
 
 	HdrEnvMap::HdrEnvMap(
-		float strength,
+		float directStrength,
+		float hpmStrength,
 		uint32_t width, 
 		uint32_t height, 
 		const std::vector<float>& hdr4f,
@@ -106,7 +107,7 @@ namespace en
 		m_RawCdfXSize(width * height * sizeof(float)),
 		m_RawCdfYSize(height * sizeof(float)),
 		m_ColorImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
-		m_UniformData({ .directStrength = strength, .hpmStrength = strength }),
+		m_UniformData({ .directStrength = directStrength, .hpmStrength = hpmStrength }),
 		m_UniformBuffer(
 			sizeof(UniformData), 
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 

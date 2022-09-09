@@ -13,7 +13,8 @@ namespace en
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
 		HdrEnvMap(
-			float strength,
+			float directStrength,
+			float hpmStrength,
 			uint32_t width, 
 			uint32_t height, 
 			const std::vector<float>& hdr4f,

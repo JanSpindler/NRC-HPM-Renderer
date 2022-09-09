@@ -296,7 +296,7 @@ void RunRestirHpm()
 	en::VulkanAPI::Init(appName);
 
 	// Lighting
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 4.0f);
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
 	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	int hdrWidth, hdrHeight;
@@ -304,6 +304,7 @@ void RunRestirHpm()
 	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(
 		1.0f,
+		8.0f,
 		hdrWidth,
 		hdrHeight,
 		hdr4fData,
@@ -331,7 +332,9 @@ void RunRestirHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 	
-	en::VolumeReservoir volumeReservoir(32, 11, 4);
+	//en::VolumeReservoir volumeReservoir(32, 11, 10);
+	en::VolumeReservoir volumeReservoir(32, 3, 4);
+	//en::VolumeReservoir volumeReservoir(32, 1, 0);
 	hpmRenderer = new en::RestirHpmRenderer(width, height, camera, volumeData, dirLight, pointLight, hdrEnvMap, volumeReservoir);
 
 	en::ImGuiRenderer::Init(width, height);

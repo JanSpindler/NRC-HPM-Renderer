@@ -86,6 +86,10 @@ namespace en
 		VkDeviceMemory m_PixelInfoImageMemory;
 		VkImageView m_PixelInfoImageView;
 
+		VkImage m_RestirStatsImage;
+		VkDeviceMemory m_RestirStatsImageMemory;
+		VkImageView m_RestirStatsImageView;
+
 		VkDescriptorSet m_DescSet;
 
 		vk::CommandPool m_CommandPool;
@@ -102,6 +106,7 @@ namespace en
 
 		void CreateOutputImage(VkDevice device);
 		void CreatePixelInfoImage(VkDevice device);
+		void CreateRestirStatsImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 
