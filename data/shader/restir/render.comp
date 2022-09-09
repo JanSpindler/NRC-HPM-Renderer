@@ -36,7 +36,7 @@ vec4 ShadePath(const ivec2 imageCoord)
 		if (density > 0.0)
 		{
 			// Get scene lighting
-			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
+			const vec3 sceneLighting = TraceScene(currentPoint, currentDir, vertexDir);
 
 			// Phase factor
 			const float phase = i == exchangeStartVertex ? hg_phase_func(dot(lastDir, -currentDir)) : 1.0; // Importance sampling

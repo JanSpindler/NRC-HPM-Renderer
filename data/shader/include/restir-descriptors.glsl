@@ -145,3 +145,8 @@ layout(set = 6, binding = 0, rgba32f) uniform image2D outputImage;
 layout(set = 6, binding = 1, rgba32f) uniform image2D pixelInfoImage;
 
 layout(set = 6, binding = 2, rgba32f) uniform image2D restirStatsImage;
+
+layout(set = 6, binding = 3) uniform RendererUniformData
+{
+	uint frameCounter;
+};

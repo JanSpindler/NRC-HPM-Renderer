@@ -30,10 +30,18 @@ namespace en
 		restirStatsImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		restirStatsImageBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding uniformBufferBinding;
+		uniformBufferBinding.binding = 3;
+		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferBinding.descriptorCount = 1;
+		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		uniformBufferBinding.pImmutableSamplers = nullptr;
+
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
 			outputImageBinding,
 			pixelInfoImageBinding,
-			restirStatsImageBinding };
+			restirStatsImageBinding,
+			uniformBufferBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -50,7 +58,11 @@ namespace en
 		storageImagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		storageImagePoolSize.descriptorCount = 3;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePoolSize };
+		VkDescriptorPoolSize uniformBufferPoolSize;
+		uniformBufferPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferPoolSize.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePoolSize, uniformBufferPoolSize };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -82,7 +94,7 @@ namespace en
 		:
 		m_Width(width),
 		m_Height(height),
-		m_FrameCounter(0),
+		m_UniformData({ .frameCounter = 0 }),
 		m_Camera(camera),
 		m_VolumeData(volumeData),
 		m_DirLight(dirLight),
@@ -93,7 +105,12 @@ namespace en
 		m_RenderShader("restir/render.comp", false),
 		m_TemporalReuseShader("restir/temporal_reuse.comp", false),
 		m_SpatialReuseShader("restir/spatial_reuse.comp", false),
-		m_LocalInitShader("restir/local_init.comp", false)
+		m_LocalInitShader("restir/local_init.comp", false),
+		m_UniformBuffer(
+			sizeof(UniformData), 
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			{})
 	{
 		m_VolumeReservoir.Init(m_Width * m_Height);
 
@@ -115,6 +132,8 @@ namespace en
 		CreatePixelInfoImage(device);
 		CreateRestirStatsImage(device);
 
+		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
+
 		AllocateAndUpdateDescriptorSet(device);
 	
 		RecordCommandBuffer();
@@ -122,8 +141,6 @@ namespace en
 
 	void RestirHpmRenderer::Render(VkQueue queue)
 	{
-		m_FrameCounter++;
-
 		VkSubmitInfo submitInfo;
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
@@ -137,11 +154,16 @@ namespace en
 
 		VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
+
+		m_UniformData.frameCounter++;
+		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 	}
 
 	void RestirHpmRenderer::Destroy()
 	{
 		VkDevice device = VulkanAPI::GetDevice();
+
+		m_UniformBuffer.Destroy();
 
 		m_CommandPool.Destroy();
 
@@ -193,19 +215,14 @@ namespace en
 			HdrEnvMap::GetDescriptorSetLayout(),
 			m_DescSetLayout };
 
-		VkPushConstantRange frameCounterRange;
-		frameCounterRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		frameCounterRange.offset = 0;
-		frameCounterRange.size = sizeof(uint32_t);
-
 		VkPipelineLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutCI.pNext = nullptr;
 		layoutCI.flags = 0;
 		layoutCI.setLayoutCount = descSetLayouts.size();
 		layoutCI.pSetLayouts = descSetLayouts.data();
-		layoutCI.pushConstantRangeCount = 1;
-		layoutCI.pPushConstantRanges = &frameCounterRange;
+		layoutCI.pushConstantRangeCount = 0;
+		layoutCI.pPushConstantRanges = nullptr;
 
 		VkResult result = vkCreatePipelineLayout(device, &layoutCI, nullptr, &m_PipelineLayout);
 		ASSERT_VULKAN(result);
@@ -742,11 +759,30 @@ namespace en
 		restirStatsImageWrite.pBufferInfo = nullptr;
 		restirStatsImageWrite.pTexelBufferView = nullptr;
 
+		// Uniform buffer
+		VkDescriptorBufferInfo uniformBufferInfo;
+		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
+		uniformBufferInfo.offset = 0;
+		uniformBufferInfo.range = sizeof(UniformData);
+
+		VkWriteDescriptorSet uniformBufferWrite;
+		uniformBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		uniformBufferWrite.pNext = nullptr;
+		uniformBufferWrite.dstSet = m_DescSet;
+		uniformBufferWrite.dstBinding = 3;
+		uniformBufferWrite.dstArrayElement = 0;
+		uniformBufferWrite.descriptorCount = 1;
+		uniformBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferWrite.pImageInfo = nullptr;
+		uniformBufferWrite.pBufferInfo = &uniformBufferInfo;
+		uniformBufferWrite.pTexelBufferView = nullptr;
+
 		// Update descriptor set
 		std::vector<VkWriteDescriptorSet> writes = { 
 			outputImageWrite,
 			pixelInfoImageWrite,
-			restirStatsImageWrite };
+			restirStatsImageWrite,
+			uniformBufferWrite };
 		
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
@@ -773,9 +809,6 @@ namespace en
 			m_PointLight.GetDescriptorSet(),
 			m_HdrEnvMap.GetDescriptorSet(),
 			m_DescSet };
-
-		// Push constants
-		vkCmdPushConstants(m_CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &m_FrameCounter);
 
 		// Create memory barrier
 		VkMemoryBarrier memoryBarrier;

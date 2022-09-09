@@ -116,3 +116,14 @@ vec3 TraceScene(const vec3 pos, const vec3 dir)
 	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) + SampleHdrEnvMap(pos, dir, 1);
 	return totalLight;
 }
+
+vec3 TraceScene(const vec3 pos, const vec3 dir, const vec3 hdrEnvMapUniformDir)
+{
+	const vec3 exit = find_entry_exit(pos, hdrEnvMapUniformDir)[1];
+	const float hdrEnvMapTransmittance = GetTransmittance(pos, exit, 16);
+	const float hdrEnvMapPhase = hg_phase_func(dot(-dir, hdrEnvMapUniformDir));
+	const vec3 hdrEnvMapLight = SampleHdrEnvMap(hdrEnvMapUniformDir, true) * hdrEnvMapTransmittance * hdrEnvMapPhase;
+
+	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) + hdrEnvMapLight;
+	return totalLight;
+}

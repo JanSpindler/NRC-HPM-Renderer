@@ -45,13 +45,16 @@ namespace en
 			uint32_t temporalKernelSize;
 		};
 
+		struct UniformData
+		{
+			uint32_t frameCounter;
+		};
+
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
 
 		const uint32_t m_Width;
 		const uint32_t m_Height;
-
-		uint32_t m_FrameCounter;
 
 		const Camera& m_Camera;
 		const VolumeData& m_VolumeData;
@@ -89,6 +92,9 @@ namespace en
 		VkImage m_RestirStatsImage;
 		VkDeviceMemory m_RestirStatsImageMemory;
 		VkImageView m_RestirStatsImageView;
+
+		UniformData m_UniformData;
+		vk::Buffer m_UniformBuffer;
 
 		VkDescriptorSet m_DescSet;
 
