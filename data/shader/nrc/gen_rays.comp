@@ -57,7 +57,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 			lastDir = currentDir;
 
 			// Generate new direction
-			currentDir = NewRayDir(currentDir);
+			currentDir = NewRayDir(currentDir, true);
 		}
 
 		// Generate new point
@@ -97,17 +97,23 @@ void main()
 
 	vec4 primaryRayColor;
 	vec4 primaryRayInfo;
+	bool didScatter = false;
 	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
 	{
-		primaryRayColor = vec4(vec3(0.0), 1.0);
+		primaryRayColor = vec4(SampleHdrEnvMap(rd, false), 1.0);
 		primaryRayInfo = vec4(0.0);
 	}
 	else
 	{
-		bool didScatter;
 		primaryRayColor = TracePath(ro, rd, didScatter);
-		primaryRayInfo = vec4(didScatter ? 1.0 : 0.0, 0.0, 0.0, 0.0);
+
+		if (!didScatter)
+		{
+			primaryRayColor = vec4(SampleHdrEnvMap(rd, false), 1.0);
+		}
 	}
+
+	primaryRayInfo = vec4(didScatter ? 1.0 : 0.0, 0.0, 0.0, 0.0);
 
 	// Store output
 	imageStore(nrcPrimaryRayColorImage, imageCoord, primaryRayColor);

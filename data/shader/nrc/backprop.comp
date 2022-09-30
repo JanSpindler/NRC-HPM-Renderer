@@ -6,9 +6,9 @@ layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
 
-float ReLUDeriv(const float x)
+float16_t ReLUDeriv(const float16_t x)
 {
-	return x > 0.0 ? 1.0 : 0.0;
+	return float16_t(x > 0.0 ? 1.0 : 0.0);
 }
 
 void Backprop(
@@ -24,20 +24,20 @@ void Backprop(
 	for (uint outputNeuron = 0; outputNeuron < outputLayerWidth; outputNeuron++)
 	{
 		const uint neuronIndex = outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + outputNeuron;
-		const float activatedValue = trainNeurons[neuronIndex];
+		const float16_t activatedValue = trainNeurons[neuronIndex];
 		trainNeurons[neuronIndex] *= ReLUDeriv(activatedValue);
 	}
 
 	// Calc delta weights and biases
 	for (uint row = 0; row < outputLayerWidth; row++)
 	{
-		const float outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
+		const float16_t outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
 		
 		// Delta weights
 		for (uint col = 0; col < inputLayerWidth; col++)
 		{
-			const float inputVal = trainNeurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
-			const float delta = -inputVal * outputVal;
+			const float16_t inputVal = trainNeurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col];
+			const float16_t delta = -inputVal * outputVal;
 
 			const uint weightIndex = weightsOffset + (col * outputLayerWidth) + row;
 			atomicAdd(deltaWeights[weightIndex], delta);
@@ -50,11 +50,11 @@ void Backprop(
 	// Backprop through weights
 	for (uint col = 0; col < inputLayerWidth; col++)
 	{
-		float sum = 0.0;
+		float16_t sum = float16_t(0.0);
 		for (uint row = 0; row < outputLayerWidth; row++)
 		{
-			const float outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
-			const float weightVal = weights[weightsOffset + (col * outputLayerWidth) + row];
+			const float16_t outputVal = trainNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row];
+			const float16_t weightVal = weights[weightsOffset + (col * outputLayerWidth) + row];
 			sum += weightVal * outputVal;
 		}
 		trainNeurons[inputNeuronOffset + (globalSampleIndex * inputLayerWidth) + col] = sum;
@@ -153,9 +153,9 @@ void CalcError(const uint batchIndex, const uint sampleIndex)
 	const uint errorIndex = TRAIN_OUTPUT_NEURONS_INDEX + (trainSampleIndex * 3);
 	
 	const vec3 target = imageLoad(nrcNeuralRayTargetImage, TrainSampleIndexToImageCoord(trainSampleIndex)).xyz;
-	trainNeurons[errorIndex + 0] -= target.x;
-	trainNeurons[errorIndex + 1] -= target.y;
-	trainNeurons[errorIndex + 2] -= target.z;
+	trainNeurons[errorIndex + 0] -= float16_t(target.x);
+	trainNeurons[errorIndex + 1] -= float16_t(target.y);
+	trainNeurons[errorIndex + 2] -= float16_t(target.z);
 	// TODO: other error
 }
 

@@ -18,8 +18,8 @@
 #include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/renderer/RestirHpmRenderer.hpp>
 
-//#define NRC
-#define RESTIR
+#define NRC
+//#define RESTIR
 
 #ifdef NRC
 en::NrcHpmRenderer* hpmRenderer = nullptr;
@@ -128,7 +128,8 @@ void RunNrcHpm()
 	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
 	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(
-		0.0f,
+		1.0f,
+		3.0f,
 		hdrWidth,
 		hdrHeight,
 		hdr4fData,
@@ -156,7 +157,7 @@ void RunNrcHpm()
 
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	en::NeuralRadianceCache nrc(2, 24, 0.001f, 128); // Batch size is multiple of 128
+	en::NeuralRadianceCache nrc(6, 32, 0.001f, 128); // Batch size is multiple of 128
 	nrc.SetPosFrequencyEncoding(12);
 	//nrc.SetPosMrheEncoding(16, 512, 8, 16384, 4, 0.01f);
 	nrc.SetDirFrequencyEncoding(4);

@@ -34,52 +34,52 @@ layout(set = 2, binding = 0) uniform dir_light_t
 // NN buffers
 layout(std430, set = 3, binding = 0) buffer RenderNeurons
 {
-	float renderNeurons[];
+	float16_t renderNeurons[];
 };
 
 layout(std430, set = 3, binding = 1) buffer TrainNeurons
 {
-	float trainNeurons[];
+	float16_t trainNeurons[];
 };
 
 layout(std430, set = 3, binding = 2) buffer Weights
 {
-	float weights[];
+	float16_t weights[];
 };
 
 layout(std430, set = 3, binding = 3) buffer DeltaWeights
 {
-	float deltaWeights[];
+	float16_t deltaWeights[];
 };
 
 layout(std430, set = 3, binding = 4) buffer MomentumWeights
 {
-	float momentumWeights[];
+	float16_t momentumWeights[];
 };
 
 layout(std430, set = 3, binding = 5) buffer Biases
 {
-	float biases[];
+	float16_t biases[];
 };
 
 layout(std430, set = 3, binding = 6) buffer DeltaBiases
 {
-	float deltaBiases[];
+	float16_t deltaBiases[];
 };
 
 layout(std430, set = 3, binding = 7) buffer MomentumBiases
 {
-	float momentumBiases[];
+	float16_t momentumBiases[];
 };
 
 layout(std430, set = 3, binding = 8) buffer Mrhe
 {
-	float mrhe[];
+	float16_t mrhe[];
 };
 
 layout(std430, set = 3, binding = 9) buffer DeltaMrhe
 {
-	float deltaMrhe[];
+	float16_t deltaMrhe[];
 };
 
 layout(std430, set = 3, binding = 10) buffer MrheRes

@@ -307,12 +307,6 @@ namespace en
 				}
 			}
 
-			// Cooperative matrix types
-			//uint32_t coopMatPropertyCount;
-			//vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, nullptr);
-			//std::vector<VkCooperativeMatrixPropertiesNV> coopMatProperties(coopMatPropertyCount);
-			//vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, coopMatProperties.data());
-
 			// Surface support
 			VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
 			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_Surface, &surfaceCapabilities);
@@ -347,6 +341,22 @@ namespace en
 					bestPresentMode = presentMode;
 					break;
 				}
+			}
+
+			// Cooperative matrix types
+			PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV myvkGetPhysicalDeviceCooperativeMatrixPropertiesNV =
+				(PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV) vkGetInstanceProcAddr(m_Instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
+			
+			uint32_t coopMatPropertyCount;
+			myvkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, nullptr);
+			std::vector<VkCooperativeMatrixPropertiesNV> coopMatProperties(coopMatPropertyCount);
+			for (uint32_t i = 0; i < coopMatPropertyCount; i++)
+			{
+				coopMatProperties[i].sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV;
+			}
+			myvkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, coopMatProperties.data());
+			for (const VkCooperativeMatrixPropertiesNV& coopMatProperty : coopMatProperties)
+			{
 			}
 
 			// Final check
@@ -412,7 +422,10 @@ namespace en
 			VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME,
 			VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
-			VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME };
+			VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME,
+			VK_KHR_16BIT_STORAGE_EXTENSION_NAME,
+			VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
+			VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME };
 
 		float priorities[] = { 1.0f, 1.0f };
 		VkDeviceQueueCreateInfo queueCreateInfo;
@@ -424,12 +437,34 @@ namespace en
 		queueCreateInfo.pQueuePriorities = priorities;
 
 		// Features
-		VkPhysicalDeviceFeatures features{};
+		VkPhysicalDeviceFeatures features10{};
+
+		VkPhysicalDeviceVulkan11Features features11{};
+		features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+		features11.pNext = nullptr;
+		features11.storageBuffer16BitAccess = VK_TRUE;
+
+		// Atomic float 2 features
+		VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT atomicFloat2Features;
+		atomicFloat2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
+		atomicFloat2Features.pNext = &features11;
+		atomicFloat2Features.shaderBufferFloat16Atomics = VK_TRUE;
+		atomicFloat2Features.shaderBufferFloat16AtomicAdd = VK_TRUE;
+		atomicFloat2Features.shaderBufferFloat16AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.shaderBufferFloat32AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.shaderBufferFloat64AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.shaderSharedFloat16Atomics = VK_FALSE;
+		atomicFloat2Features.shaderSharedFloat16AtomicAdd = VK_FALSE;
+		atomicFloat2Features.shaderSharedFloat16AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.shaderSharedFloat32AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.shaderSharedFloat64AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.shaderImageFloat32AtomicMinMax = VK_FALSE;
+		atomicFloat2Features.sparseImageFloat32AtomicMinMax = VK_FALSE;
 
 		// Vulkan memory model features
 		VkPhysicalDeviceVulkanMemoryModelFeatures memoryModelFeatures;
 		memoryModelFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES;
-		memoryModelFeatures.pNext = nullptr;
+		memoryModelFeatures.pNext = &atomicFloat2Features;
 		memoryModelFeatures.vulkanMemoryModel = VK_TRUE;
 		memoryModelFeatures.vulkanMemoryModelDeviceScope = VK_TRUE;
 		memoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains = VK_FALSE;
@@ -484,7 +519,7 @@ namespace en
 		createInfo.ppEnabledLayerNames = layers.data();
 		createInfo.enabledExtensionCount = extensions.size();
 		createInfo.ppEnabledExtensionNames = extensions.data();
-		createInfo.pEnabledFeatures = &features;
+		createInfo.pEnabledFeatures = &features10;
 
 		VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &m_Device);
 		ASSERT_VULKAN(result);

@@ -4,7 +4,7 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-void StepWeights(const uint index, const float learningRate)
+void StepWeights(const uint index, const float16_t learningRate)
 {
 	if (index >= TOTAL_WEIGHTS_COUNT)
 	{
@@ -17,10 +17,10 @@ void StepWeights(const uint index, const float learningRate)
 	}
 
 	weights[index] += learningRate * deltaWeights[index];
-	deltaWeights[index] = 0.0;
+	deltaWeights[index] = float16_t(0.0);
 }
 
-void StepBiases(const uint index, const float learningRate)
+void StepBiases(const uint index, const float16_t learningRate)
 {
 	if (index >= TOTAL_BIASES_COUNT)
 	{
@@ -28,10 +28,10 @@ void StepBiases(const uint index, const float learningRate)
 	}
 
 	biases[index] += learningRate * deltaBiases[index];
-	deltaBiases[index] = 0.0;
+	deltaBiases[index] = float16_t(0.0);
 }
 
-void StepMrhe(const uint index, const float learningRate)
+void StepMrhe(const uint index, const float16_t learningRate)
 {
 	if (index >= TOTAL_MRHE_COUNT)
 	{
@@ -39,15 +39,15 @@ void StepMrhe(const uint index, const float learningRate)
 	}
 
 	mrhe[index] += learningRate * deltaMrhe[index];
-	deltaMrhe[index] = 0.0;
+	deltaMrhe[index] = float16_t(0.0);
 }
 
 void main()
 {
 	const uint index = gl_GlobalInvocationID.x;
 
-	const float nrcLearningRate = NRC_LEARNING_RATE;// * ONE_OVER_TRAIN_SAMPLE_COUNT;
-	const float mrheLearningRate = MRHE_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT;
+	const float16_t nrcLearningRate = float16_t(NRC_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT);
+	const float16_t mrheLearningRate = float16_t(MRHE_LEARNING_RATE * ONE_OVER_TRAIN_SAMPLE_COUNT);
 
 	StepWeights(index, nrcLearningRate);
 	StepBiases(index, nrcLearningRate);

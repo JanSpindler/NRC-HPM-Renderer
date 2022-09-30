@@ -2,7 +2,7 @@
 #define NRC
 #include "common.glsl"
 
-layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 // Row major
 ivec2 GlobalSampleIndexToImageCoord(const uint globalSampleIndex)
@@ -16,6 +16,38 @@ ivec2 GlobalSampleIndexToImageCoord(const uint globalSampleIndex)
 float ReLU(float x)
 {
 	return max(0.0, x);
+}
+
+void ForwardHiddenNv(
+	const uint globalSampleIndex,
+	const uint inputNeuronOffset,
+	const uint weightsOffset,
+	const uint biasesOffset,
+	const uint outputNeuronOffset)
+{
+	// Iterate over tiles
+	const uint tiledOutputRowCount = LAYER_WIDTH / NV_TILE_SIZE;
+	const uint tiledOutputColCount = BATCH_SIZE / NV_TILE_SIZE;
+	const uint tiledI = LAYER_WIDTH / NV_TILE_SIZE;
+
+	mFCoopmatNV outputTile;
+	mFCoopmatNV aTile;
+	mFCoopmatNV bTile;
+
+	for (uint tileRow = 0; tileRow < tiledOutputRowCount; tileRow++)
+	{
+		for (uint tileCol = 0; tileCol < tiledOutputColCount; tileCol++)
+		{
+			coopMatLoadNV(outputTile, renderNeurons, 1, 1, false);
+
+			for (uint tileI = 0; tileI < tiledI; tileI++)
+			{
+				coopMatLoadNV(aTile, weights, 1, 1, false);
+				coopMatLoadNV(bTile, renderNeurons, 1, 1, false);
+				outputTile = coopMatMulAddNV(aTile, bTile, outputTile);
+			}
+		}
+	}
 }
 
 void Forward(
@@ -49,7 +81,7 @@ void Forward(
 		sum = ReLU(sum);
 
 		// Store
-		renderNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row] = sum;
+		renderNeurons[outputNeuronOffset + (globalSampleIndex * outputLayerWidth) + row] = float16_t(sum);
 	}
 }
 
@@ -124,6 +156,28 @@ void Forward(const uint batchIndex, const uint sampleIndex)
 
 const uint samplesPerThread = BATCH_SIZE / gl_WorkGroupSize.x;
 
+void ForwardNv(const uint batchIndex)
+{
+	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
+	{
+		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
+		const uint globalSampleIndex = (batchIndex * BATCH_SIZE) + sampleIndex;
+		ForwardInputToFirstHidden(globalSampleIndex);
+	}
+
+	for (uint hiddenLayerIndex = 0; hiddenLayerIndex < LAYER_COUNT - 1; hiddenLayerIndex++)
+	{
+		ForwardHiddenNv(0, 0, 0, 0, 0);
+	}
+
+	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
+	{
+		const uint sampleIndex = (gl_LocalInvocationID.x * samplesPerThread) + threadSampleIndex;
+		const uint globalSampleIndex = (batchIndex * BATCH_SIZE) + sampleIndex;
+		ForwardLastHiddenToOutput(globalSampleIndex);
+	}
+}
+
 void Forward(const uint batchIndex)
 {
 	for (uint threadSampleIndex = 0; threadSampleIndex < samplesPerThread; threadSampleIndex++)
@@ -138,7 +192,7 @@ void main()
 	const uint batchIndex = gl_WorkGroupID.x;
 
 	subgroupBarrier();
-	Forward(batchIndex);
+	ForwardNv(batchIndex);
 	subgroupBarrier();
 
 	// Write neural ray color to image
