@@ -424,8 +424,7 @@ namespace en
 			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
 			VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME,
 			VK_KHR_16BIT_STORAGE_EXTENSION_NAME,
-			VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
-			VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME };
+			VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME };
 
 		float priorities[] = { 1.0f, 1.0f };
 		VkDeviceQueueCreateInfo queueCreateInfo;
@@ -444,27 +443,10 @@ namespace en
 		features11.pNext = nullptr;
 		features11.storageBuffer16BitAccess = VK_TRUE;
 
-		// Atomic float 2 features
-		VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT atomicFloat2Features;
-		atomicFloat2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT;
-		atomicFloat2Features.pNext = &features11;
-		atomicFloat2Features.shaderBufferFloat16Atomics = VK_TRUE;
-		atomicFloat2Features.shaderBufferFloat16AtomicAdd = VK_TRUE;
-		atomicFloat2Features.shaderBufferFloat16AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.shaderBufferFloat32AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.shaderBufferFloat64AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.shaderSharedFloat16Atomics = VK_FALSE;
-		atomicFloat2Features.shaderSharedFloat16AtomicAdd = VK_FALSE;
-		atomicFloat2Features.shaderSharedFloat16AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.shaderSharedFloat32AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.shaderSharedFloat64AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.shaderImageFloat32AtomicMinMax = VK_FALSE;
-		atomicFloat2Features.sparseImageFloat32AtomicMinMax = VK_FALSE;
-
 		// Vulkan memory model features
 		VkPhysicalDeviceVulkanMemoryModelFeatures memoryModelFeatures;
 		memoryModelFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES;
-		memoryModelFeatures.pNext = &atomicFloat2Features;
+		memoryModelFeatures.pNext = &features11;
 		memoryModelFeatures.vulkanMemoryModel = VK_TRUE;
 		memoryModelFeatures.vulkanMemoryModelDeviceScope = VK_TRUE;
 		memoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains = VK_FALSE;

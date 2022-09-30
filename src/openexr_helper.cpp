@@ -1,4 +1,4 @@
-#include <engine/util/openexr_helper.hpp>
+/*#include <engine/util/openexr_helper.hpp>
 
 #include <cstdio>
 #include <cstdlib>
@@ -74,3 +74,4 @@ namespace en
         delete[] hrgba;
     }
 }
+*/

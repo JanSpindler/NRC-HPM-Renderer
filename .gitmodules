@@ -1,3 +1,3 @@
-[submodule "external/kompute"]
-	path = external/kompute
-	url = https://github.com/KomputeProject/kompute.git
+[submodule "dependencies/tiny-cuda-nn"]
+	path = dependencies/tiny-cuda-nn
+	url = https://github.com/NVlabs/tiny-cuda-nn.git
