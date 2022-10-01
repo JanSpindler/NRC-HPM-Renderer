@@ -23,6 +23,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "include")
 list(APPEND CUDA_NVCC_FLAGS "--extended-lambda")
 list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 
+set(CMAKE_CUDA_ARCHITECTURES 86)
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "86")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_11)
