@@ -26,7 +26,7 @@ list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 set(CMAKE_CUDA_ARCHITECTURES 86)
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "86")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
-target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_11)
+target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_17)
 target_compile_options(${PROJECT_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)
 
 # Dependencies
