@@ -24,6 +24,9 @@ PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32HandleKHR;
 VkImage image;
 VkDeviceMemory imageMemory;
 
+en::vk::CommandPool* commandPool;
+VkCommandBuffer commandBuffer;
+
 VkExternalMemoryHandleTypeFlagBits externalMemoryHandleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 
 void LoadVulkanProcAddr()
@@ -37,10 +40,16 @@ void LoadVulkanProcAddr()
 		"vkGetSemaphoreWin32HandleKHR");
 }
 
-void CreateImage(uint32_t width, uint32_t height)
+void CreateCommandBuffer(uint32_t qfi)
+{
+	commandPool = new en::vk::CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, qfi);
+	commandPool->AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	commandBuffer = commandPool->GetBuffer(0);
+}
+
+void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height)
 {
 	VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	VkDevice device = en::VulkanAPI::GetDevice();
 
 	// Create Image
 	VkExternalMemoryImageCreateInfo vkExternalMemImageCreateInfo = {};
@@ -101,10 +110,6 @@ void CreateImage(uint32_t width, uint32_t height)
 	ASSERT_VULKAN(result);
 
 	// Change image layout
-	en::vk::CommandPool commandPool(0, en::VulkanAPI::GetGraphicsQFI());
-	commandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	VkCommandBuffer commandBuffer = commandPool.GetBuffer(0);
-
 	VkCommandBufferBeginInfo beginInfo;
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.pNext = nullptr;
@@ -138,11 +143,19 @@ void CreateImage(uint32_t width, uint32_t height)
 	submitInfo.signalSemaphoreCount = 0;
 	submitInfo.pSignalSemaphores = nullptr;
 
-	VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 	result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 	ASSERT_VULKAN(result);
 	result = vkQueueWaitIdle(queue);
 	ASSERT_VULKAN(result);
+}
+
+void DestroyVulkanResources(VkDevice device)
+{
+	vkFreeMemory(device, imageMemory, nullptr);
+	vkDestroyImage(device, image, nullptr);
+
+	commandPool->Destroy();
+	delete commandPool;
 }
 
 HANDLE GetImageMemoryHandle()
@@ -162,14 +175,17 @@ HANDLE GetImageMemoryHandle()
 void RunTcnn()
 {
 	// Start engine
-	std::string appName("NRC-HPM-Renderer");
+	const std::string appName("NRC-HPM-Renderer");
 	uint32_t width = 768; // Multiple of 128 for nrc batch size
 	uint32_t height = width;
 	en::Log::Info("Starting " + appName);
 	en::Window::Init(width, height, false, appName);
 	en::VulkanAPI::Init(appName);
+	const VkDevice device = en::VulkanAPI::GetDevice();
+	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
+	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 
-	// Init tcnn
+	/*// Init tcnn
 	nlohmann::json config = {
 	{"loss", {
 		{"otype", "L2"}
@@ -221,11 +237,12 @@ void RunTcnn()
 	tcnn::GPUMatrix<float> inference_inputs(n_input_dims, batch_size);
 	tcnn::GPUMatrix<float> inference_outputs(n_output_dims, batch_size);
 
-	tcnn::GPUMemory<uint8_t> tcnnMemory(batch_size * n_input_dims * sizeof(float));
+	tcnn::GPUMemory<uint8_t> tcnnMemory(batch_size * n_input_dims * sizeof(float));*/
 
 	// Interop test
 	LoadVulkanProcAddr();
-	CreateImage(width, height);
+	CreateCommandBuffer(en::VulkanAPI::GetGraphicsQFI());
+	CreateImage(device, queue, width, height);
 	
 	cudaExternalMemoryHandleDesc cuExtMemHandleDesc;
 	memset(&cuExtMemHandleDesc, 0, sizeof(cudaExternalMemoryHandleDesc));
@@ -238,8 +255,6 @@ void RunTcnn()
 	ASSERT_CUDA(cudaResult);
 
 	// Main loop
-	VkDevice device = en::VulkanAPI::GetDevice();
-	VkQueue graphicsQueue = en::VulkanAPI::GetGraphicsQueue();
 	VkResult result;
 	while (!en::Window::IsClosed())
 	{
@@ -252,6 +267,8 @@ void RunTcnn()
 	ASSERT_VULKAN(result);
 
 	// End
+	DestroyVulkanResources(device);
+
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();
 
