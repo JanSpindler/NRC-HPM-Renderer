@@ -18,9 +18,9 @@
 #include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/renderer/RestirHpmRenderer.hpp>
 
-//#define NRC
+#define NRC
 //#define RESTIR
-#define TCNN
+//#define TCNN
 
 #ifdef NRC
 en::NrcHpmRenderer* hpmRenderer = nullptr;
@@ -30,9 +30,6 @@ en::NrcHpmRenderer* hpmRenderer = nullptr;
 en::RestirHpmRenderer* hpmRenderer = nullptr;
 #endif
 
-#define RENDER (NRC || RESTIR)
-
-#ifndef RENDER
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
 	uint32_t width = en::Window::GetWidth();
@@ -438,8 +435,6 @@ void RunRestirHpm()
 	en::Log::Info("Ending " + appName);
 }
 #endif
-
-#endif // RENDER
 
 #ifdef TCNN
 
