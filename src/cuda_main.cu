@@ -40,6 +40,8 @@ VkSampler sampler;
 VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 VkSemaphore vkSemaphore;
 
+cudaStream_t streamToRun;
+
 void LoadVulkanProcAddr()
 {
 	fpGetMemoryWin32HandleKHR = (PFN_vkGetMemoryWin32HandleKHR)vkGetInstanceProcAddr(
@@ -344,6 +346,28 @@ HANDLE GetSemaphoreHandle(VkDevice device)
 	return handle;
 }
 
+void CuVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
+{
+	cudaExternalSemaphoreSignalParams extSemaphoreSignalParams;
+	memset(&extSemaphoreSignalParams, 0, sizeof(extSemaphoreSignalParams));
+	extSemaphoreSignalParams.params.fence.value = 0;
+	extSemaphoreSignalParams.flags = 0;
+
+	cudaError_t error = cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, streamToRun);
+	ASSERT_CUDA(error);
+}
+
+void CuVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore)
+{
+	cudaExternalSemaphoreWaitParams extSemaphoreWaitParams;
+	memset(&extSemaphoreWaitParams, 0, sizeof(extSemaphoreWaitParams));
+	extSemaphoreWaitParams.params.fence.value = 0;
+	extSemaphoreWaitParams.flags = 0;
+
+	cudaError_t error = cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemaphoreWaitParams, 1, streamToRun);
+	ASSERT_CUDA(error);
+}
+
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
 	uint32_t width = en::Window::GetWidth();
@@ -414,13 +438,13 @@ void SwapchainResizeCallback()
 	en::Window::WaitForUsableSize();
 	vkDeviceWaitIdle(en::VulkanAPI::GetDevice()); // TODO: causes error with multithreaded rendering
 
-	uint32_t width = en::Window::GetWidth();
-	uint32_t height = en::Window::GetHeight();
-	//nrcHpmRenderer->ResizeFrame(width, height);
-	en::ImGuiRenderer::Resize(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(imageView);
+	en::Log::Info("Skipping swapchain resize callback");
 
-	en::Log::Error("Should not resize", true);
+	//uint32_t width = en::Window::GetWidth();
+	//uint32_t height = en::Window::GetHeight();
+	//nrcHpmRenderer->ResizeFrame(width, height);
+	//en::ImGuiRenderer::Resize(width, height);
+	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
 void RunTcnn()
@@ -445,6 +469,9 @@ void RunTcnn()
 
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(imageView);
+
+	// Swapchain rerecording because imgui renderer is now available
+	swapchain.Resize(width, height);
 
 	/*// Init tcnn
 	nlohmann::json config = {
