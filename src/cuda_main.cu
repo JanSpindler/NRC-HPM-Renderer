@@ -12,6 +12,9 @@
 #include <engine/graphics/VulkanAPI.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
+#include <engine/graphics/renderer/ImGuiRenderer.hpp>
+#include <engine/graphics/vulkan/Swapchain.hpp>
+#include <imgui.h>
 
 #include <tiny-cuda-nn/config.h>
 #include <vulkan/vulkan.h>
@@ -21,13 +24,21 @@
 PFN_vkGetMemoryWin32HandleKHR fpGetMemoryWin32HandleKHR;
 PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32HandleKHR;
 
-VkImage image;
-VkDeviceMemory imageMemory;
-
 en::vk::CommandPool* commandPool;
 VkCommandBuffer commandBuffer;
 
+//VkDescriptorPool descPool;
+//VkDescriptorSetLayout descSetLayout;
+//VkDescriptorSet descSet;
+
 VkExternalMemoryHandleTypeFlagBits externalMemoryHandleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+VkImage image;
+VkDeviceMemory imageMemory;
+VkImageView imageView;
+VkSampler sampler;
+
+VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+VkSemaphore vkSemaphore;
 
 void LoadVulkanProcAddr()
 {
@@ -68,7 +79,7 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 	imageCI.arrayLayers = 1;
 	imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageCI.queueFamilyIndexCount = 0;
 	imageCI.pQueueFamilyIndices = nullptr;
@@ -147,18 +158,165 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 	ASSERT_VULKAN(result);
 	result = vkQueueWaitIdle(queue);
 	ASSERT_VULKAN(result);
+
+	// Create image view
+	VkImageViewCreateInfo imageViewCI;
+	imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imageViewCI.pNext = nullptr;
+	imageViewCI.flags = 0;
+	imageViewCI.image = image;
+	imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	imageViewCI.format = format;
+	imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageViewCI.subresourceRange.baseArrayLayer = 0;
+	imageViewCI.subresourceRange.baseMipLevel = 0;
+	imageViewCI.subresourceRange.layerCount = 1;
+	imageViewCI.subresourceRange.levelCount = 1;
+
+	result = vkCreateImageView(device, &imageViewCI, nullptr, &imageView);
+	ASSERT_VULKAN(result);
+
+	// Create sampler
+	VkSamplerCreateInfo samplerCI;
+	samplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCI.pNext = nullptr;
+	samplerCI.flags = 0;
+	samplerCI.magFilter = VK_FILTER_LINEAR;
+	samplerCI.minFilter = VK_FILTER_LINEAR;
+	samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	samplerCI.mipLodBias = 0.0f;
+	samplerCI.anisotropyEnable = VK_FALSE;
+	samplerCI.maxAnisotropy = 0.0f;
+	samplerCI.compareEnable = VK_FALSE;
+	samplerCI.compareOp = VK_COMPARE_OP_LESS;
+	samplerCI.minLod = 0.0f;
+	samplerCI.maxLod = 1.0f;
+	samplerCI.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerCI.unnormalizedCoordinates = VK_FALSE;
+
+	result = vkCreateSampler(device, &samplerCI, nullptr, &sampler);
+	ASSERT_VULKAN(result);
 }
+
+void CreateVkCuSemaphore(VkDevice device)
+{
+	SECURITY_ATTRIBUTES winSecurityAttributes;
+
+	VkExportSemaphoreWin32HandleInfoKHR vulkanExportSemaphoreWin32HandleInfoKHR = {};
+	vulkanExportSemaphoreWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
+	vulkanExportSemaphoreWin32HandleInfoKHR.pNext = NULL;
+	vulkanExportSemaphoreWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
+	vulkanExportSemaphoreWin32HandleInfoKHR.dwAccess = DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
+	vulkanExportSemaphoreWin32HandleInfoKHR.name = (LPCWSTR)NULL;
+
+	VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
+	vulkanExportSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
+	vulkanExportSemaphoreCreateInfo.pNext = &vulkanExportSemaphoreWin32HandleInfoKHR;
+	vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+	vulkanExportSemaphoreCreateInfo.pNext = NULL;
+	vulkanExportSemaphoreCreateInfo.handleTypes = externalSemaphoreHandleType;
+	
+	VkSemaphoreCreateInfo semaphoreCI;
+	semaphoreCI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphoreCI.pNext = &vulkanExportSemaphoreCreateInfo;
+	semaphoreCI.flags = 0;
+
+	VkResult result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &vkSemaphore);
+	ASSERT_VULKAN(result);
+}
+
+/*void InitDescriptor(VkDevice device)
+{
+	// Create desc set layout
+	VkDescriptorSetLayoutBinding imageBinding;
+	imageBinding.binding = 0;
+	imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	imageBinding.descriptorCount = 1;
+	imageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	imageBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutCI;
+	layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCI.pNext = nullptr;
+	layoutCI.flags = 0;
+	layoutCI.bindingCount = 1;
+	layoutCI.pBindings = &imageBinding;
+
+	VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &descSetLayout);
+	ASSERT_VULKAN(result);
+
+	// Create desc pool
+	VkDescriptorPoolSize combinedImageSamplerPoolSize;
+	combinedImageSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	combinedImageSamplerPoolSize.descriptorCount = 1;
+
+	VkDescriptorPoolCreateInfo poolCI;
+	poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolCI.pNext = nullptr;
+	poolCI.flags = 0;
+	poolCI.maxSets = 1;
+	poolCI.poolSizeCount = 1;
+	poolCI.pPoolSizes = &combinedImageSamplerPoolSize;
+
+	result = vkCreateDescriptorPool(device, &poolCI, nullptr, &descPool);
+	ASSERT_VULKAN(result);
+
+	// Allocate desc set
+	VkDescriptorSetAllocateInfo descSetAI;
+	descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descSetAI.pNext = nullptr;
+	descSetAI.descriptorPool = descPool;
+	descSetAI.descriptorSetCount = 1;
+	descSetAI.pSetLayouts = &descSetLayout;
+
+	result = vkAllocateDescriptorSets(device, &descSetAI, &descSet);
+	ASSERT_VULKAN(result);
+
+	// Update desc set
+	VkDescriptorImageInfo imageInfo;
+	imageInfo.sampler = sampler;
+	imageInfo.imageView = imageView;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	VkWriteDescriptorSet imageWrite;
+	imageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	imageWrite.pNext = nullptr;
+	imageWrite.dstSet = descSet;
+	imageWrite.dstBinding = 0;
+	imageWrite.dstArrayElement = 0;
+	imageWrite.descriptorCount = 1;
+	imageWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	imageWrite.pImageInfo = &imageInfo;
+	imageWrite.pBufferInfo = nullptr;
+	imageWrite.pTexelBufferView = nullptr;
+
+	vkUpdateDescriptorSets(device, 1, &imageWrite, 0, nullptr);
+}*/
 
 void DestroyVulkanResources(VkDevice device)
 {
+	vkDestroySemaphore(device, vkSemaphore, nullptr);
+
+	vkDestroySampler(device, sampler, nullptr);
+	vkDestroyImageView(device, imageView, nullptr);
 	vkFreeMemory(device, imageMemory, nullptr);
 	vkDestroyImage(device, image, nullptr);
+
+	//vkDestroyDescriptorPool(device, descPool, nullptr);
+	//vkDestroyDescriptorSetLayout(device, descSetLayout, nullptr);
 
 	commandPool->Destroy();
 	delete commandPool;
 }
 
-HANDLE GetImageMemoryHandle()
+HANDLE GetImageMemoryHandle(VkDevice device)
 {
 	HANDLE handle;
 
@@ -166,10 +324,103 @@ HANDLE GetImageMemoryHandle()
 	vkMemoryGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
 	vkMemoryGetWin32HandleInfoKHR.pNext = NULL;
 	vkMemoryGetWin32HandleInfoKHR.memory = imageMemory;
-	vkMemoryGetWin32HandleInfoKHR.handleType = (VkExternalMemoryHandleTypeFlagBitsKHR)VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+	vkMemoryGetWin32HandleInfoKHR.handleType = externalMemoryHandleType;
 
-	fpGetMemoryWin32HandleKHR(en::VulkanAPI::GetDevice(), &vkMemoryGetWin32HandleInfoKHR, &handle);
+	fpGetMemoryWin32HandleKHR(device, &vkMemoryGetWin32HandleInfoKHR, &handle);
 	return handle;
+}
+
+HANDLE GetSemaphoreHandle(VkDevice device)
+{
+	HANDLE handle;
+
+	VkSemaphoreGetWin32HandleInfoKHR vulkanSemaphoreGetWin32HandleInfoKHR = {};
+	vulkanSemaphoreGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR;
+	vulkanSemaphoreGetWin32HandleInfoKHR.pNext = NULL;
+	vulkanSemaphoreGetWin32HandleInfoKHR.semaphore = vkSemaphore;
+	vulkanSemaphoreGetWin32HandleInfoKHR.handleType = externalSemaphoreHandleType;
+
+	fpGetSemaphoreWin32HandleKHR(device, &vulkanSemaphoreGetWin32HandleInfoKHR, &handle);
+	return handle;
+}
+
+void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
+{
+	uint32_t width = en::Window::GetWidth();
+	uint32_t height = en::Window::GetHeight();
+
+	VkCommandBufferBeginInfo beginInfo;
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.pNext = nullptr;
+	beginInfo.flags = 0;
+	beginInfo.pInheritanceInfo = nullptr;
+
+	VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	if (result != VK_SUCCESS)
+		en::Log::Error("Failed to begin VkCommandBuffer", true);
+
+	en::vk::CommandRecorder::ImageLayoutTransfer(
+		commandBuffer,
+		image,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_ACCESS_NONE_KHR,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	if (en::ImGuiRenderer::IsInitialized())
+	{
+		VkImageCopy imageCopy;
+		imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopy.srcSubresource.mipLevel = 0;
+		imageCopy.srcSubresource.baseArrayLayer = 0;
+		imageCopy.srcSubresource.layerCount = 1;
+		imageCopy.srcOffset = { 0, 0, 0 };
+		imageCopy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopy.dstSubresource.mipLevel = 0;
+		imageCopy.dstSubresource.baseArrayLayer = 0;
+		imageCopy.dstSubresource.layerCount = 1;
+		imageCopy.dstOffset = { 0, 0, 0 };
+		imageCopy.extent = { width, height, 1 };
+
+		vkCmdCopyImage(
+			commandBuffer,
+			en::ImGuiRenderer::GetImage(),
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&imageCopy);
+	}
+
+	en::vk::CommandRecorder::ImageLayoutTransfer(
+		commandBuffer,
+		image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	result = vkEndCommandBuffer(commandBuffer);
+	if (result != VK_SUCCESS)
+		en::Log::Error("Failed to end VkCommandBuffer", true);
+}
+
+void SwapchainResizeCallback()
+{
+	en::Window::WaitForUsableSize();
+	vkDeviceWaitIdle(en::VulkanAPI::GetDevice()); // TODO: causes error with multithreaded rendering
+
+	uint32_t width = en::Window::GetWidth();
+	uint32_t height = en::Window::GetHeight();
+	//nrcHpmRenderer->ResizeFrame(width, height);
+	en::ImGuiRenderer::Resize(width, height);
+	en::ImGuiRenderer::SetBackgroundImageView(imageView);
+
+	en::Log::Error("Should not resize", true);
 }
 
 void RunTcnn()
@@ -184,6 +435,16 @@ void RunTcnn()
 	const VkDevice device = en::VulkanAPI::GetDevice();
 	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
 	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
+
+	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
+
+	LoadVulkanProcAddr();
+	CreateCommandBuffer(en::VulkanAPI::GetGraphicsQFI());
+	CreateImage(device, queue, width, height);
+	CreateVkCuSemaphore(device);
+
+	en::ImGuiRenderer::Init(width, height);
+	en::ImGuiRenderer::SetBackgroundImageView(imageView);
 
 	/*// Init tcnn
 	nlohmann::json config = {
@@ -240,19 +501,25 @@ void RunTcnn()
 	tcnn::GPUMemory<uint8_t> tcnnMemory(batch_size * n_input_dims * sizeof(float));*/
 
 	// Interop test
-	LoadVulkanProcAddr();
-	CreateCommandBuffer(en::VulkanAPI::GetGraphicsQFI());
-	CreateImage(device, queue, width, height);
-	
 	cudaExternalMemoryHandleDesc cuExtMemHandleDesc;
 	memset(&cuExtMemHandleDesc, 0, sizeof(cudaExternalMemoryHandleDesc));
 	cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
-	cuExtMemHandleDesc.handle.win32.handle = GetImageMemoryHandle();
+	cuExtMemHandleDesc.handle.win32.handle = GetImageMemoryHandle(device);
 	cuExtMemHandleDesc.size = width * height * 4 * sizeof(float);
 	
 	cudaExternalMemory_t cuVkImageMemory;
 	cudaError_t cudaResult = cudaImportExternalMemory(&cuVkImageMemory, &cuExtMemHandleDesc);
 	ASSERT_CUDA(cudaResult);
+
+	cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
+	memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
+	externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+	externalSemaphoreHandleDesc.handle.win32.handle = GetSemaphoreHandle(device);
+	externalSemaphoreHandleDesc.flags = 0;
+
+	cudaExternalSemaphore_t cuVkSemaphore;
+	cudaError_t error = cudaImportExternalSemaphore(&cuVkSemaphore, &externalSemaphoreHandleDesc);
+	ASSERT_CUDA(error);
 
 	// Main loop
 	VkResult result;
@@ -262,12 +529,30 @@ void RunTcnn()
 		en::Window::Update();
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
+
+		// Imgui
+		en::ImGuiRenderer::StartFrame();
+
+		ImGui::Begin("Hello world");
+
+		ImGui::End();
+
+		// Display
+		en::ImGuiRenderer::EndFrame(queue);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+
+		swapchain.DrawAndPresent();
 	}
 	result = vkDeviceWaitIdle(device);
 	ASSERT_VULKAN(result);
 
 	// End
 	DestroyVulkanResources(device);
+	
+	en::ImGuiRenderer::Shutdown();
+
+	swapchain.Destroy(true);
 
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();
