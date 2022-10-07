@@ -29,15 +29,12 @@ PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32HandleKHR;
 en::vk::CommandPool* commandPool;
 VkCommandBuffer commandBuffer;
 
-//VkDescriptorPool descPool;
-//VkDescriptorSetLayout descSetLayout;
-//VkDescriptorSet descSet;
-
 VkExternalMemoryHandleTypeFlagBits externalMemoryHandleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 VkImage image;
 VkDeviceMemory imageMemory;
 VkImageView imageView;
 VkSampler sampler;
+cudaExternalMemory_t cuImageMemory;
 
 VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 VkSemaphore vkCudaStartSemaphore;
@@ -96,6 +93,7 @@ void CreateCommandBuffer(uint32_t qfi)
 void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height)
 {
 	VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	const size_t imageSizeInBytes = width * height * 4 * sizeof(float);
 
 	// Create Image
 	VkExternalMemoryImageCreateInfo vkExternalMemImageCreateInfo = {};
@@ -154,6 +152,15 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 
 	result = vkBindImageMemory(device, image, imageMemory, 0);
 	ASSERT_VULKAN(result);
+
+	// Cuda image memory
+	cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
+	cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
+	cuExtMemHandleDesc.handle.win32.handle = GetImageMemoryHandle(device);
+	cuExtMemHandleDesc.size = imageSizeInBytes;
+
+	cudaError_t cudaResult = cudaImportExternalMemory(&cuImageMemory, &cuExtMemHandleDesc);
+	ASSERT_CUDA(cudaResult);
 
 	// Change image layout
 	VkCommandBufferBeginInfo beginInfo;
@@ -286,74 +293,6 @@ void CreateSyncObjects(VkDevice device)
 	ASSERT_CUDA(error);
 }
 
-/*void InitDescriptor(VkDevice device)
-{
-	// Create desc set layout
-	VkDescriptorSetLayoutBinding imageBinding;
-	imageBinding.binding = 0;
-	imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	imageBinding.descriptorCount = 1;
-	imageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	imageBinding.pImmutableSamplers = nullptr;
-
-	VkDescriptorSetLayoutCreateInfo layoutCI;
-	layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCI.pNext = nullptr;
-	layoutCI.flags = 0;
-	layoutCI.bindingCount = 1;
-	layoutCI.pBindings = &imageBinding;
-
-	VkResult result = vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &descSetLayout);
-	ASSERT_VULKAN(result);
-
-	// Create desc pool
-	VkDescriptorPoolSize combinedImageSamplerPoolSize;
-	combinedImageSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	combinedImageSamplerPoolSize.descriptorCount = 1;
-
-	VkDescriptorPoolCreateInfo poolCI;
-	poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCI.pNext = nullptr;
-	poolCI.flags = 0;
-	poolCI.maxSets = 1;
-	poolCI.poolSizeCount = 1;
-	poolCI.pPoolSizes = &combinedImageSamplerPoolSize;
-
-	result = vkCreateDescriptorPool(device, &poolCI, nullptr, &descPool);
-	ASSERT_VULKAN(result);
-
-	// Allocate desc set
-	VkDescriptorSetAllocateInfo descSetAI;
-	descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	descSetAI.pNext = nullptr;
-	descSetAI.descriptorPool = descPool;
-	descSetAI.descriptorSetCount = 1;
-	descSetAI.pSetLayouts = &descSetLayout;
-
-	result = vkAllocateDescriptorSets(device, &descSetAI, &descSet);
-	ASSERT_VULKAN(result);
-
-	// Update desc set
-	VkDescriptorImageInfo imageInfo;
-	imageInfo.sampler = sampler;
-	imageInfo.imageView = imageView;
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-	VkWriteDescriptorSet imageWrite;
-	imageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	imageWrite.pNext = nullptr;
-	imageWrite.dstSet = descSet;
-	imageWrite.dstBinding = 0;
-	imageWrite.dstArrayElement = 0;
-	imageWrite.descriptorCount = 1;
-	imageWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	imageWrite.pImageInfo = &imageInfo;
-	imageWrite.pBufferInfo = nullptr;
-	imageWrite.pTexelBufferView = nullptr;
-
-	vkUpdateDescriptorSets(device, 1, &imageWrite, 0, nullptr);
-}*/
-
 void DestroyVulkanResources(VkDevice device)
 {
 	vkDestroySemaphore(device, vkCudaFinishedSemaphore, nullptr);
@@ -363,9 +302,6 @@ void DestroyVulkanResources(VkDevice device)
 	vkDestroyImageView(device, imageView, nullptr);
 	vkFreeMemory(device, imageMemory, nullptr);
 	vkDestroyImage(device, image, nullptr);
-
-	//vkDestroyDescriptorPool(device, descPool, nullptr);
-	//vkDestroyDescriptorSetLayout(device, descSetLayout, nullptr);
 
 	commandPool->Destroy();
 	delete commandPool;
@@ -472,6 +408,11 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
+__global__ void FillImage()
+{
+
+}
+
 void RunTcnn()
 {
 	// Start engine
@@ -552,17 +493,6 @@ void RunTcnn()
 
 	tcnn::GPUMemory<uint8_t> tcnnMemory(batch_size * n_input_dims * sizeof(float));*/
 
-	// Interop test
-	cudaExternalMemoryHandleDesc cuExtMemHandleDesc;
-	memset(&cuExtMemHandleDesc, 0, sizeof(cudaExternalMemoryHandleDesc));
-	cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
-	cuExtMemHandleDesc.handle.win32.handle = GetImageMemoryHandle(device);
-	cuExtMemHandleDesc.size = width * height * 4 * sizeof(float);
-	
-	cudaExternalMemory_t cuVkImageMemory;
-	cudaError_t cudaResult = cudaImportExternalMemory(&cuVkImageMemory, &cuExtMemHandleDesc);
-	ASSERT_CUDA(cudaResult);
-
 	// Main loop
 	VkResult result;
 	size_t frameCount = 0;
@@ -581,7 +511,7 @@ void RunTcnn()
 			CuVkSemaphoreWait(cuCudaStartSemaphore);
 
 			// Cuda rendering
-
+			
 		}
 		// Tell vulkan that cuda finished
 		CuVkSemaphoreSignal(cuCudaFinishedSemaphore);
