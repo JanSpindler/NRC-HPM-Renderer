@@ -387,9 +387,12 @@ __global__ void CuFillImage(float* cuImageMemory)
 	const int xIndex = threadIdx.x + (blockIdx.x * blockDim.x);
 	const int yIndex = threadIdx.y + (blockIdx.y * blockDim.y);
 	const int zIndex = threadIdx.z + (blockIdx.z * blockDim.z);
-	const int pixelIndex = (yIndex * 768) + xIndex;
+	const int pixelIndex = (xIndex * 768) + yIndex;
 	const int pixelChannelIndex = (pixelIndex * 4) + zIndex;
-	cuImageMemory[pixelChannelIndex] = 0.5f;
+
+	const float brightness = (float)pixelIndex / (768.0f * 768.0f);
+
+	cuImageMemory[pixelChannelIndex] = brightness;
 }
 
 void RunTcnn()
@@ -418,7 +421,7 @@ void RunTcnn()
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
 
-	/*// Init tcnn
+	// Init tcnn
 	nlohmann::json config = {
 	{"loss", {
 		{"otype", "L2"}
@@ -466,11 +469,8 @@ void RunTcnn()
 
 	tcnn::GPUMatrix<float> training_batch_inputs(n_input_dims, batch_size);
 	tcnn::GPUMatrix<float> training_batch_targets(n_output_dims, batch_size);
-
 	tcnn::GPUMatrix<float> inference_inputs(n_input_dims, batch_size);
 	tcnn::GPUMatrix<float> inference_outputs(n_output_dims, batch_size);
-
-	tcnn::GPUMemory<uint8_t> tcnnMemory(batch_size * n_input_dims * sizeof(float));*/
 
 	cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
 	cudaExtBufferDesc.offset = 0;
@@ -491,6 +491,16 @@ void RunTcnn()
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
 
+		// Test tcnn performance without effect
+		for (size_t i = 0; i < (width * height) / batch_size; i++)
+		{
+			model.network->inference(inference_inputs, inference_outputs);
+		}
+		for (size_t i = 0; i < (128 * 128) / batch_size; i++)
+		{
+			model.trainer->training_step(training_batch_inputs, training_batch_targets);
+		}
+
 		// Render frame
 		if (frameCount > 0)
 		{
@@ -498,13 +508,13 @@ void RunTcnn()
 			CuVkSemaphoreWait(cuCudaStartSemaphore);
 
 			// Cuda rendering
-			dim3 threads(2, 4, 4);
-			dim3 blocks(width / 2, height / 4, 1);
+			dim3 threads(8, 1, 4);
+			dim3 blocks(width / 8, height, 1);
 			CuFillImage<<<blocks, threads, 0, streamToRun>>>(reinterpret_cast<float*>(cuImageMemory));
 		}
 		// Tell vulkan that cuda finished
 		CuVkSemaphoreSignal(cuCudaFinishedSemaphore);
-		
+
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
 
