@@ -17,7 +17,7 @@ file(GLOB_RECURSE PROJECT_SOURCE "src/*.cpp")
 file(GLOB_RECURSE PROJECT_CUDA_SOURCE "src/*.cu")
 
 add_executable(${PROJECT_NAME} ${PROJECT_INCLUDE} ${PROJECT_SOURCE} ${PROJECT_CUDA_SOURCE})
-target_include_directories(${PROJECT_NAME} PUBLIC "include")
+target_include_directories(${PROJECT_NAME} PUBLIC "include" ${CUDA_INC_PATH})
 
 # Compile
 list(APPEND CUDA_NVCC_FLAGS "--extended-lambda")

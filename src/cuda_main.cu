@@ -15,9 +15,8 @@
 #include <engine/graphics/renderer/ImGuiRenderer.hpp>
 #include <engine/graphics/vulkan/Swapchain.hpp>
 #include <imgui.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/random.hpp>
 
+#include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
 #include <vulkan/vulkan.h>
 
@@ -30,11 +29,11 @@ en::vk::CommandPool* commandPool;
 VkCommandBuffer commandBuffer;
 
 VkExternalMemoryHandleTypeFlagBits externalMemoryHandleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+size_t imageSizeInBytes;
 VkImage image;
 VkDeviceMemory imageMemory;
 VkImageView imageView;
-VkSampler sampler;
-cudaExternalMemory_t cuImageMemory;
+cudaExternalMemory_t cuExtImageMemory;
 
 VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 VkSemaphore vkCudaStartSemaphore;
@@ -93,7 +92,7 @@ void CreateCommandBuffer(uint32_t qfi)
 void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height)
 {
 	VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	const size_t imageSizeInBytes = width * height * 4 * sizeof(float);
+	imageSizeInBytes = width * height * 4 * sizeof(float);
 
 	// Create Image
 	VkExternalMemoryImageCreateInfo vkExternalMemImageCreateInfo = {};
@@ -159,7 +158,7 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 	cuExtMemHandleDesc.handle.win32.handle = GetImageMemoryHandle(device);
 	cuExtMemHandleDesc.size = imageSizeInBytes;
 
-	cudaError_t cudaResult = cudaImportExternalMemory(&cuImageMemory, &cuExtMemHandleDesc);
+	cudaError_t cudaResult = cudaImportExternalMemory(&cuExtImageMemory, &cuExtMemHandleDesc);
 	ASSERT_CUDA(cudaResult);
 
 	// Change image layout
@@ -221,30 +220,6 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 
 	result = vkCreateImageView(device, &imageViewCI, nullptr, &imageView);
 	ASSERT_VULKAN(result);
-
-	// Create sampler
-	VkSamplerCreateInfo samplerCI;
-	samplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerCI.pNext = nullptr;
-	samplerCI.flags = 0;
-	samplerCI.magFilter = VK_FILTER_LINEAR;
-	samplerCI.minFilter = VK_FILTER_LINEAR;
-	samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-	samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-	samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-	samplerCI.mipLodBias = 0.0f;
-	samplerCI.anisotropyEnable = VK_FALSE;
-	samplerCI.maxAnisotropy = 0.0f;
-	samplerCI.compareEnable = VK_FALSE;
-	samplerCI.compareOp = VK_COMPARE_OP_LESS;
-	samplerCI.minLod = 0.0f;
-	samplerCI.maxLod = 1.0f;
-	samplerCI.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	samplerCI.unnormalizedCoordinates = VK_FALSE;
-
-	result = vkCreateSampler(device, &samplerCI, nullptr, &sampler);
-	ASSERT_VULKAN(result);
 }
 
 void CreateSyncObjects(VkDevice device)
@@ -298,7 +273,6 @@ void DestroyVulkanResources(VkDevice device)
 	vkDestroySemaphore(device, vkCudaFinishedSemaphore, nullptr);
 	vkDestroySemaphore(device, vkCudaStartSemaphore, nullptr);
 
-	vkDestroySampler(device, sampler, nullptr);
 	vkDestroyImageView(device, imageView, nullptr);
 	vkFreeMemory(device, imageMemory, nullptr);
 	vkDestroyImage(device, image, nullptr);
@@ -408,9 +382,14 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
-__global__ void FillImage()
+__global__ void CuFillImage(float* cuImageMemory)
 {
-
+	const int xIndex = threadIdx.x + (blockIdx.x * blockDim.x);
+	const int yIndex = threadIdx.y + (blockIdx.y * blockDim.y);
+	const int zIndex = threadIdx.z + (blockIdx.z * blockDim.z);
+	const int pixelIndex = (yIndex * 768) + xIndex;
+	const int pixelChannelIndex = (pixelIndex * 4) + zIndex;
+	cuImageMemory[pixelChannelIndex] = 0.5f;
 }
 
 void RunTcnn()
@@ -493,6 +472,15 @@ void RunTcnn()
 
 	tcnn::GPUMemory<uint8_t> tcnnMemory(batch_size * n_input_dims * sizeof(float));*/
 
+	cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
+	cudaExtBufferDesc.offset = 0;
+	cudaExtBufferDesc.size = imageSizeInBytes;
+	cudaExtBufferDesc.flags = 0;
+	
+	void* cuImageMemory;
+	cudaError_t error = cudaExternalMemoryGetMappedBuffer(&cuImageMemory, cuExtImageMemory, &cudaExtBufferDesc);
+	ASSERT_CUDA(error);
+
 	// Main loop
 	VkResult result;
 	size_t frameCount = 0;
@@ -507,15 +495,16 @@ void RunTcnn()
 		if (frameCount > 0)
 		{
 			// Wait for vulkan
-			const glm::vec4 randomColor = glm::linearRand(glm::vec4(0.0), glm::vec4(1.0));
 			CuVkSemaphoreWait(cuCudaStartSemaphore);
 
 			// Cuda rendering
-			
+			dim3 threads(2, 4, 4);
+			dim3 blocks(width / 2, height / 4, 1);
+			CuFillImage<<<blocks, threads, 0, streamToRun>>>(reinterpret_cast<float*>(cuImageMemory));
 		}
 		// Tell vulkan that cuda finished
 		CuVkSemaphoreSignal(cuCudaFinishedSemaphore);
-
+		
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
 
@@ -524,11 +513,11 @@ void RunTcnn()
 		ImGui::End();
 
 		// Display
-		en::ImGuiRenderer::EndFrame(queue);
+		en::ImGuiRenderer::EndFrame(queue, vkCudaFinishedSemaphore);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 
-		swapchain.DrawAndPresent(vkCudaFinishedSemaphore, vkCudaStartSemaphore);
+		swapchain.DrawAndPresent(VK_NULL_HANDLE, vkCudaStartSemaphore);
 		frameCount++;
 	}
 	result = vkDeviceWaitIdle(device);

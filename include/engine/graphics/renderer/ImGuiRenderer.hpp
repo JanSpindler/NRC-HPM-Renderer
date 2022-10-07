@@ -14,7 +14,7 @@ namespace en
 
 		static void Resize(uint32_t width, uint32_t height);
 		static void StartFrame();
-		static void EndFrame(VkQueue queue);
+		static void EndFrame(VkQueue queue, VkSemaphore waitSemaphore);
 
 		static bool IsInitialized();
 		static VkImage GetImage();
