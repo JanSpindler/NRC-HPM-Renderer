@@ -64,7 +64,7 @@ namespace en::vk
 		vkDestroySwapchainKHR(device, oldSwapchain, nullptr);
 	}
 
-	void Swapchain::DrawAndPresent(VkSemaphore signalSemaphore) // TODO: use one image for drawing and another one for presenting
+	void Swapchain::DrawAndPresent(VkSemaphore waitSemaphore, VkSemaphore signalSemaphore) // TODO: use one image for drawing and another one for presenting
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 		VkQueue graphicsQueue = VulkanAPI::GetGraphicsQueue();
@@ -93,6 +93,11 @@ namespace en::vk
 		// Submit correct CommandBuffer
 		std::vector<VkSemaphore> renderWaitSemaphores = { m_ImageAvailableSemaphore };
 		std::vector<VkPipelineStageFlags> renderWaitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		if (waitSemaphore != VK_NULL_HANDLE)
+		{
+			renderWaitSemaphores.push_back(waitSemaphore);
+			renderWaitStages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+		}
 		std::vector<VkSemaphore> renderSignalSemaphores = { m_RenderFinishedSemaphore };
 		if (signalSemaphore != VK_NULL_HANDLE)
 		{

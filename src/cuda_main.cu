@@ -576,9 +576,15 @@ void RunTcnn()
 		// Render frame
 		if (frameCount > 0)
 		{
+			// Wait for vulkan
 			const glm::vec4 randomColor = glm::linearRand(glm::vec4(0.0), glm::vec4(1.0));
 			CuVkSemaphoreWait(cuCudaStartSemaphore);
+
+			// Cuda rendering
+
 		}
+		// Tell vulkan that cuda finished
+		CuVkSemaphoreSignal(cuCudaFinishedSemaphore);
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -592,7 +598,7 @@ void RunTcnn()
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 
-		swapchain.DrawAndPresent(vkCudaStartSemaphore);
+		swapchain.DrawAndPresent(vkCudaFinishedSemaphore, vkCudaStartSemaphore);
 		frameCount++;
 	}
 	result = vkDeviceWaitIdle(device);
