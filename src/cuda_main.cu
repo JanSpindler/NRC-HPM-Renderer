@@ -371,17 +371,6 @@ void DestroyVulkanResources(VkDevice device)
 	delete commandPool;
 }
 
-void CuVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
-{
-	cudaExternalSemaphoreSignalParams extSemaphoreSignalParams;
-	memset(&extSemaphoreSignalParams, 0, sizeof(extSemaphoreSignalParams));
-	extSemaphoreSignalParams.params.fence.value = 0;
-	extSemaphoreSignalParams.flags = 0;
-
-	cudaError_t error = cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, streamToRun);
-	ASSERT_CUDA(error);
-}
-
 void CuVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore)
 {
 	cudaExternalSemaphoreWaitParams extSemaphoreWaitParams;
@@ -390,6 +379,17 @@ void CuVkSemaphoreWait(cudaExternalSemaphore_t& extSemaphore)
 	extSemaphoreWaitParams.flags = 0;
 
 	cudaError_t error = cudaWaitExternalSemaphoresAsync(&extSemaphore, &extSemaphoreWaitParams, 1, streamToRun);
+	ASSERT_CUDA(error);
+}
+
+void CuVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
+{
+	cudaExternalSemaphoreSignalParams extSemaphoreSignalParams;
+	memset(&extSemaphoreSignalParams, 0, sizeof(extSemaphoreSignalParams));
+	extSemaphoreSignalParams.params.fence.value = 0;
+	extSemaphoreSignalParams.flags = 0;
+
+	cudaError_t error = cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, streamToRun);
 	ASSERT_CUDA(error);
 }
 
@@ -565,6 +565,7 @@ void RunTcnn()
 
 	// Main loop
 	VkResult result;
+	size_t frameCount = 0;
 	while (!en::Window::IsClosed())
 	{
 		// Update
@@ -573,8 +574,11 @@ void RunTcnn()
 		height = en::Window::GetHeight();
 
 		// Render frame
-		const glm::vec4 randomColor = glm::linearRand(glm::vec4(0.0), glm::vec4(1.0));
-
+		if (frameCount > 0)
+		{
+			const glm::vec4 randomColor = glm::linearRand(glm::vec4(0.0), glm::vec4(1.0));
+			CuVkSemaphoreWait(cuCudaStartSemaphore);
+		}
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -588,7 +592,8 @@ void RunTcnn()
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 
-		swapchain.DrawAndPresent();
+		swapchain.DrawAndPresent(vkCudaStartSemaphore);
+		frameCount++;
 	}
 	result = vkDeviceWaitIdle(device);
 	ASSERT_VULKAN(result);

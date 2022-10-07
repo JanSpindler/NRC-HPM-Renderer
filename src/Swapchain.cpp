@@ -64,7 +64,7 @@ namespace en::vk
 		vkDestroySwapchainKHR(device, oldSwapchain, nullptr);
 	}
 
-	void Swapchain::DrawAndPresent() // TODO: use one image for drawing and another one for presenting
+	void Swapchain::DrawAndPresent(VkSemaphore signalSemaphore) // TODO: use one image for drawing and another one for presenting
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 		VkQueue graphicsQueue = VulkanAPI::GetGraphicsQueue();
@@ -91,21 +91,27 @@ namespace en::vk
 		}
 
 		// Submit correct CommandBuffer
-		std::vector<VkSemaphore> waitSemaphores = { m_ImageAvailableSemaphore };
-		std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		std::vector<VkSemaphore> signalSemaphores = { m_RenderFinishedSemaphore };
+		std::vector<VkSemaphore> renderWaitSemaphores = { m_ImageAvailableSemaphore };
+		std::vector<VkPipelineStageFlags> renderWaitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		std::vector<VkSemaphore> renderSignalSemaphores = { m_RenderFinishedSemaphore };
+		if (signalSemaphore != VK_NULL_HANDLE)
+		{
+			renderSignalSemaphores.push_back(signalSemaphore);
+		}
+		std::vector<VkSemaphore> presentWaitSemaphores = { m_RenderFinishedSemaphore };
+
 		VkCommandBuffer commandBuffer = m_CommandPool.GetBuffer(imageIndex);
 
 		VkSubmitInfo submitInfo;
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = waitSemaphores.size();
-		submitInfo.pWaitSemaphores = waitSemaphores.data();
-		submitInfo.pWaitDstStageMask = waitStages.data();
+		submitInfo.waitSemaphoreCount = renderWaitSemaphores.size();
+		submitInfo.pWaitSemaphores = renderWaitSemaphores.data();
+		submitInfo.pWaitDstStageMask = renderWaitStages.data();
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
-		submitInfo.signalSemaphoreCount = signalSemaphores.size();
-		submitInfo.pSignalSemaphores = signalSemaphores.data();
+		submitInfo.signalSemaphoreCount = renderSignalSemaphores.size();
+		submitInfo.pSignalSemaphores = renderSignalSemaphores.data();
 
 		result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
@@ -114,8 +120,8 @@ namespace en::vk
 		VkPresentInfoKHR presentInfo;
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.pNext = nullptr;
-		presentInfo.waitSemaphoreCount = signalSemaphores.size();
-		presentInfo.pWaitSemaphores = signalSemaphores.data();
+		presentInfo.waitSemaphoreCount = presentWaitSemaphores.size();
+		presentInfo.pWaitSemaphores = presentWaitSemaphores.data();
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &m_Handle;
 		presentInfo.pImageIndices = &imageIndex;
