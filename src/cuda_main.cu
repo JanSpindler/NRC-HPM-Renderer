@@ -15,6 +15,8 @@
 #include <engine/graphics/renderer/ImGuiRenderer.hpp>
 #include <engine/graphics/vulkan/Swapchain.hpp>
 #include <imgui.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/random.hpp>
 
 #include <tiny-cuda-nn/config.h>
 #include <vulkan/vulkan.h>
@@ -38,9 +40,40 @@ VkImageView imageView;
 VkSampler sampler;
 
 VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-VkSemaphore vkSemaphore;
+VkSemaphore vkCudaStartSemaphore;
+VkSemaphore vkCudaFinishedSemaphore;
+cudaExternalSemaphore_t cuCudaStartSemaphore;
+cudaExternalSemaphore_t cuCudaFinishedSemaphore;
 
-cudaStream_t streamToRun;
+cudaStream_t streamToRun = 0;
+
+HANDLE GetImageMemoryHandle(VkDevice device)
+{
+	HANDLE handle;
+
+	VkMemoryGetWin32HandleInfoKHR vkMemoryGetWin32HandleInfoKHR = {};
+	vkMemoryGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
+	vkMemoryGetWin32HandleInfoKHR.pNext = NULL;
+	vkMemoryGetWin32HandleInfoKHR.memory = imageMemory;
+	vkMemoryGetWin32HandleInfoKHR.handleType = externalMemoryHandleType;
+
+	fpGetMemoryWin32HandleKHR(device, &vkMemoryGetWin32HandleInfoKHR, &handle);
+	return handle;
+}
+
+HANDLE GetSemaphoreHandle(VkDevice device, VkSemaphore vkSemaphore)
+{
+	HANDLE handle;
+
+	VkSemaphoreGetWin32HandleInfoKHR vulkanSemaphoreGetWin32HandleInfoKHR = {};
+	vulkanSemaphoreGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR;
+	vulkanSemaphoreGetWin32HandleInfoKHR.pNext = NULL;
+	vulkanSemaphoreGetWin32HandleInfoKHR.semaphore = vkSemaphore;
+	vulkanSemaphoreGetWin32HandleInfoKHR.handleType = externalSemaphoreHandleType;
+
+	fpGetSemaphoreWin32HandleKHR(device, &vulkanSemaphoreGetWin32HandleInfoKHR, &handle);
+	return handle;
+}
 
 void LoadVulkanProcAddr()
 {
@@ -207,8 +240,9 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 	ASSERT_VULKAN(result);
 }
 
-void CreateVkCuSemaphore(VkDevice device)
+void CreateSyncObjects(VkDevice device)
 {
+	// Create vulkan semaphores
 	SECURITY_ATTRIBUTES winSecurityAttributes;
 
 	VkExportSemaphoreWin32HandleInfoKHR vulkanExportSemaphoreWin32HandleInfoKHR = {};
@@ -230,8 +264,26 @@ void CreateVkCuSemaphore(VkDevice device)
 	semaphoreCI.pNext = &vulkanExportSemaphoreCreateInfo;
 	semaphoreCI.flags = 0;
 
-	VkResult result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &vkSemaphore);
+	VkResult result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &vkCudaStartSemaphore);
 	ASSERT_VULKAN(result);
+
+	result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &vkCudaFinishedSemaphore);
+	ASSERT_VULKAN(result);
+
+	// Import vulkan semaphore to cuda
+	cudaExternalSemaphoreHandleDesc extCudaStartSemaphoreHD{};
+	extCudaStartSemaphoreHD.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+	extCudaStartSemaphoreHD.handle.win32.handle = GetSemaphoreHandle(device, vkCudaStartSemaphore);
+
+	cudaError_t error = cudaImportExternalSemaphore(&cuCudaStartSemaphore, &extCudaStartSemaphoreHD);
+	ASSERT_CUDA(error);
+
+	cudaExternalSemaphoreHandleDesc extCudaFinishedSemaphoreHD{};
+	extCudaFinishedSemaphoreHD.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+	extCudaFinishedSemaphoreHD.handle.win32.handle = GetSemaphoreHandle(device, vkCudaFinishedSemaphore);
+
+	error = cudaImportExternalSemaphore(&cuCudaFinishedSemaphore, &extCudaFinishedSemaphoreHD);
+	ASSERT_CUDA(error);
 }
 
 /*void InitDescriptor(VkDevice device)
@@ -304,7 +356,8 @@ void CreateVkCuSemaphore(VkDevice device)
 
 void DestroyVulkanResources(VkDevice device)
 {
-	vkDestroySemaphore(device, vkSemaphore, nullptr);
+	vkDestroySemaphore(device, vkCudaFinishedSemaphore, nullptr);
+	vkDestroySemaphore(device, vkCudaStartSemaphore, nullptr);
 
 	vkDestroySampler(device, sampler, nullptr);
 	vkDestroyImageView(device, imageView, nullptr);
@@ -316,34 +369,6 @@ void DestroyVulkanResources(VkDevice device)
 
 	commandPool->Destroy();
 	delete commandPool;
-}
-
-HANDLE GetImageMemoryHandle(VkDevice device)
-{
-	HANDLE handle;
-
-	VkMemoryGetWin32HandleInfoKHR vkMemoryGetWin32HandleInfoKHR = {};
-	vkMemoryGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
-	vkMemoryGetWin32HandleInfoKHR.pNext = NULL;
-	vkMemoryGetWin32HandleInfoKHR.memory = imageMemory;
-	vkMemoryGetWin32HandleInfoKHR.handleType = externalMemoryHandleType;
-
-	fpGetMemoryWin32HandleKHR(device, &vkMemoryGetWin32HandleInfoKHR, &handle);
-	return handle;
-}
-
-HANDLE GetSemaphoreHandle(VkDevice device)
-{
-	HANDLE handle;
-
-	VkSemaphoreGetWin32HandleInfoKHR vulkanSemaphoreGetWin32HandleInfoKHR = {};
-	vulkanSemaphoreGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR;
-	vulkanSemaphoreGetWin32HandleInfoKHR.pNext = NULL;
-	vulkanSemaphoreGetWin32HandleInfoKHR.semaphore = vkSemaphore;
-	vulkanSemaphoreGetWin32HandleInfoKHR.handleType = externalSemaphoreHandleType;
-
-	fpGetSemaphoreWin32HandleKHR(device, &vulkanSemaphoreGetWin32HandleInfoKHR, &handle);
-	return handle;
 }
 
 void CuVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
@@ -465,7 +490,7 @@ void RunTcnn()
 	LoadVulkanProcAddr();
 	CreateCommandBuffer(en::VulkanAPI::GetGraphicsQFI());
 	CreateImage(device, queue, width, height);
-	CreateVkCuSemaphore(device);
+	CreateSyncObjects(device);
 
 	en::ImGuiRenderer::Init(width, height);
 	en::ImGuiRenderer::SetBackgroundImageView(imageView);
@@ -538,16 +563,6 @@ void RunTcnn()
 	cudaError_t cudaResult = cudaImportExternalMemory(&cuVkImageMemory, &cuExtMemHandleDesc);
 	ASSERT_CUDA(cudaResult);
 
-	cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
-	memset(&externalSemaphoreHandleDesc, 0, sizeof(externalSemaphoreHandleDesc));
-	externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
-	externalSemaphoreHandleDesc.handle.win32.handle = GetSemaphoreHandle(device);
-	externalSemaphoreHandleDesc.flags = 0;
-
-	cudaExternalSemaphore_t cuVkSemaphore;
-	cudaError_t error = cudaImportExternalSemaphore(&cuVkSemaphore, &externalSemaphoreHandleDesc);
-	ASSERT_CUDA(error);
-
 	// Main loop
 	VkResult result;
 	while (!en::Window::IsClosed())
@@ -556,6 +571,10 @@ void RunTcnn()
 		en::Window::Update();
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
+
+		// Render frame
+		const glm::vec4 randomColor = glm::linearRand(glm::vec4(0.0), glm::vec4(1.0));
+
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
