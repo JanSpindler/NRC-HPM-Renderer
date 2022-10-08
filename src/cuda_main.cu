@@ -390,9 +390,19 @@ __global__ void CuFillImage(float* cuImageMemory)
 	const int pixelIndex = (xIndex * 768) + yIndex;
 	const int pixelChannelIndex = (pixelIndex * 4) + zIndex;
 
-	const float brightness = (float)pixelIndex / (768.0f * 768.0f);
+	float value;
+	switch (zIndex)
+	{
+	case 1:
+		value = (float)xIndex / 768.0f;
+		break;
+	case 0:
+		value = (float)yIndex / 768.0f;
+	default:
+		value = 0.0;
+	}
 
-	cuImageMemory[pixelChannelIndex] = brightness;
+	cuImageMemory[pixelChannelIndex] = value;
 }
 
 void RunTcnn()
