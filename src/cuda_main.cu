@@ -1,4 +1,4 @@
-#include <cuda_main.hpp>
+//#include <cuda_main.hpp>
 
 #define VK_USE_PLATFORM_WIN32_KHR
 
@@ -15,6 +15,8 @@
 #include <engine/graphics/renderer/ImGuiRenderer.hpp>
 #include <engine/graphics/vulkan/Swapchain.hpp>
 #include <imgui.h>
+#include <engine/graphics/renderer/NrcHpmRenderer.hpp>
+#include <engine/graphics/NeuralRadianceCache.hpp>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
@@ -405,7 +407,7 @@ __global__ void CuFillImage(float* cuImageMemory)
 	cuImageMemory[pixelChannelIndex] = value;
 }
 
-void RunTcnn()
+int main()
 {
 	// Start engine
 	const std::string appName("NRC-HPM-Renderer");
@@ -431,7 +433,7 @@ void RunTcnn()
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
 
-	// Init tcnn
+	// Init rendering stuff
 	nlohmann::json config = {
 	{"loss", {
 		{"otype", "L2"}
@@ -469,18 +471,7 @@ void RunTcnn()
 	}},
 	};
 
-	const uint32_t n_input_dims = 5;
-	const uint32_t n_output_dims = 3;
-	const uint32_t n_inference_steps = 36;
-	const uint32_t n_training_steps = 10;
-	const uint32_t batch_size = 16384;
-
-	tcnn::TrainableModel model = tcnn::create_from_config(n_input_dims, n_output_dims, config);
-
-	tcnn::GPUMatrix<float> training_batch_inputs(n_input_dims, batch_size);
-	tcnn::GPUMatrix<float> training_batch_targets(n_output_dims, batch_size);
-	tcnn::GPUMatrix<float> inference_inputs(n_input_dims, batch_size);
-	tcnn::GPUMatrix<float> inference_outputs(n_output_dims, batch_size);
+	en::NeuralRadianceCache nrc(config, 5, 3, 14);
 
 	cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
 	cudaExtBufferDesc.offset = 0;
@@ -500,16 +491,6 @@ void RunTcnn()
 		en::Window::Update();
 		width = en::Window::GetWidth();
 		height = en::Window::GetHeight();
-
-		// Test tcnn performance without effect
-		for (size_t i = 0; i < (width * height) / batch_size; i++)
-		{
-			model.network->inference(inference_inputs, inference_outputs);
-		}
-		for (size_t i = 0; i < (128 * 128) / batch_size; i++)
-		{
-			model.trainer->training_step(training_batch_inputs, training_batch_targets);
-		}
 
 		// Render frame
 		if (frameCount > 0)
@@ -554,4 +535,6 @@ void RunTcnn()
 	en::Window::Shutdown();
 
 	en::Log::Info("Ending " + appName);
+
+	return 0;
 }

@@ -1,3 +1,5 @@
+#include <cuda_runtime.h>
+#include <tiny-cuda-nn/config.h>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <random>
 #include <engine/util/Log.hpp>
@@ -8,12 +10,12 @@ namespace en
 		const nlohmann::json& config, 
 		uint32_t inputCount, 
 		uint32_t outputCount,
-		uint32_t batchSize) 
+		uint32_t log2BatchSize) 
 		:
 		m_Model(tcnn::create_from_config(inputCount, outputCount, config)),
 		m_InputCount(inputCount),
 		m_OutputCount(outputCount),
-		m_BatchSize(batchSize)
+		m_BatchSize(2 << (log2BatchSize - 1))
 	{
 	}
 
@@ -40,7 +42,7 @@ namespace en
 			const size_t floatInputOffset = i * m_BatchSize * m_InputCount;
 			const size_t floatOutputOffset = i * m_BatchSize * m_OutputCount;
 			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), m_InputCount, m_BatchSize);
-			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), m_OutputCount, m_BatchSize));
+			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), m_OutputCount, m_BatchSize);
 		}
 
 		// Init train buffers
@@ -54,5 +56,9 @@ namespace en
 			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), m_InputCount, m_BatchSize);
 			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatTargetOffset]), m_OutputCount, m_BatchSize);
 		}
+	}
+
+	void NeuralRadianceCache::Destroy()
+	{
 	}
 }

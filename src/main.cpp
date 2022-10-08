@@ -1,4 +1,4 @@
-#include <engine/util/Log.hpp>
+/*#include <engine/util/Log.hpp>
 #include <engine/graphics/Window.hpp>
 #include <engine/graphics/VulkanAPI.hpp>
 #include <engine/graphics/vulkan/Swapchain.hpp>
@@ -460,4 +460,4 @@ int main()
 #endif
 
 	return 0;
-}
+}*/

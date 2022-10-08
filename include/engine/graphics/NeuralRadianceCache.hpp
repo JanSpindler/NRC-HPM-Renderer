@@ -1,7 +1,7 @@
 #pragma once
 
-#include <engine/graphics/vulkan/Buffer.hpp>
 #include <tiny-cuda-nn/config.h>
+#include <engine/graphics/vulkan/Buffer.hpp>
 #include <vector>
 
 namespace en
@@ -13,7 +13,7 @@ namespace en
 			const nlohmann::json& config, 
 			uint32_t inputCount, 
 			uint32_t outputCount,
-			uint32_t batchSize);
+			uint32_t log2BatchSize);
 
 		void Init(
 			uint32_t inferCount, 
@@ -22,6 +22,8 @@ namespace en
 			float* dCuInferOutput, 
 			float* dCuTrainInput, 
 			float* dCuTrainTarget);
+
+		void Destroy();
 
 	private:
 		const uint32_t m_InputCount;

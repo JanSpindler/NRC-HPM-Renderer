@@ -5,12 +5,13 @@
 #include <engine/graphics/DirLight.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
-#include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/vulkan/Shader.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 
 namespace en
 {
+	class NeuralRadianceCache;
+
 	class NrcHpmRenderer
 	{
 	public:
@@ -43,26 +44,6 @@ namespace en
 
 			uint32_t trainWidth;
 			uint32_t trainHeight;
-			
-			uint32_t posEncoding;
-			uint32_t dirEncoding;
-			
-			uint32_t posFreqCount;
-			uint32_t posMinFreq;
-			uint32_t posMaxFreq;
-			uint32_t posLevelCount;
-			uint32_t posHashTableSize;
-			uint32_t posFeatureCount;
-
-			uint32_t dirFreqCount;
-			uint32_t dirFeatureCount;
-
-			uint32_t layerCount;
-			uint32_t layerWidth;
-			uint32_t inputFeatureCount;
-			float nrcLearningRate;
-			float mrheLearningRate;
-			uint32_t batchSize;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -81,6 +62,11 @@ namespace en
 		const HdrEnvMap& m_HdrEnvMap;
 		NeuralRadianceCache& m_Nrc;
 
+		vk::Buffer* m_NrcInferInputBuffer;
+		vk::Buffer* m_NrcInferOutputBuffer;
+		vk::Buffer* m_NrcTrainInputBuffer;
+		vk::Buffer* m_NrcTrainTargetBuffer;
+
 		VkPipelineLayout m_PipelineLayout;
 
 		SpecializationData m_SpecData;
@@ -90,11 +76,8 @@ namespace en
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
-		vk::Shader m_FilterRaysShader;
-		VkPipeline m_FilterRaysPipeline;
-
-		vk::Shader m_ForwardShader;
-		VkPipeline m_ForwardPipeline;
+		vk::Shader m_CalcNrcTargetsShader;
+		VkPipeline m_CalcNrcTargetsPipeline;
 
 		vk::Shader m_RenderShader;
 		VkPipeline m_RenderPipeline;
@@ -111,18 +94,6 @@ namespace en
 		VkDeviceMemory m_PrimaryRayInfoImageMemory;
 		VkImageView m_PrimaryRayInfoImageView;
 
-		VkImage m_NeuralRayOriginImage;
-		VkDeviceMemory m_NeuralRayOriginImageMemory;
-		VkImageView m_NeuralRayOriginImageView;
-
-		VkImage m_NeuralRayDirImage;
-		VkDeviceMemory m_NeuralRayDirImageMemory;
-		VkImageView m_NeuralRayDirImageView;
-
-		VkImage m_NeuralRayColorImage;
-		VkDeviceMemory m_NeuralRayColorImageMemory;
-		VkImageView m_NeuralRayColorImageView;
-
 		VkImage m_NeuralRayTargetImage;
 		VkDeviceMemory m_NeuralRayTargetImageMemory;
 		VkImageView m_NeuralRayTargetImageView;
@@ -132,21 +103,19 @@ namespace en
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
 
+		void CreateNrcBuffers();
+
 		void CreatePipelineLayout(VkDevice device);
 
 		void InitSpecializationConstants();
 
 		void CreateGenRaysPipeline(VkDevice device);
-		void CreateFilterRaysPipeline(VkDevice device);
-		void CreateForwardPipeline(VkDevice device);
+		void CreateCalcNrcTargetsPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
 		void CreatePrimaryRayColorImage(VkDevice device);
 		void CreatePrimaryRayInfoImage(VkDevice device);
-		void CreateNeuralRayOriginImage(VkDevice device);
-		void CreateNeuralRayDirImage(VkDevice device);
-		void CreateNeuralRayColorImage(VkDevice device);
 		void CreateNeuralRayTargetImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
