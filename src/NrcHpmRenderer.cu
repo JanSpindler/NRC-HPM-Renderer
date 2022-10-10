@@ -176,8 +176,9 @@ namespace en
 			m_CuExtCudaStartSemaphore, 
 			m_CuExtCudaFinishedSemaphore);
 
-		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		m_CommandBuffer = m_CommandPool.GetBuffer(0);
+		m_CommandPool.AllocateBuffers(2, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		m_PreCudaCommandBuffer = m_CommandPool.GetBuffer(0);
+		m_PostCudaCommandBuffer = m_CommandPool.GetBuffer(1);
 
 		CreatePipelineLayout(device);
 
@@ -194,7 +195,8 @@ namespace en
 
 		AllocateAndUpdateDescriptorSet(device);
 
-		RecordCommandBuffer();
+		RecordPreCudaCommandBuffer();
+		RecordPostCudaCommandBuffer();
 	}
 
 	void NrcHpmRenderer::Render(VkQueue queue) const
@@ -206,11 +208,21 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
+		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &m_CudaStartSemaphore;
 
 		VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+
+		m_Nrc.InferAndTrain();
+
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &m_CudaStartSemaphore;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &m_CudaFinishedSemaphore;
+
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
 	}
 
@@ -599,11 +611,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_CommandBuffer,
+			m_PreCudaCommandBuffer,
 			m_OutputImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -612,7 +624,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_CommandBuffer);
+		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -622,7 +634,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -704,11 +716,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_CommandBuffer,
+			m_PreCudaCommandBuffer,
 			m_PrimaryRayColorImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -717,7 +729,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_CommandBuffer);
+		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -727,7 +739,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -809,11 +821,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_CommandBuffer,
+			m_PreCudaCommandBuffer,
 			m_PrimaryRayInfoImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -822,7 +834,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_CommandBuffer);
+		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -832,7 +844,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -914,11 +926,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_CommandBuffer,
+			m_PreCudaCommandBuffer,
 			m_NeuralRayTargetImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -927,7 +939,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_CommandBuffer);
+		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -937,7 +949,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -1039,7 +1051,7 @@ namespace en
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
 
-	void NrcHpmRenderer::RecordCommandBuffer()
+	void NrcHpmRenderer::RecordPreCudaCommandBuffer()
 	{
 		// Begin
 		VkCommandBufferBeginInfo beginInfo;
@@ -1048,7 +1060,7 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		VkResult result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		VkResult result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		if (result != VK_SUCCESS)
 			Log::Error("Failed to begin VkCommandBuffer", true);
 
@@ -1070,16 +1082,16 @@ namespace en
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
-			m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 			0, descSets.size(), descSets.data(),
 			0, nullptr);
 
 		// Gen rays pipeline
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
+		vkCmdDispatch(m_PreCudaCommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
 
 		vkCmdPipelineBarrier(
-			m_CommandBuffer,
+			m_PreCudaCommandBuffer,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			VK_DEPENDENCY_DEVICE_GROUP_BIT,
@@ -1088,11 +1100,11 @@ namespace en
 			0, nullptr);
 
 		// Calc nrc targets pipeline
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_CalcNrcTargetsPipeline);
-		vkCmdDispatch(m_CommandBuffer, 1, 1, 1); // TODO
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_CalcNrcTargetsPipeline);
+		vkCmdDispatch(m_PreCudaCommandBuffer, 1, 1, 1); // TODO
 
 		vkCmdPipelineBarrier(
-			m_CommandBuffer,
+			m_PreCudaCommandBuffer,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 			VK_DEPENDENCY_DEVICE_GROUP_BIT,
@@ -1101,12 +1113,55 @@ namespace en
 			0, nullptr);
 
 		// Render pipeline
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
-		vkCmdDispatch(m_CommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
+		vkCmdDispatch(m_PreCudaCommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
 
 		// End
-		result = vkEndCommandBuffer(m_CommandBuffer);
+		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		if (result != VK_SUCCESS)
 			Log::Error("Failed to end VkCommandBuffer", true);
+	}
+
+	void NrcHpmRenderer::RecordPostCudaCommandBuffer()
+	{
+		// Begin command buffer
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		VkResult result = vkBeginCommandBuffer(m_PostCudaCommandBuffer, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		// Collect descriptor sets
+		std::vector<VkDescriptorSet> descSets = {
+			m_Camera.GetDescriptorSet(),
+			m_VolumeData.GetDescriptorSet(),
+			m_DirLight.GetDescriptorSet(),
+			m_PointLight.GetDescriptorSet(),
+			m_HdrEnvMap.GetDescriptorSet(),
+			m_DescSet };
+
+		// Create memory barrier
+		VkMemoryBarrier memoryBarrier;
+		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		memoryBarrier.pNext = nullptr;
+		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+		// Bind descriptor sets
+		vkCmdBindDescriptorSets(
+			m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			0, descSets.size(), descSets.data(),
+			0, nullptr);
+
+		// Render pipeline
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
+		vkCmdDispatch(m_PreCudaCommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
+
+		// End command buffer
+		result = vkEndCommandBuffer(m_PostCudaCommandBuffer);
+		ASSERT_VULKAN(result);
 	}
 }

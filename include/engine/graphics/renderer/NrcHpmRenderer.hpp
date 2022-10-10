@@ -119,7 +119,8 @@ namespace en
 		VkDescriptorSet m_DescSet;
 
 		vk::CommandPool m_CommandPool;
-		VkCommandBuffer m_CommandBuffer;
+		VkCommandBuffer m_PreCudaCommandBuffer;
+		VkCommandBuffer m_PostCudaCommandBuffer;
 
 		void CreateSyncObjects(VkDevice device);
 
@@ -140,6 +141,7 @@ namespace en
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 
-		void RecordCommandBuffer();
+		void RecordPreCudaCommandBuffer();
+		void RecordPostCudaCommandBuffer();
 	};
 }
