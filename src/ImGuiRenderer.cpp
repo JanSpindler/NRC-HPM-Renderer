@@ -184,7 +184,8 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Submit
-		std::vector<VkSemaphore> waitSemaphores = { waitSemaphore };
+		std::vector<VkSemaphore> waitSemaphores = {};
+		if (waitSemaphore == VK_NULL_HANDLE) { waitSemaphores.push_back(waitSemaphore); }
 		std::vector<VkPipelineStageFlags> waitStages = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
 		
 		VkSubmitInfo submitInfo;

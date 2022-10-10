@@ -17,6 +17,7 @@
 #include <imgui.h>
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/graphics/NeuralRadianceCache.hpp>
+#include <engine/util/read_file.hpp>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
@@ -24,7 +25,7 @@
 
 #define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
-PFN_vkGetMemoryWin32HandleKHR fpGetMemoryWin32HandleKHR;
+/*PFN_vkGetMemoryWin32HandleKHR fpGetMemoryWin32HandleKHR;
 PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32HandleKHR;
 
 en::vk::CommandPool* commandPool;
@@ -292,7 +293,9 @@ void CuVkSemaphoreSignal(cudaExternalSemaphore_t& extSemaphore)
 
 	cudaError_t error = cudaSignalExternalSemaphoresAsync(&extSemaphore, &extSemaphoreSignalParams, 1, streamToRun);
 	ASSERT_CUDA(error);
-}
+}*/
+
+en::NrcHpmRenderer* hpmRenderer = nullptr;
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -319,7 +322,7 @@ void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	if (en::ImGuiRenderer::IsInitialized())
+	if (hpmRenderer != nullptr && en::ImGuiRenderer::IsInitialized())
 	{
 		VkImageCopy imageCopy;
 		imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -409,20 +412,7 @@ int main()
 	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
 	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 
-	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
-
-	LoadVulkanProcAddr();
-	CreateCommandBuffer(en::VulkanAPI::GetGraphicsQFI());
-	CreateImage(device, queue, width, height);
-	CreateSyncObjects(device);
-
-	en::ImGuiRenderer::Init(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(imageView);
-
-	// Swapchain rerecording because imgui renderer is now available
-	swapchain.Resize(width, height);
-
-	// Init rendering stuff
+	// Init nrc
 	nlohmann::json config = {
 	{"loss", {
 		{"otype", "L2"}
@@ -462,15 +452,77 @@ int main()
 
 	en::NeuralRadianceCache nrc(config, 5, 3, 14);
 
+	// Lighting
+	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 1.5f);
+	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
+
+	int hdrWidth, hdrHeight;
+	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
+	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
+	en::HdrEnvMap hdrEnvMap(
+		1.0f,
+		3.0f,
+		hdrWidth,
+		hdrHeight,
+		hdr4fData,
+		hdrCdf[0],
+		hdrCdf[1]);
+
+	// Load data
+	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
+	en::vk::Texture3D density3DTex(
+		density3D,
+		VK_FILTER_LINEAR,
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+		VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+	en::VolumeData volumeData(&density3DTex);
+
+	// Setup rendering
+	en::Camera camera(
+		glm::vec3(0.0f, 0.0f, -64.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		static_cast<float>(width) / static_cast<float>(height),
+		glm::radians(60.0f),
+		0.1f,
+		100.0f);
+
+	// Init rendering pipeline
+	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
+
+	//LoadVulkanProcAddr();
+	//CreateCommandBuffer(en::VulkanAPI::GetGraphicsQFI());
+	//CreateImage(device, queue, width, height);
+	//CreateSyncObjects(device);
+
+	hpmRenderer = new en::NrcHpmRenderer(
+		width, 
+		height, 
+		128, 
+		128, 
+		camera, 
+		volumeData, 
+		dirLight, 
+		pointLight, 
+		hdrEnvMap, 
+		nrc);
+
+	en::ImGuiRenderer::Init(width, height);
+	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
+	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
+
+	// Swapchain rerecording because imgui renderer is now available
+	swapchain.Resize(width, height);
+
 	//
-	cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
-	cudaExtBufferDesc.offset = 0;
-	cudaExtBufferDesc.size = imageSizeInBytes;
-	cudaExtBufferDesc.flags = 0;
-	
-	void* cuImageMemory;
-	cudaError_t error = cudaExternalMemoryGetMappedBuffer(&cuImageMemory, cuExtImageMemory, &cudaExtBufferDesc);
-	ASSERT_CUDA(error);
+	//cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
+	//cudaExtBufferDesc.offset = 0;
+	//cudaExtBufferDesc.size = imageSizeInBytes;
+	//cudaExtBufferDesc.flags = 0;
+	//
+	//void* cuImageMemory;
+	//cudaError_t error = cudaExternalMemoryGetMappedBuffer(&cuImageMemory, cuExtImageMemory, &cudaExtBufferDesc);
+	//ASSERT_CUDA(error);
 
 	// Main loop
 	VkResult result;
@@ -483,18 +535,22 @@ int main()
 		height = en::Window::GetHeight();
 
 		// Render frame
-		if (frameCount > 0)
-		{
-			// Wait for vulkan
-			CuVkSemaphoreWait(cuCudaStartSemaphore);
-		
-			// Cuda rendering
-			dim3 threads(8, 1, 4);
-			dim3 blocks(width / 8, height, 1);
-			CuFillImage<<<blocks, threads, 0, streamToRun>>>(reinterpret_cast<float*>(cuImageMemory));
-		}
-		// Tell vulkan that cuda finished
-		CuVkSemaphoreSignal(cuCudaFinishedSemaphore);
+		//if (frameCount > 0)
+		//{
+		//	// Wait for vulkan
+		//	CuVkSemaphoreWait(cuCudaStartSemaphore);
+		//
+		//	// Cuda rendering
+		//	dim3 threads(8, 1, 4);
+		//	dim3 blocks(width / 8, height, 1);
+		//	CuFillImage<<<blocks, threads, 0, streamToRun>>>(reinterpret_cast<float*>(cuImageMemory));
+		//}
+		//// Tell vulkan that cuda finished
+		//CuVkSemaphoreSignal(cuCudaFinishedSemaphore);
+
+		hpmRenderer->Render(queue);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -504,18 +560,20 @@ int main()
 		ImGui::End();
 
 		// Display
-		en::ImGuiRenderer::EndFrame(queue, vkCudaFinishedSemaphore);
+		//en::ImGuiRenderer::EndFrame(queue, vkCudaFinishedSemaphore);
+		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 
-		swapchain.DrawAndPresent(VK_NULL_HANDLE, vkCudaStartSemaphore);
+		//swapchain.DrawAndPresent(VK_NULL_HANDLE, vkCudaStartSemaphore);
+		swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
 		frameCount++;
 	}
 	result = vkDeviceWaitIdle(device);
 	ASSERT_VULKAN(result);
 
 	// End
-	DestroyVulkanResources(device);
+	//DestroyVulkanResources(device);
 	
 	en::ImGuiRenderer::Shutdown();
 
