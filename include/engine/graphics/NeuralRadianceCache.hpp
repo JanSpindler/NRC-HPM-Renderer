@@ -11,7 +11,7 @@ namespace en
 	public:
 		NeuralRadianceCache(
 			const nlohmann::json& config, 
-			uint32_t inputCount, 
+			uint32_t inputCount,
 			uint32_t outputCount,
 			uint32_t log2BatchSize);
 
