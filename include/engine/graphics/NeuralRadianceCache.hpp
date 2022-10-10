@@ -23,6 +23,10 @@ namespace en
 			float* dCuTrainInput, 
 			float* dCuTrainTarget);
 
+		void Inference();
+
+		void Train();
+
 		void Destroy();
 
 	private:

@@ -473,6 +473,7 @@ int main()
 
 	en::NeuralRadianceCache nrc(config, 5, 3, 14);
 
+	//
 	cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
 	cudaExtBufferDesc.offset = 0;
 	cudaExtBufferDesc.size = imageSizeInBytes;

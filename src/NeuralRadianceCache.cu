@@ -58,6 +58,26 @@ namespace en
 		}
 	}
 
+	void NeuralRadianceCache::Inference()
+	{
+		for (size_t i = 0; i < m_InferInputBatches.size(); i++)
+		{
+			const tcnn::GPUMatrix<float>& inputBatch = m_InferInputBatches[i];
+			tcnn::GPUMatrix<float>& outputBatch = m_InferOutputBatches[i];
+			m_Model.network->inference(inputBatch, outputBatch);
+		}
+	}
+
+	void NeuralRadianceCache::Train()
+	{
+		for (size_t i = 0; i < m_TrainInputBatches.size(); i++)
+		{
+			const tcnn::GPUMatrix<float>& inputBatch = m_TrainInputBatches[i];
+			const tcnn::GPUMatrix<float>& targetBatch = m_TrainTargetBatches[i];
+			m_Model.trainer->training_step(inputBatch, targetBatch);
+		}
+	}
+
 	void NeuralRadianceCache::Destroy()
 	{
 	}
