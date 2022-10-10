@@ -4,6 +4,8 @@
 #include <random>
 #include <engine/util/Log.hpp>
 
+#define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
+
 namespace en
 {
 	NeuralRadianceCache::NeuralRadianceCache(
@@ -25,8 +27,14 @@ namespace en
 		float* dCuInferInput,
 		float* dCuInferOutput,
 		float* dCuTrainInput,
-		float* dCuTrainTarget)
+		float* dCuTrainTarget,
+		cudaExternalSemaphore_t cudaStartSemaphore,
+		cudaExternalSemaphore_t cudaFinishedSemaphore)
 	{
+		// Init members
+		m_CudaStartSemaphore = cudaStartSemaphore;
+		m_CudaFinishedSemaphore = cudaFinishedSemaphore;
+
 		// Check batch size compatibility
 		if (inferCount % m_BatchSize != 0 || trainCount % m_BatchSize != 0)
 		{
@@ -58,6 +66,18 @@ namespace en
 		}
 	}
 
+	void NeuralRadianceCache::InferAndTrain()
+	{
+		AwaitCudaStartSemaphore();
+		Inference();
+		Train();
+		SignalCudaFinishedSemaphore();
+	}
+
+	void NeuralRadianceCache::Destroy()
+	{
+	}
+
 	void NeuralRadianceCache::Inference()
 	{
 		for (size_t i = 0; i < m_InferInputBatches.size(); i++)
@@ -78,7 +98,25 @@ namespace en
 		}
 	}
 
-	void NeuralRadianceCache::Destroy()
+	void NeuralRadianceCache::AwaitCudaStartSemaphore()
 	{
+		cudaExternalSemaphoreWaitParams extSemaphoreWaitParams;
+		memset(&extSemaphoreWaitParams, 0, sizeof(extSemaphoreWaitParams));
+		extSemaphoreWaitParams.params.fence.value = 0;
+		extSemaphoreWaitParams.flags = 0;
+
+		cudaError_t error = cudaWaitExternalSemaphoresAsync(&m_CudaStartSemaphore, &extSemaphoreWaitParams, 1);
+		ASSERT_CUDA(error);
+	}
+
+	void NeuralRadianceCache::SignalCudaFinishedSemaphore()
+	{
+		cudaExternalSemaphoreSignalParams extSemaphoreSignalParams;
+		memset(&extSemaphoreSignalParams, 0, sizeof(extSemaphoreSignalParams));
+		extSemaphoreSignalParams.params.fence.value = 0;
+		extSemaphoreSignalParams.flags = 0;
+
+		cudaError_t error = cudaSignalExternalSemaphoresAsync(&m_CudaFinishedSemaphore, &extSemaphoreSignalParams, 1);
+		ASSERT_CUDA(error);
 	}
 }

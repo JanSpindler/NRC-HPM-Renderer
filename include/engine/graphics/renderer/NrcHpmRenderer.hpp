@@ -63,6 +63,12 @@ namespace en
 		const HdrEnvMap& m_HdrEnvMap;
 		NeuralRadianceCache& m_Nrc;
 
+		VkSemaphore m_CudaStartSemaphore;
+		cudaExternalSemaphore_t m_CuExtCudaStartSemaphore;
+
+		VkSemaphore m_CudaFinishedSemaphore;
+		cudaExternalSemaphore_t m_CuExtCudaFinishedSemaphore;
+
 		vk::Buffer* m_NrcInferInputBuffer;
 		cudaExternalMemory_t m_NrcInferInputCuExtMem;
 		void* m_NrcInferInputDCuBuffer;
@@ -114,6 +120,8 @@ namespace en
 
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
+
+		void CreateSyncObjects(VkDevice device);
 
 		void CreateNrcBuffers();
 

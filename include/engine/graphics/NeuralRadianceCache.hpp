@@ -21,11 +21,11 @@ namespace en
 			float* dCuInferInput, 
 			float* dCuInferOutput, 
 			float* dCuTrainInput, 
-			float* dCuTrainTarget);
+			float* dCuTrainTarget,
+			cudaExternalSemaphore_t cudaStartSemaphore,
+			cudaExternalSemaphore_t cudaFinishedSemaphore);
 
-		void Inference();
-
-		void Train();
+		void InferAndTrain();
 
 		void Destroy();
 
@@ -39,5 +39,13 @@ namespace en
 		std::vector<tcnn::GPUMatrix<float>> m_InferOutputBatches;
 		std::vector<tcnn::GPUMatrix<float>> m_TrainInputBatches;
 		std::vector<tcnn::GPUMatrix<float>> m_TrainTargetBatches;
+
+		cudaExternalSemaphore_t m_CudaStartSemaphore;
+		cudaExternalSemaphore_t m_CudaFinishedSemaphore;
+
+		void Inference();
+		void Train();
+		void AwaitCudaStartSemaphore();
+		void SignalCudaFinishedSemaphore();
 	};
 }

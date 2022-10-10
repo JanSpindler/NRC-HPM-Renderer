@@ -227,20 +227,9 @@ void CreateImage(VkDevice device, VkQueue queue, uint32_t width, uint32_t height
 void CreateSyncObjects(VkDevice device)
 {
 	// Create vulkan semaphores
-	SECURITY_ATTRIBUTES winSecurityAttributes;
-
-	VkExportSemaphoreWin32HandleInfoKHR vulkanExportSemaphoreWin32HandleInfoKHR = {};
-	vulkanExportSemaphoreWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
-	vulkanExportSemaphoreWin32HandleInfoKHR.pNext = NULL;
-	vulkanExportSemaphoreWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
-	vulkanExportSemaphoreWin32HandleInfoKHR.dwAccess = DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
-	vulkanExportSemaphoreWin32HandleInfoKHR.name = (LPCWSTR)NULL;
-
 	VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
 	vulkanExportSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
-	vulkanExportSemaphoreCreateInfo.pNext = &vulkanExportSemaphoreWin32HandleInfoKHR;
-	vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-	vulkanExportSemaphoreCreateInfo.pNext = NULL;
+	vulkanExportSemaphoreCreateInfo.pNext = nullptr;
 	vulkanExportSemaphoreCreateInfo.handleTypes = externalSemaphoreHandleType;
 	
 	VkSemaphoreCreateInfo semaphoreCI;
@@ -498,7 +487,7 @@ int main()
 		{
 			// Wait for vulkan
 			CuVkSemaphoreWait(cuCudaStartSemaphore);
-
+		
 			// Cuda rendering
 			dim3 threads(8, 1, 4);
 			dim3 blocks(width / 8, height, 1);

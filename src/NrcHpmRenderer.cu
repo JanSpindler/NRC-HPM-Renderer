@@ -1,3 +1,10 @@
+#define VK_USE_PLATFORM_WIN32_KHR
+
+#include <aclapi.h>
+#include <dxgi1_2.h>
+#include <windows.h>
+#include <VersionHelpers.h>
+
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/util/Log.hpp>
@@ -9,6 +16,26 @@ namespace en
 {
 	VkDescriptorSetLayout NrcHpmRenderer::m_DescSetLayout;
 	VkDescriptorPool NrcHpmRenderer::m_DescPool;
+
+	PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32HandleKHR = nullptr;
+
+	HANDLE GetSemaphoreHandle(VkDevice device, VkSemaphore vkSemaphore)
+	{
+		if (fpGetSemaphoreWin32HandleKHR == nullptr)
+		{
+			fpGetSemaphoreWin32HandleKHR = (PFN_vkGetSemaphoreWin32HandleKHR)vkGetDeviceProcAddr(device, "vkGetSemaphoreWin32HandleKHR");
+		}
+
+		VkSemaphoreGetWin32HandleInfoKHR vulkanSemaphoreGetWin32HandleInfoKHR = {};
+		vulkanSemaphoreGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR;
+		vulkanSemaphoreGetWin32HandleInfoKHR.pNext = NULL;
+		vulkanSemaphoreGetWin32HandleInfoKHR.semaphore = vkSemaphore;
+		vulkanSemaphoreGetWin32HandleInfoKHR.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+
+		HANDLE handle;
+		fpGetSemaphoreWin32HandleKHR(device, &vulkanSemaphoreGetWin32HandleInfoKHR, &handle);
+		return handle;
+	}
 
 	void NrcHpmRenderer::Init(VkDevice device)
 	{
@@ -133,22 +160,24 @@ namespace en
 		m_HdrEnvMap(hdrEnvMap),
 		m_Nrc(nrc)
 	{
+		VkDevice device = VulkanAPI::GetDevice();
+
+		CreateSyncObjects(device);
+
 		CreateNrcBuffers();
 
 		m_Nrc.Init(
 			m_FrameWidth * m_FrameHeight, 
 			m_TrainWidth * m_TrainHeight,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr);
-
-		VkDevice device = VulkanAPI::GetDevice();
+			reinterpret_cast<float*>(m_NrcInferInputDCuBuffer),
+			reinterpret_cast<float*>(m_NrcInferOutputDCuBuffer),
+			reinterpret_cast<float*>(m_NrcTrainInputDCuBuffer),
+			reinterpret_cast<float*>(m_NrcTrainTargetDCuBuffer),
+			m_CuExtCudaStartSemaphore, 
+			m_CuExtCudaFinishedSemaphore);
 
 		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_CommandBuffer = m_CommandPool.GetBuffer(0);
-
-		CreateNrcBuffers();
 
 		CreatePipelineLayout(device);
 
@@ -229,6 +258,9 @@ namespace en
 		
 		m_NrcInferInputBuffer->Destroy();
 		delete m_NrcInferInputBuffer;
+
+		vkDestroySemaphore(device, m_CudaFinishedSemaphore, nullptr);
+		vkDestroySemaphore(device, m_CudaStartSemaphore, nullptr);
 	}
 
 	VkImage NrcHpmRenderer::GetImage() const
@@ -239,6 +271,38 @@ namespace en
 	VkImageView NrcHpmRenderer::GetImageView() const
 	{
 		return m_OutputImageView;
+	}
+
+	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
+	{
+		// Create vk semaphore
+		VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
+		vulkanExportSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
+		vulkanExportSemaphoreCreateInfo.pNext = nullptr;
+		vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+
+		VkSemaphoreCreateInfo semaphoreCI;
+		semaphoreCI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		semaphoreCI.pNext = &vulkanExportSemaphoreCreateInfo;
+		semaphoreCI.flags = 0;
+
+		VkResult result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &m_CudaStartSemaphore);
+		ASSERT_VULKAN(result);
+
+		result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &m_CudaStartSemaphore);
+		ASSERT_VULKAN(result);
+
+		// Export semaphore to cuda
+		cudaExternalSemaphoreHandleDesc extCudaSemaphoreHD{};
+		extCudaSemaphoreHD.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+
+		extCudaSemaphoreHD.handle.win32.handle = GetSemaphoreHandle(device, m_CudaStartSemaphore);
+		cudaError_t error = cudaImportExternalSemaphore(&m_CuExtCudaStartSemaphore, &extCudaSemaphoreHD);
+		ASSERT_CUDA(error);
+
+		extCudaSemaphoreHD.handle.win32.handle = GetSemaphoreHandle(device, m_CudaFinishedSemaphore);
+		error = cudaImportExternalSemaphore(&m_CuExtCudaFinishedSemaphore, &extCudaSemaphoreHD);
+		ASSERT_CUDA(error);
 	}
 
 	void NrcHpmRenderer::CreateNrcBuffers()
