@@ -7,6 +7,7 @@
 #include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/vulkan/Shader.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
+#include <cuda_runtime.h>
 
 namespace en
 {
@@ -63,9 +64,20 @@ namespace en
 		NeuralRadianceCache& m_Nrc;
 
 		vk::Buffer* m_NrcInferInputBuffer;
+		cudaExternalMemory_t m_NrcInferInputCuExtMem;
+		void* m_NrcInferInputDCuBuffer;
+
 		vk::Buffer* m_NrcInferOutputBuffer;
+		cudaExternalMemory_t m_NrcInferOutputCuExtMem;
+		void* m_NrcInferOutputDCuBuffer;
+
 		vk::Buffer* m_NrcTrainInputBuffer;
+		cudaExternalMemory_t m_NrcTrainInputCuExtMem;
+		void* m_NrcTrainInputDCuBuffer;
+
 		vk::Buffer* m_NrcTrainTargetBuffer;
+		cudaExternalMemory_t m_NrcTrainTargetCuExtMem;
+		void* m_NrcTrainTargetDCuBuffer;
 
 		VkPipelineLayout m_PipelineLayout;
 

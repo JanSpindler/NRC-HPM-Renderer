@@ -3,6 +3,8 @@
 #include <engine/util/Log.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 
+#define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
+
 namespace en
 {
 	VkDescriptorSetLayout NrcHpmRenderer::m_DescSetLayout;
@@ -146,6 +148,8 @@ namespace en
 		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_CommandBuffer = m_CommandPool.GetBuffer(0);
 
+		CreateNrcBuffers();
+
 		CreatePipelineLayout(device);
 
 		InitSpecializationConstants();
@@ -239,7 +243,79 @@ namespace en
 
 	void NrcHpmRenderer::CreateNrcBuffers()
 	{
+		// Create buffers
+		vk::Buffer* m_NrcInferInputBuffer = new vk::Buffer(
+			1, 
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			{},
+			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
+		vk::Buffer* m_NrcInferOutputBuffer = new vk::Buffer(
+			1,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			{},
+			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+		
+		vk::Buffer* m_NrcTrainInputBuffer = new vk::Buffer(
+			1,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			{},
+			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+		
+		vk::Buffer* m_NrcTrainTargetBuffer = new vk::Buffer(
+			1,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			{},
+			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+		// Get cuda external memory
+		cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
+		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferInputBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = 1;
+		cudaError_t cudaResult = cudaImportExternalMemory(&m_NrcInferInputCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferOutputBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = 1;
+		cudaResult = cudaImportExternalMemory(&m_NrcInferOutputCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainInputBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = 1;
+		cudaResult = cudaImportExternalMemory(&m_NrcTrainInputCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainTargetBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = 1;
+		cudaResult = cudaImportExternalMemory(&m_NrcTrainTargetCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		// Get cuda buffer
+		cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
+		cudaExtBufferDesc.offset = 0;
+		cudaExtBufferDesc.flags = 0;
+
+		cudaExtBufferDesc.size = 1;
+		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcInferInputDCuBuffer, m_NrcInferInputCuExtMem, &cudaExtBufferDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cudaExtBufferDesc.size = 1;
+		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcInferOutputDCuBuffer, m_NrcInferOutputCuExtMem, &cudaExtBufferDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cudaExtBufferDesc.size = 1;
+		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcTrainInputDCuBuffer, m_NrcTrainInputCuExtMem, &cudaExtBufferDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cudaExtBufferDesc.size = 1;
+		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcTrainTargetDCuBuffer, m_NrcTrainTargetCuExtMem, &cudaExtBufferDesc);
+		ASSERT_CUDA(cudaResult);
 	}
 
 	void NrcHpmRenderer::CreatePipelineLayout(VkDevice device)
