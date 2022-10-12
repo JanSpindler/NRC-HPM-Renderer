@@ -69,18 +69,22 @@ namespace en
 		VkSemaphore m_CudaFinishedSemaphore;
 		cudaExternalSemaphore_t m_CuExtCudaFinishedSemaphore;
 
+		VkDeviceSize m_NrcInferInputBufferSize;
 		vk::Buffer* m_NrcInferInputBuffer;
 		cudaExternalMemory_t m_NrcInferInputCuExtMem;
 		void* m_NrcInferInputDCuBuffer;
 
+		VkDeviceSize m_NrcInferOutputBufferSize;
 		vk::Buffer* m_NrcInferOutputBuffer;
 		cudaExternalMemory_t m_NrcInferOutputCuExtMem;
 		void* m_NrcInferOutputDCuBuffer;
 
+		VkDeviceSize m_NrcTrainInputBufferSize;
 		vk::Buffer* m_NrcTrainInputBuffer;
 		cudaExternalMemory_t m_NrcTrainInputCuExtMem;
 		void* m_NrcTrainInputDCuBuffer;
 
+		VkDeviceSize m_NrcTrainTargetBufferSize;
 		vk::Buffer* m_NrcTrainTargetBuffer;
 		cudaExternalMemory_t m_NrcTrainTargetCuExtMem;
 		void* m_NrcTrainTargetDCuBuffer;
@@ -112,10 +116,6 @@ namespace en
 		VkDeviceMemory m_PrimaryRayInfoImageMemory;
 		VkImageView m_PrimaryRayInfoImageView;
 
-		VkImage m_NeuralRayTargetImage;
-		VkDeviceMemory m_NeuralRayTargetImageMemory;
-		VkImageView m_NeuralRayTargetImageView;
-
 		VkDescriptorSet m_DescSet;
 
 		vk::CommandPool m_CommandPool;
@@ -137,7 +137,6 @@ namespace en
 		void CreateOutputImage(VkDevice device);
 		void CreatePrimaryRayColorImage(VkDevice device);
 		void CreatePrimaryRayInfoImage(VkDevice device);
-		void CreateNeuralRayTargetImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 

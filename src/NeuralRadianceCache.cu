@@ -57,7 +57,7 @@ namespace en
 		uint32_t trainBatchCount = trainCount / m_BatchSize;
 		m_TrainInputBatches.resize(trainBatchCount);
 		m_TrainTargetBatches.resize(trainBatchCount);
-		for (uint32_t i = 0; i < inferBatchCount; i++)
+		for (uint32_t i = 0; i < trainBatchCount; i++)
 		{
 			const size_t floatInputOffset = i * m_BatchSize * m_InputCount;
 			const size_t floatTargetOffset = i * m_BatchSize * m_OutputCount;

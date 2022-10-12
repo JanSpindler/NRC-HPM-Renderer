@@ -81,9 +81,14 @@ namespace en::vk
 		VkDevice device = VulkanAPI::GetDevice();
 
 		// Create
+		VkExternalMemoryBufferCreateInfo extMemBufCI;
+		extMemBufCI.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
+		extMemBufCI.pNext = nullptr;
+		extMemBufCI.handleTypes = extMemType;
+
 		VkBufferCreateInfo createInfo;
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.pNext = nullptr;
+		createInfo.pNext = (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT) ? &extMemBufCI : nullptr;
 		createInfo.flags = 0;
 		createInfo.size = size;
 		createInfo.usage = usage;

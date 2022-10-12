@@ -61,42 +61,42 @@ namespace en
 		primaryRayInfoImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		primaryRayInfoImageBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding neuralRayOriginImageBinding;
-		neuralRayOriginImageBinding.binding = 3;
-		neuralRayOriginImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		neuralRayOriginImageBinding.descriptorCount = 1;
-		neuralRayOriginImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		neuralRayOriginImageBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding nrcInferInputBufferBinding;
+		nrcInferInputBufferBinding.binding = 3;
+		nrcInferInputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcInferInputBufferBinding.descriptorCount = 1;
+		nrcInferInputBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcInferInputBufferBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding neuralRayDirImageBinding;
-		neuralRayDirImageBinding.binding = 4;
-		neuralRayDirImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		neuralRayDirImageBinding.descriptorCount = 1;
-		neuralRayDirImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		neuralRayDirImageBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding nrcInferOutputBufferBinding;
+		nrcInferOutputBufferBinding.binding = 4;
+		nrcInferOutputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcInferOutputBufferBinding.descriptorCount = 1;
+		nrcInferOutputBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcInferOutputBufferBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding neuralRayColorImageBinding;
-		neuralRayColorImageBinding.binding = 5;
-		neuralRayColorImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		neuralRayColorImageBinding.descriptorCount = 1;
-		neuralRayColorImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		neuralRayColorImageBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding nrcTrainInputBufferBinding;
+		nrcTrainInputBufferBinding.binding = 5;
+		nrcTrainInputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainInputBufferBinding.descriptorCount = 1;
+		nrcTrainInputBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcTrainInputBufferBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding neuralRayTargetImageBinding;
-		neuralRayTargetImageBinding.binding = 6;
-		neuralRayTargetImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		neuralRayTargetImageBinding.descriptorCount = 1;
-		neuralRayTargetImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		neuralRayTargetImageBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding nrcTrainTargetBufferBinding;
+		nrcTrainTargetBufferBinding.binding = 6;
+		nrcTrainTargetBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainTargetBufferBinding.descriptorCount = 1;
+		nrcTrainTargetBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcTrainTargetBufferBinding.pImmutableSamplers = nullptr;
 
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
 			outputImageBinding,
 			primaryRayColorImageBinding,
 			primaryRayInfoImageBinding,
-			neuralRayOriginImageBinding,
-			neuralRayDirImageBinding,
-			neuralRayColorImageBinding,
-			neuralRayTargetImageBinding };
+			nrcInferInputBufferBinding,
+			nrcInferOutputBufferBinding,
+			nrcTrainInputBufferBinding,
+			nrcTrainTargetBufferBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -109,11 +109,15 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Create desc pool
-		VkDescriptorPoolSize storageImagePoolSize;
-		storageImagePoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageImagePoolSize.descriptorCount = 7;
+		VkDescriptorPoolSize storageImagePS;
+		storageImagePS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		storageImagePS.descriptorCount = 3;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePoolSize };
+		VkDescriptorPoolSize storageBufferPS;
+		storageBufferPS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		storageBufferPS.descriptorCount = 4;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePS, storageBufferPS };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -191,7 +195,6 @@ namespace en
 		CreateOutputImage(device);
 		CreatePrimaryRayColorImage(device);
 		CreatePrimaryRayInfoImage(device);
-		CreateNeuralRayTargetImage(device);
 
 		AllocateAndUpdateDescriptorSet(device);
 
@@ -231,10 +234,6 @@ namespace en
 		VkDevice device = VulkanAPI::GetDevice();
 
 		m_CommandPool.Destroy();
-
-		vkDestroyImageView(device, m_NeuralRayTargetImageView, nullptr);
-		vkFreeMemory(device, m_NeuralRayTargetImageMemory, nullptr);
-		vkDestroyImage(device, m_NeuralRayTargetImage, nullptr);
 
 		vkDestroyImageView(device, m_PrimaryRayInfoImageView, nullptr);
 		vkFreeMemory(device, m_PrimaryRayInfoImageMemory, nullptr);
@@ -301,7 +300,7 @@ namespace en
 		VkResult result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &m_CudaStartSemaphore);
 		ASSERT_VULKAN(result);
 
-		result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &m_CudaStartSemaphore);
+		result = vkCreateSemaphore(device, &semaphoreCI, nullptr, &m_CudaFinishedSemaphore);
 		ASSERT_VULKAN(result);
 
 		// Export semaphore to cuda
@@ -320,35 +319,35 @@ namespace en
 	void NrcHpmRenderer::CreateNrcBuffers()
 	{
 		// Calculate sizes
-		const size_t nrcInferInputBufferSize = m_FrameWidth * m_FrameHeight * 5 * sizeof(float);
-		const size_t nrcInferOutputBufferSize = m_FrameWidth * m_FrameHeight * 3 * sizeof(float);
-		const size_t nrcTrainInputBufferSize = m_TrainWidth * m_TrainHeight * 5 * sizeof(float);
-		const size_t nrcTrainTargetBufferSize = m_TrainWidth * m_TrainHeight * 3 * sizeof(float);
+		m_NrcInferInputBufferSize = m_FrameWidth * m_FrameHeight * 5 * sizeof(float);
+		m_NrcInferOutputBufferSize = m_FrameWidth * m_FrameHeight * 3 * sizeof(float);
+		m_NrcTrainInputBufferSize = m_TrainWidth * m_TrainHeight * 5 * sizeof(float);
+		m_NrcTrainTargetBufferSize = m_TrainWidth * m_TrainHeight * 3 * sizeof(float);
 
 		// Create buffers
 		vk::Buffer* m_NrcInferInputBuffer = new vk::Buffer(
-			nrcInferInputBufferSize, 
+			m_NrcInferInputBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
 		vk::Buffer* m_NrcInferOutputBuffer = new vk::Buffer(
-			nrcInferOutputBufferSize,
+			m_NrcInferOutputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 		
 		vk::Buffer* m_NrcTrainInputBuffer = new vk::Buffer(
-			nrcTrainInputBufferSize,
+			m_NrcTrainInputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 		
 		vk::Buffer* m_NrcTrainTargetBuffer = new vk::Buffer(
-			nrcTrainTargetBufferSize,
+			m_NrcTrainTargetBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{},
@@ -359,22 +358,22 @@ namespace en
 		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
 
 		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferInputBuffer->GetMemoryWin32Handle();
-		cuExtMemHandleDesc.size = nrcInferInputBufferSize;
+		cuExtMemHandleDesc.size = m_NrcInferInputBufferSize;
 		cudaError_t cudaResult = cudaImportExternalMemory(&m_NrcInferInputCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
 		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferOutputBuffer->GetMemoryWin32Handle();
-		cuExtMemHandleDesc.size = nrcInferOutputBufferSize;
+		cuExtMemHandleDesc.size = m_NrcInferOutputBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcInferOutputCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
 		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainInputBuffer->GetMemoryWin32Handle();
-		cuExtMemHandleDesc.size = nrcTrainInputBufferSize;
+		cuExtMemHandleDesc.size = m_NrcTrainInputBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcTrainInputCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
 		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainTargetBuffer->GetMemoryWin32Handle();
-		cuExtMemHandleDesc.size = nrcTrainTargetBufferSize;
+		cuExtMemHandleDesc.size = m_NrcTrainTargetBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcTrainTargetCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
@@ -383,19 +382,19 @@ namespace en
 		cudaExtBufferDesc.offset = 0;
 		cudaExtBufferDesc.flags = 0;
 
-		cudaExtBufferDesc.size = nrcInferInputBufferSize;
+		cudaExtBufferDesc.size = m_NrcInferInputBufferSize;
 		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcInferInputDCuBuffer, m_NrcInferInputCuExtMem, &cudaExtBufferDesc);
 		ASSERT_CUDA(cudaResult);
 
-		cudaExtBufferDesc.size = nrcInferOutputBufferSize;
+		cudaExtBufferDesc.size = m_NrcInferOutputBufferSize;
 		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcInferOutputDCuBuffer, m_NrcInferOutputCuExtMem, &cudaExtBufferDesc);
 		ASSERT_CUDA(cudaResult);
 
-		cudaExtBufferDesc.size = nrcTrainInputBufferSize;
+		cudaExtBufferDesc.size = m_NrcTrainInputBufferSize;
 		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcTrainInputDCuBuffer, m_NrcTrainInputCuExtMem, &cudaExtBufferDesc);
 		ASSERT_CUDA(cudaResult);
 
-		cudaExtBufferDesc.size = nrcTrainTargetBufferSize;
+		cudaExtBufferDesc.size = m_NrcTrainTargetBufferSize;
 		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcTrainTargetDCuBuffer, m_NrcTrainTargetCuExtMem, &cudaExtBufferDesc);
 		ASSERT_CUDA(cudaResult);
 	}
@@ -855,111 +854,6 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void NrcHpmRenderer::CreateNeuralRayTargetImage(VkDevice device)
-	{
-		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-
-		// Create Image
-		VkImageCreateInfo imageCI;
-		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCI.pNext = nullptr;
-		imageCI.flags = 0;
-		imageCI.imageType = VK_IMAGE_TYPE_2D;
-		imageCI.format = format;
-		imageCI.extent = { m_TrainWidth, m_TrainHeight, 1 };
-		imageCI.mipLevels = 1;
-		imageCI.arrayLayers = 1;
-		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT;
-		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCI.queueFamilyIndexCount = 0;
-		imageCI.pQueueFamilyIndices = nullptr;
-		imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-
-		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_NeuralRayTargetImage);
-		ASSERT_VULKAN(result);
-
-		// Image Memory
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device, m_NeuralRayTargetImage, &memoryRequirements);
-
-		VkMemoryAllocateInfo allocateInfo;
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.pNext = nullptr;
-		allocateInfo.allocationSize = memoryRequirements.size;
-		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
-			memoryRequirements.memoryTypeBits,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_NeuralRayTargetImageMemory);
-		ASSERT_VULKAN(result);
-
-		result = vkBindImageMemory(device, m_NeuralRayTargetImage, m_NeuralRayTargetImageMemory, 0);
-		ASSERT_VULKAN(result);
-
-		// Create image view
-		VkImageViewCreateInfo imageViewCI;
-		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCI.pNext = nullptr;
-		imageViewCI.flags = 0;
-		imageViewCI.image = m_NeuralRayTargetImage;
-		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCI.format = format;
-		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCI.subresourceRange.baseMipLevel = 0;
-		imageViewCI.subresourceRange.levelCount = 1;
-		imageViewCI.subresourceRange.baseArrayLayer = 0;
-		imageViewCI.subresourceRange.layerCount = 1;
-
-		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_NeuralRayTargetImageView);
-		ASSERT_VULKAN(result);
-
-		// Change image layout
-		VkCommandBufferBeginInfo beginInfo;
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pNext = nullptr;
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
-		ASSERT_VULKAN(result);
-
-		vk::CommandRecorder::ImageLayoutTransfer(
-			m_PreCudaCommandBuffer,
-			m_NeuralRayTargetImage,
-			VK_IMAGE_LAYOUT_PREINITIALIZED,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_ACCESS_NONE,
-			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
-		ASSERT_VULKAN(result);
-
-		VkSubmitInfo submitInfo;
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = nullptr;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		VkQueue queue = VulkanAPI::GetGraphicsQueue();
-		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-		ASSERT_VULKAN(result);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-	}
-
 	void NrcHpmRenderer::AllocateAndUpdateDescriptorSet(VkDevice device)
 	{
 		// Allocate
@@ -974,6 +868,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Write
+		// Storage image writes
 		VkDescriptorImageInfo outputImageInfo;
 		outputImageInfo.sampler = VK_NULL_HANDLE;
 		outputImageInfo.imageView = m_OutputImageView;
@@ -1025,28 +920,84 @@ namespace en
 		primaryRayInfoImageWrite.pBufferInfo = nullptr;
 		primaryRayInfoImageWrite.pTexelBufferView = nullptr;
 
-		VkDescriptorImageInfo neuralRayTargetImageInfo;
-		neuralRayTargetImageInfo.sampler = VK_NULL_HANDLE;
-		neuralRayTargetImageInfo.imageView = m_NeuralRayTargetImageView;
-		neuralRayTargetImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		// Storage buffer writes
+		VkDescriptorBufferInfo nrcInferInputBufferInfo;
+		nrcInferInputBufferInfo.buffer = m_NrcInferInputBuffer->GetVulkanHandle();
+		nrcInferInputBufferInfo.offset = 0;
+		nrcInferInputBufferInfo.range = m_NrcInferInputBufferSize;
 
-		VkWriteDescriptorSet neuralRayTargetImageWrite;
-		neuralRayTargetImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		neuralRayTargetImageWrite.pNext = nullptr;
-		neuralRayTargetImageWrite.dstSet = m_DescSet;
-		neuralRayTargetImageWrite.dstBinding = 6;
-		neuralRayTargetImageWrite.dstArrayElement = 0;
-		neuralRayTargetImageWrite.descriptorCount = 1;
-		neuralRayTargetImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		neuralRayTargetImageWrite.pImageInfo = &neuralRayTargetImageInfo;
-		neuralRayTargetImageWrite.pBufferInfo = nullptr;
-		neuralRayTargetImageWrite.pTexelBufferView = nullptr;
+		VkWriteDescriptorSet nrcInferInputBufferWrite;
+		nrcInferInputBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcInferInputBufferWrite.pNext = nullptr;
+		nrcInferInputBufferWrite.dstSet = m_DescSet;
+		nrcInferInputBufferWrite.dstBinding = 3;
+		nrcInferInputBufferWrite.dstArrayElement = 0;
+		nrcInferInputBufferWrite.descriptorCount = 1;
+		nrcInferInputBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcInferInputBufferWrite.pImageInfo = nullptr;
+		nrcInferInputBufferWrite.pBufferInfo = &nrcInferInputBufferInfo;
+		nrcInferInputBufferWrite.pTexelBufferView = nullptr;
 
+		VkDescriptorBufferInfo nrcInferOutputBufferInfo;
+		nrcInferOutputBufferInfo.buffer = m_NrcInferOutputBuffer->GetVulkanHandle();
+		nrcInferOutputBufferInfo.offset = 0;
+		nrcInferOutputBufferInfo.range = m_NrcInferOutputBufferSize;
+
+		VkWriteDescriptorSet nrcInferOutputBufferWrite;
+		nrcInferOutputBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcInferOutputBufferWrite.pNext = nullptr;
+		nrcInferOutputBufferWrite.dstSet = m_DescSet;
+		nrcInferOutputBufferWrite.dstBinding = 4;
+		nrcInferOutputBufferWrite.dstArrayElement = 0;
+		nrcInferOutputBufferWrite.descriptorCount = 1;
+		nrcInferOutputBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcInferOutputBufferWrite.pImageInfo = nullptr;
+		nrcInferOutputBufferWrite.pBufferInfo = &nrcInferOutputBufferInfo;
+		nrcInferOutputBufferWrite.pTexelBufferView = nullptr;
+
+		VkDescriptorBufferInfo nrcTrainInputBufferInfo;
+		nrcTrainInputBufferInfo.buffer = m_NrcTrainInputBuffer->GetVulkanHandle();
+		nrcTrainInputBufferInfo.offset = 0;
+		nrcTrainInputBufferInfo.range = m_NrcTrainInputBufferSize;
+
+		VkWriteDescriptorSet nrcTrainInputBufferWrite;
+		nrcTrainInputBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcTrainInputBufferWrite.pNext = nullptr;
+		nrcTrainInputBufferWrite.dstSet = m_DescSet;
+		nrcTrainInputBufferWrite.dstBinding = 5;
+		nrcTrainInputBufferWrite.dstArrayElement = 0;
+		nrcTrainInputBufferWrite.descriptorCount = 1;
+		nrcTrainInputBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainInputBufferWrite.pImageInfo = nullptr;
+		nrcTrainInputBufferWrite.pBufferInfo = &nrcTrainInputBufferInfo;
+		nrcTrainInputBufferWrite.pTexelBufferView = nullptr;
+
+		VkDescriptorBufferInfo nrcTrainTargetBufferInfo;
+		nrcTrainTargetBufferInfo.buffer = m_NrcTrainTargetBuffer->GetVulkanHandle();
+		nrcTrainTargetBufferInfo.offset = 0;
+		nrcTrainTargetBufferInfo.range = m_NrcTrainTargetBufferSize;
+
+		VkWriteDescriptorSet nrcTrainTargetBufferWrite;
+		nrcTrainTargetBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcTrainTargetBufferWrite.pNext = nullptr;
+		nrcTrainTargetBufferWrite.dstSet = m_DescSet;
+		nrcTrainTargetBufferWrite.dstBinding = 6;
+		nrcTrainTargetBufferWrite.dstArrayElement = 0;
+		nrcTrainTargetBufferWrite.descriptorCount = 1;
+		nrcTrainTargetBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainTargetBufferWrite.pImageInfo = nullptr;
+		nrcTrainTargetBufferWrite.pBufferInfo = &nrcTrainTargetBufferInfo;
+		nrcTrainTargetBufferWrite.pTexelBufferView = nullptr;
+
+		// Write writes
 		std::vector<VkWriteDescriptorSet> writes = { 
 			outputImageWrite,
 			primaryRayColorImageWrite,
 			primaryRayInfoImageWrite,
-			neuralRayTargetImageWrite };
+			nrcInferInputBufferWrite,
+			nrcInferOutputBufferWrite,
+			nrcTrainInputBufferWrite,
+			nrcTrainTargetBufferWrite };
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
