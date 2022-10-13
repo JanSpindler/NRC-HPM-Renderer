@@ -112,10 +112,22 @@ layout(set = 6, binding = 1, rgba32f) uniform image2D nrcPrimaryRayColorImage;
 
 layout(set = 6, binding = 2, rgba32f) uniform image2D nrcPrimaryRayInfoImage;
 
-layout(set = 6, binding = 3, rgba32f) uniform image2D nrcNeuralRayOriginImage;
+layout(set = 6, binding = 3) buffer NrcInferInput
+{
+	float nrcInferInput[];
+};
 
-layout(set = 6, binding = 4, rgba32f) uniform image2D nrcNeuralRayDirImage;
+layout(set = 6, binding = 4) buffer NrcInferOutput
+{
+	float nrcInferOutput[];
+};
 
-layout(set = 6, binding = 5, rgba32f) uniform image2D nrcNeuralRayColorImage;
+layout(set = 6, binding = 5) buffer NrcTrainInput
+{
+	float nrcTrainInput[];
+};
 
-layout(set = 6, binding = 6, rgba32f) uniform image2D nrcNeuralRayTargetImage;
+layout(set = 6, binding = 6) buffer NrcTrainTarget
+{
+	float nrcTrainTarget[];
+};
