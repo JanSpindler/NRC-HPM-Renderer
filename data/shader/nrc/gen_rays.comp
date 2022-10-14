@@ -33,8 +33,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 
 			if (RandFloat(1.0) > totalTermProb)
 			{
-				imageStore(nrcNeuralRayOriginImage, imageCoord, vec4(currentPoint, 0.0));
-				imageStore(nrcNeuralRayDirImage, imageCoord, vec4(currentDir, 0.0));
+				// TODO: Store neural ray input
 				return vec4(scatteredLight, transmittance);
 			}
 			totalTermProb *= 0.5;

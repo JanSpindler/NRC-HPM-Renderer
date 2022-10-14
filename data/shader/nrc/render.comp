@@ -13,7 +13,7 @@ void main()
 
 	const vec4 primaryRayColor = imageLoad(nrcPrimaryRayColorImage, invertedYImageCoord);
 	const vec4 primaryRayInfo = imageLoad(nrcPrimaryRayInfoImage, invertedYImageCoord);
-	const vec4 neuralRayColor = imageLoad(nrcNeuralRayColorImage, invertedYImageCoord);
+	const vec4 neuralRayColor = vec4(0.0); // TODO
 
 	vec4 outputColor = vec4(primaryRayColor.xyz, 1.0);
 	if (primaryRayInfo.x > 0.0)
