@@ -1067,10 +1067,6 @@ namespace en
 			0, nullptr,
 			0, nullptr);
 
-		// Render pipeline
-		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
-		vkCmdDispatch(m_PreCudaCommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
-
 		// End
 		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		if (result != VK_SUCCESS)

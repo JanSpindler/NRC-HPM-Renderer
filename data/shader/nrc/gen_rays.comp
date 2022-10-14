@@ -31,12 +31,12 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 		{
 			didScatter = true;
 
-			if (RandFloat(1.0) > totalTermProb)
-			{
-				// TODO: Store neural ray input
-				return vec4(scatteredLight, transmittance);
-			}
-			totalTermProb *= 0.5;
+			//if (RandFloat(1.0) > totalTermProb)
+			//{
+			//	// TODO: Store neural ray input
+			//	return vec4(scatteredLight, transmittance);
+			//}
+			//totalTermProb *= 0.5;
 
 			// Get scene lighting
 			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
@@ -105,7 +105,7 @@ void main()
 	else
 	{
 		primaryRayColor = TracePath(ro, rd, didScatter);
-
+		
 		if (!didScatter)
 		{
 			primaryRayColor = vec4(SampleHdrEnvMap(rd, false), 1.0);
