@@ -105,7 +105,6 @@ void main()
 	else
 	{
 		primaryRayColor = TracePath(ro, rd, didScatter);
-		
 		if (!didScatter)
 		{
 			primaryRayColor = vec4(SampleHdrEnvMap(rd, false), 1.0);

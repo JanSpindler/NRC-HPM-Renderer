@@ -248,15 +248,17 @@ int main()
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
 
-		ImGui::Begin("Hello world");
-
-		ImGui::End();
-
-		// Display
+		volumeData.RenderImGui();
+		volumeData.Update(camera.HasChanged());
+		dirLight.RenderImgui();
+		pointLight.RenderImGui();
+		hdrEnvMap.RenderImGui();
+		
 		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 
+		// Display
 		swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
 		frameCount++;
 	}
