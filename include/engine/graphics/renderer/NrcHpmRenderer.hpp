@@ -70,22 +70,22 @@ namespace en
 		cudaExternalSemaphore_t m_CuExtCudaFinishedSemaphore;
 
 		VkDeviceSize m_NrcInferInputBufferSize;
-		vk::Buffer* m_NrcInferInputBuffer;
+		vk::Buffer* m_NrcInferInputBuffer = nullptr;
 		cudaExternalMemory_t m_NrcInferInputCuExtMem;
 		void* m_NrcInferInputDCuBuffer;
 
 		VkDeviceSize m_NrcInferOutputBufferSize;
-		vk::Buffer* m_NrcInferOutputBuffer;
+		vk::Buffer* m_NrcInferOutputBuffer = nullptr;
 		cudaExternalMemory_t m_NrcInferOutputCuExtMem;
 		void* m_NrcInferOutputDCuBuffer;
 
 		VkDeviceSize m_NrcTrainInputBufferSize;
-		vk::Buffer* m_NrcTrainInputBuffer;
+		vk::Buffer* m_NrcTrainInputBuffer = nullptr;
 		cudaExternalMemory_t m_NrcTrainInputCuExtMem;
 		void* m_NrcTrainInputDCuBuffer;
 
 		VkDeviceSize m_NrcTrainTargetBufferSize;
-		vk::Buffer* m_NrcTrainTargetBuffer;
+		vk::Buffer* m_NrcTrainTargetBuffer = nullptr;
 		cudaExternalMemory_t m_NrcTrainTargetCuExtMem;
 		void* m_NrcTrainTargetDCuBuffer;
 

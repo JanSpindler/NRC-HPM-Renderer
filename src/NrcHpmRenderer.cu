@@ -219,12 +219,16 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		m_Nrc.InferAndTrain();
-
+		
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = &m_CudaStartSemaphore;
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		submitInfo.pWaitDstStageMask = &waitStage;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_PostCudaCommandBuffer;
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &m_CudaFinishedSemaphore;
-
+		
 		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
 	}
@@ -325,28 +329,28 @@ namespace en
 		m_NrcTrainTargetBufferSize = m_TrainWidth * m_TrainHeight * 3 * sizeof(float);
 
 		// Create buffers
-		vk::Buffer* m_NrcInferInputBuffer = new vk::Buffer(
+		m_NrcInferInputBuffer = new vk::Buffer(
 			m_NrcInferInputBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
-		vk::Buffer* m_NrcInferOutputBuffer = new vk::Buffer(
+		m_NrcInferOutputBuffer = new vk::Buffer(
 			m_NrcInferOutputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 		
-		vk::Buffer* m_NrcTrainInputBuffer = new vk::Buffer(
+		m_NrcTrainInputBuffer = new vk::Buffer(
 			m_NrcTrainInputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 		
-		vk::Buffer* m_NrcTrainTargetBuffer = new vk::Buffer(
+		m_NrcTrainTargetBuffer = new vk::Buffer(
 			m_NrcTrainTargetBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -1103,13 +1107,13 @@ namespace en
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
-			m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+			m_PostCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 			0, descSets.size(), descSets.data(),
 			0, nullptr);
 
 		// Render pipeline
-		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
-		vkCmdDispatch(m_PreCudaCommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
+		vkCmdBindPipeline(m_PostCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
+		vkCmdDispatch(m_PostCudaCommandBuffer, m_FrameWidth / 32, m_FrameHeight, 1);
 
 		// End command buffer
 		result = vkEndCommandBuffer(m_PostCudaCommandBuffer);
