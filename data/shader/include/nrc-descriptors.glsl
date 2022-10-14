@@ -56,22 +56,42 @@ layout(set = 5, binding = 1, rgba32f) uniform image2D nrcPrimaryRayColorImage;
 
 layout(set = 5, binding = 2, rgba32f) uniform image2D nrcPrimaryRayInfoImage;
 
-layout(set = 5, binding = 3) buffer NrcInferInput
+struct NrcInput
 {
-	float nrcInferInput[];
+	float posX;
+	float posY;
+	float posZ;
+	float theta;
+	float phi;
 };
 
-layout(set = 5, binding = 4) buffer NrcInferOutput
+struct NrcOutput
 {
-	float nrcInferOutput[];
+	float r;
+	float g;
+	float b;
 };
 
-layout(set = 5, binding = 5) buffer NrcTrainInput
+layout(std430, set = 5, binding = 3) buffer NrcInferInput
 {
-	float nrcTrainInput[];
+	//float nrcInferInput[];
+	NrcInput nrcInferInput[];
 };
 
-layout(set = 5, binding = 6) buffer NrcTrainTarget
+layout(std430, set = 5, binding = 4) buffer NrcInferOutput
 {
-	float nrcTrainTarget[];
+	//float nrcInferOutput[];
+	NrcOutput nrcInferOutput[];
+};
+
+layout(std430, set = 5, binding = 5) buffer NrcTrainInput
+{
+	//float nrcTrainInput[];
+	NrcInput nrcTrainInput[];
+};
+
+layout(std430, set = 5, binding = 6) buffer NrcTrainTarget
+{
+	//float nrcTrainTarget[];
+	NrcOutput nrcTrainTarget[];
 };
