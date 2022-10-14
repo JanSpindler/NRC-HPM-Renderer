@@ -4,7 +4,24 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-ivec2 imageCoord;
+void StoreNrcInferInput(const vec3 pos, const vec3 dir)
+{
+	// Calc index
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
+
+	// Calc dir
+	const float theta = 0.0;
+	const float phi = 0.0;
+
+	// Store infer input
+	nrcInferInput[linearPixelIndex].posX = pos.x;
+	nrcInferInput[linearPixelIndex].posY = pos.y;
+	nrcInferInput[linearPixelIndex].posZ = pos.z;
+	nrcInferInput[linearPixelIndex].theta = theta;
+	nrcInferInput[linearPixelIndex].phi = phi;
+}
 
 #define PATH_SAMPLE_COUNT 32
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
@@ -33,7 +50,9 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 
 			if (RandFloat(1.0) > totalTermProb)
 			{
-				// TODO: Store neural ray input
+				StoreNrcInferInput(currentPoint, currentDir);
+
+				// Return prematurly terminated ray color
 				return vec4(scatteredLight, transmittance);
 			}
 			totalTermProb *= 0.5;
@@ -73,7 +92,7 @@ void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
-	imageCoord = ivec2(x, y);
+	ivec2 imageCoord = ivec2(x, y);
 
 	// Fraguv and world pos
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);

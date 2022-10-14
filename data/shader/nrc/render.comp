@@ -4,6 +4,19 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
+vec3 LoadNrcInferOutput(const ivec2 invertedYImageCoord)
+{
+	const uint x = invertedYImageCoord.x;
+	const uint y = invertedYImageCoord.y;
+	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
+
+	vec3 color;
+	color.x = max(0.0, nrcInferOutput[linearPixelIndex].r);
+	color.y = max(0.0, nrcInferOutput[linearPixelIndex].g);
+	color.z = max(0.0, nrcInferOutput[linearPixelIndex].b);
+	return color * 100.0;
+}
+
 void main()
 {
 	const uint x = gl_GlobalInvocationID.x;
@@ -13,7 +26,7 @@ void main()
 
 	const vec4 primaryRayColor = imageLoad(nrcPrimaryRayColorImage, invertedYImageCoord);
 	const vec4 primaryRayInfo = imageLoad(nrcPrimaryRayInfoImage, invertedYImageCoord);
-	const vec4 neuralRayColor = vec4(0.0); // TODO
+	const vec4 neuralRayColor = vec4(LoadNrcInferOutput(invertedYImageCoord), 0.0);
 
 	vec4 outputColor = vec4(primaryRayColor.xyz, 1.0);
 	if (primaryRayInfo.x > 0.0)
