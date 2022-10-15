@@ -171,6 +171,7 @@ namespace en
 		m_TrainHeight(trainHeight),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
 		m_PrepRayInfoShader("nrc/prep_ray_info.comp", false),
+		m_PrepTrainRaysShader("nrc/prep_train_rays.comp", false),
 		m_RenderShader("nrc/render.comp", false),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
@@ -206,6 +207,7 @@ namespace en
 
 		CreateGenRaysPipeline(device);
 		CreatePrepRayInfoPipeline(device);
+		CreatePrepTrainRaysPipeline(device);
 		CreateRenderPipeline(device);
 
 		CreateOutputImage(device);
@@ -238,15 +240,17 @@ namespace en
 
 		m_Nrc.InferAndTrain();
 		
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
 		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &m_CudaStartSemaphore;
+		submitInfo.pWaitSemaphores = &m_CudaFinishedSemaphore;
 		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 		submitInfo.pWaitDstStageMask = &waitStage;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &m_PostCudaCommandBuffer;
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &m_CudaFinishedSemaphore;
-		
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
 		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
 	}
@@ -280,6 +284,9 @@ namespace en
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
 		m_RenderShader.Destroy();
 		
+		vkDestroyPipeline(device, m_PrepTrainRaysPipeline, nullptr);
+		m_PrepTrainRaysShader.Destroy();
+
 		vkDestroyPipeline(device, m_PrepRayInfoPipeline, nullptr);
 		m_PrepRayInfoShader.Destroy();
 
@@ -542,6 +549,30 @@ namespace en
 		pipelineCI.basePipelineIndex = 0;
 
 		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_PrepRayInfoPipeline);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::CreatePrepTrainRaysPipeline(VkDevice device)
+	{
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.pNext = nullptr;
+		shaderStage.flags = 0;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_PrepTrainRaysShader.GetVulkanModule();
+		shaderStage.pName = "main";
+		shaderStage.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI;
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = shaderStage;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_PrepTrainRaysPipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -1325,7 +1356,7 @@ namespace en
 			0, nullptr,
 			0, nullptr);
 
-		// Calc prep ray info
+		// Prep ray info
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepRayInfoPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
 
@@ -1337,6 +1368,10 @@ namespace en
 			1, &memoryBarrier,
 			0, nullptr,
 			0, nullptr);
+
+		// Prep train rays
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepTrainRaysPipeline);
+		vkCmdDispatch(m_PreCudaCommandBuffer, m_TrainWidth / 32, m_TrainHeight, 1);
 
 		// End
 		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);

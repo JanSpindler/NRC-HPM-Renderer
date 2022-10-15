@@ -94,7 +94,9 @@ namespace en
 		{
 			const tcnn::GPUMatrix<float>& inputBatch = m_TrainInputBatches[i];
 			const tcnn::GPUMatrix<float>& targetBatch = m_TrainTargetBatches[i];
-			m_Model.trainer->training_step(inputBatch, targetBatch);
+			auto forwardContext = m_Model.trainer->training_step(inputBatch, targetBatch);
+			float loss = m_Model.trainer->loss(*forwardContext.get());
+			Log::Info("NRC Loss: " + std::to_string(loss));
 		}
 	}
 

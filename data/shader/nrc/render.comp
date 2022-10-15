@@ -14,7 +14,7 @@ vec3 LoadNrcInferOutput(const ivec2 invertedYImageCoord)
 	color.x = max(0.0, nrcInferOutput[linearPixelIndex].r);
 	color.y = max(0.0, nrcInferOutput[linearPixelIndex].g);
 	color.z = max(0.0, nrcInferOutput[linearPixelIndex].b);
-	return color * 100.0;
+	return color;
 }
 
 void main()
