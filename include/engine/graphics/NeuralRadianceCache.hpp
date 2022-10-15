@@ -29,6 +29,8 @@ namespace en
 
 		void Destroy();
 
+		float GetLoss() const;
+
 	private:
 		const uint32_t m_InputCount;
 		const uint32_t m_OutputCount;
@@ -42,6 +44,8 @@ namespace en
 
 		cudaExternalSemaphore_t m_CudaStartSemaphore;
 		cudaExternalSemaphore_t m_CudaFinishedSemaphore;
+
+		float m_Loss = 0.0f;
 
 		void Inference();
 		void Train();

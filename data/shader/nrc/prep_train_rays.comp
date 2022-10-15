@@ -23,9 +23,10 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainInput[linearPixelIndex].phi = phi;
 
 	// Store train target
-	nrcTrainTarget[linearPixelIndex].r = 0.5; //target.x;
-	nrcTrainTarget[linearPixelIndex].g = 0.5; //target.y;
-	nrcTrainTarget[linearPixelIndex].b = 0.5; //target.z;
+	const vec3 regulatedTarget = clamp(target, 0.0, 1000.0);
+	nrcTrainTarget[linearPixelIndex].r = regulatedTarget.x;
+	nrcTrainTarget[linearPixelIndex].g = regulatedTarget.y;
+	nrcTrainTarget[linearPixelIndex].b = regulatedTarget.z;
 }
 
 #define PATH_SAMPLE_COUNT 32

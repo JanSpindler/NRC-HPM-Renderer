@@ -125,11 +125,12 @@ int main()
 	// Init nrc
 	nlohmann::json config = {
 	{"loss", {
-		{"otype", "L2"}
+		{"otype", "RelativeL2"}
 	}},
 	{"optimizer", {
 		{"otype", "Adam"},
-		{"learning_rate", 1e-3},
+		{"learning_rate", 1e-5},
+		{"relative_decay", 0.0},
 	}},
 	{"encoding", {
 		{"otype", "Composite"},
@@ -141,7 +142,7 @@ int main()
 				{"n_levels", 16},
 				{"n_features_per_level", 2},
 				{"log2_hashmap_size", 19},
-				{"base_resolution", 16},
+				{"base_resolution", 4},
 				{"per_level_scale", 2.0},
 			},
 			{
@@ -167,7 +168,7 @@ int main()
 	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
 	int hdrWidth, hdrHeight;
-	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight);
+	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight, 100.0f);
 	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 	en::HdrEnvMap hdrEnvMap(
 		1.0f,
@@ -234,6 +235,11 @@ int main()
 		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
 		uint32_t fps = en::Time::GetFps();
 		en::Window::SetTitle(appName + " | Delta time: " + std::to_string(deltaTime) + "s | Fps: " + std::to_string(fps));
+
+		if (frameCount % 100 == 0)
+		{
+			en::Log::Info("Loss: " + std::to_string(nrc.GetLoss()));
+		}
 
 		// Physics
 		en::Input::HandleUserCamInput(&camera, deltaTime);

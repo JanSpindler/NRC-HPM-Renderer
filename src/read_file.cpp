@@ -4,6 +4,7 @@
 #include <fstream>
 #include <thread>
 #include <array>
+#include <cmath>;
 
 namespace en
 {
@@ -77,7 +78,7 @@ namespace en
 		return density3D;
 	}
 
-	std::vector<float> ReadFileHdr4f(const std::string& fileName, int& width, int& height)
+	std::vector<float> ReadFileHdr4f(const std::string& fileName, int& width, int& height, float max)
 	{
 		int channel;
 		stbi_set_flip_vertically_on_load(true);
@@ -94,7 +95,7 @@ namespace en
 		std::vector<float> hdrData(floatCount);
 		memcpy(hdrData.data(), data, rawSize);
 
-		float max = 0.0f;
+		float maxVal = 0.0f;
 		size_t maxX = 0;
 		size_t maxY = 0;
 		for (size_t x = 0; x < width; x++)
@@ -105,19 +106,23 @@ namespace en
 				{
 					const size_t linearIndex = (y * width * 4) + (x * 4) + c;
 					const float current = hdrData[linearIndex];
-					if (current > max)
+					if (current > maxVal)
 					{
-						max = current;
+						maxVal = current;
 						maxX = x;
 						maxY = y;
 					}
 
+					// Clamp
+					hdrData[linearIndex] = std::min(max, hdrData[linearIndex]);
+
+					// Test overwrite
 					//hdrData[linearIndex] = 0.75f;
 				}
 			}
 		}
 		
-		en::Log::Info(fileName + " at (" + std::to_string(maxX) + "," + std::to_string(maxY) + ") max float: " + std::to_string(max));
+		en::Log::Info(fileName + " at (" + std::to_string(maxX) + "," + std::to_string(maxY) + ") max float: " + std::to_string(maxVal));
 
 		return hdrData;
 	}
