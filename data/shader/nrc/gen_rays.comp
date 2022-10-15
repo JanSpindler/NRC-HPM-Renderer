@@ -133,6 +133,6 @@ void main()
 	primaryRayInfo = vec4(didScatter ? 1.0 : 0.0, 0.0, 0.0, 0.0);
 
 	// Store output
-	imageStore(nrcPrimaryRayColorImage, imageCoord, primaryRayColor);
-	imageStore(nrcPrimaryRayInfoImage, imageCoord, primaryRayInfo);
+	imageStore(primaryRayColorImage, imageCoord, primaryRayColor);
+	imageStore(primaryRayInfoImage, imageCoord, primaryRayInfo);
 }

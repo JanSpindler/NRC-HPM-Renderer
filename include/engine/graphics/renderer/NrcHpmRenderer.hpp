@@ -50,8 +50,8 @@ namespace en
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
 
-		uint32_t m_FrameWidth;
-		uint32_t m_FrameHeight;
+		uint32_t m_RenderWidth;
+		uint32_t m_RenderHeight;
 
 		uint32_t m_TrainWidth;
 		uint32_t m_TrainHeight;
@@ -98,8 +98,8 @@ namespace en
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
-		vk::Shader m_CalcNrcTargetsShader;
-		VkPipeline m_CalcNrcTargetsPipeline;
+		vk::Shader m_PrepareTrainingShader;
+		VkPipeline m_PrepareTrainingPipeline;
 
 		vk::Shader m_RenderShader;
 		VkPipeline m_RenderPipeline;
@@ -116,6 +116,14 @@ namespace en
 		VkDeviceMemory m_PrimaryRayInfoImageMemory;
 		VkImageView m_PrimaryRayInfoImageView;
 
+		VkImage m_NrcRayOriginImage;
+		VkDeviceMemory m_NrcRayOriginImageMemory;
+		VkImageView m_NrcRayOriginImageView;
+
+		VkImage m_NrcRayDirImage;
+		VkDeviceMemory m_NrcRayDirImageMemory;
+		VkImageView m_NrcRayDirImageView;
+
 		VkDescriptorSet m_DescSet;
 
 		vk::CommandPool m_CommandPool;
@@ -131,12 +139,14 @@ namespace en
 		void InitSpecializationConstants();
 
 		void CreateGenRaysPipeline(VkDevice device);
-		void CreateCalcNrcTargetsPipeline(VkDevice device);
+		void CreatePrepareTrainingPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
 		void CreatePrimaryRayColorImage(VkDevice device);
 		void CreatePrimaryRayInfoImage(VkDevice device);
+		void CreateNrcRayOriginImage(VkDevice device);
+		void CreateNrcRayDirImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 

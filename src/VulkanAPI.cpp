@@ -8,7 +8,6 @@
 #include <engine/objects/VolumeData.hpp>
 #include <engine/graphics/DirLight.hpp>
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
-#include <engine/graphics/NeuralRadianceCache.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/renderer/RestirHpmRenderer.hpp>

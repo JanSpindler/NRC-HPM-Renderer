@@ -24,8 +24,8 @@ void main()
 	const ivec2 outputImageCoord = ivec2(x, y);
 	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - (y + 1));
 
-	const vec4 primaryRayColor = imageLoad(nrcPrimaryRayColorImage, invertedYImageCoord);
-	const vec4 primaryRayInfo = imageLoad(nrcPrimaryRayInfoImage, invertedYImageCoord);
+	const vec4 primaryRayColor = imageLoad(primaryRayColorImage, invertedYImageCoord);
+	const vec4 primaryRayInfo = imageLoad(primaryRayInfoImage, invertedYImageCoord);
 	const vec4 neuralRayColor = vec4(LoadNrcInferOutput(invertedYImageCoord), 0.0);
 
 	vec4 outputColor = vec4(primaryRayColor.xyz, 1.0);
@@ -34,5 +34,5 @@ void main()
 		outputColor.xyz += neuralRayColor.xyz * primaryRayColor.w;
 	}
 
-	imageStore(nrcOutputImage, outputImageCoord, outputColor);
+	imageStore(outputImage, outputImageCoord, outputColor);
 }
