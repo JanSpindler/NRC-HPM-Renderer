@@ -4,7 +4,7 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-void StoreNrcInferInput(const vec3 pos, const vec3 dir)
+/*void StoreNrcInferInput(const vec3 pos, const vec3 dir)
 {
 	// Calc index
 	const uint x = gl_GlobalInvocationID.x;
@@ -21,10 +21,10 @@ void StoreNrcInferInput(const vec3 pos, const vec3 dir)
 	nrcInferInput[linearPixelIndex].posZ = pos.z;
 	nrcInferInput[linearPixelIndex].theta = theta;
 	nrcInferInput[linearPixelIndex].phi = phi;
-}
+}*/
 
 #define PATH_SAMPLE_COUNT 32
-vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
+vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 {
 	vec3 scatteredLight = vec3(0.0);
 	float transmittance = 1.0;
@@ -50,7 +50,9 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 
 			if (RandFloat(1.0) > totalTermProb)
 			{
-				StoreNrcInferInput(currentPoint, currentDir);
+				// Store nrc ray info
+				imageStore(nrcRayOriginImage, imageCoord, vec4(currentPoint, 0.0));
+				imageStore(nrcRayDirImage, imageCoord, vec4(currentDir, 0.0));
 
 				// Return prematurly terminated ray color
 				return vec4(scatteredLight, transmittance);
@@ -123,7 +125,7 @@ void main()
 	}
 	else
 	{
-		primaryRayColor = TracePath(ro, rd, didScatter);
+		primaryRayColor = TracePath(imageCoord, ro, rd, didScatter);
 		if (!didScatter)
 		{
 			primaryRayColor = vec4(SampleHdrEnvMap(rd, false), 1.0);

@@ -170,7 +170,7 @@ namespace en
 		m_TrainWidth(trainWidth),
 		m_TrainHeight(trainHeight),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
-		m_PrepareTrainingShader("nrc/prepare_training.comp", false),
+		m_PrepRayInfoShader("nrc/prep_ray_info.comp", false),
 		m_RenderShader("nrc/render.comp", false),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
@@ -205,7 +205,7 @@ namespace en
 		InitSpecializationConstants();
 
 		CreateGenRaysPipeline(device);
-		CreatePrepareTrainingPipeline(device);
+		CreatePrepRayInfoPipeline(device);
 		CreateRenderPipeline(device);
 
 		CreateOutputImage(device);
@@ -280,8 +280,8 @@ namespace en
 		vkDestroyPipeline(device, m_RenderPipeline, nullptr);
 		m_RenderShader.Destroy();
 		
-		vkDestroyPipeline(device, m_PrepareTrainingPipeline, nullptr);
-		m_PrepareTrainingShader.Destroy();
+		vkDestroyPipeline(device, m_PrepRayInfoPipeline, nullptr);
+		m_PrepRayInfoShader.Destroy();
 
 		vkDestroyPipeline(device, m_GenRaysPipeline, nullptr);
 		m_GenRaysShader.Destroy();
@@ -521,14 +521,14 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void NrcHpmRenderer::CreatePrepareTrainingPipeline(VkDevice device)
+	void NrcHpmRenderer::CreatePrepRayInfoPipeline(VkDevice device)
 	{
 		VkPipelineShaderStageCreateInfo shaderStage;
 		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStage.pNext = nullptr;
 		shaderStage.flags = 0;
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStage.module = m_PrepareTrainingShader.GetVulkanModule();
+		shaderStage.module = m_PrepRayInfoShader.GetVulkanModule();
 		shaderStage.pName = "main";
 		shaderStage.pSpecializationInfo = &m_SpecInfo;
 
@@ -541,7 +541,7 @@ namespace en
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineCI.basePipelineIndex = 0;
 
-		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_PrepareTrainingPipeline);
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_PrepRayInfoPipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -1325,9 +1325,9 @@ namespace en
 			0, nullptr,
 			0, nullptr);
 
-		// Calc nrc targets pipeline
-		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepareTrainingPipeline);
-		vkCmdDispatch(m_PreCudaCommandBuffer, m_TrainWidth / 32, m_TrainHeight, 1);
+		// Calc prep ray info
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepRayInfoPipeline);
+		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
 
 		vkCmdPipelineBarrier(
 			m_PreCudaCommandBuffer,

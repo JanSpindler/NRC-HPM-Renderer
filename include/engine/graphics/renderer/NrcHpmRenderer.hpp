@@ -98,8 +98,8 @@ namespace en
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
-		vk::Shader m_PrepareTrainingShader;
-		VkPipeline m_PrepareTrainingPipeline;
+		vk::Shader m_PrepRayInfoShader;
+		VkPipeline m_PrepRayInfoPipeline;
 
 		vk::Shader m_RenderShader;
 		VkPipeline m_RenderPipeline;
@@ -139,7 +139,7 @@ namespace en
 		void InitSpecializationConstants();
 
 		void CreateGenRaysPipeline(VkDevice device);
-		void CreatePrepareTrainingPipeline(VkDevice device);
+		void CreatePrepRayInfoPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 
 		void CreateOutputImage(VkDevice device);
