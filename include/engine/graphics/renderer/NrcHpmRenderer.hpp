@@ -22,8 +22,7 @@ namespace en
 		NrcHpmRenderer(
 			uint32_t width,
 			uint32_t height,
-			uint32_t trainWidth,
-			uint32_t trainHeight,
+			float trainSampleRatio,
 			const Camera& camera,
 			const VolumeData& volumeData,
 			const DirLight& dirLight,

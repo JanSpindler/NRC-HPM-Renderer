@@ -203,9 +203,8 @@ int main()
 
 	hpmRenderer = new en::NrcHpmRenderer(
 		width, 
-		height, 
-		128, 
-		128, 
+		height,
+		0.05f,
 		camera, 
 		volumeData, 
 		dirLight, 

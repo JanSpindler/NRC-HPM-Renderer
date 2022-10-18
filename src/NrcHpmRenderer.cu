@@ -156,8 +156,7 @@ namespace en
 	NrcHpmRenderer::NrcHpmRenderer(
 		uint32_t width,
 		uint32_t height,
-		uint32_t trainWidth,
-		uint32_t trainHeight,
+		float trainSampleRatio,
 		const Camera& camera,
 		const VolumeData& volumeData,
 		const DirLight& dirLight,
@@ -167,8 +166,8 @@ namespace en
 		:
 		m_RenderWidth(width),
 		m_RenderHeight(height),
-		m_TrainWidth(trainWidth),
-		m_TrainHeight(trainHeight),
+		m_TrainWidth(128),
+		m_TrainHeight(128),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
 		m_PrepRayInfoShader("nrc/prep_ray_info.comp", false),
 		m_PrepTrainRaysShader("nrc/prep_train_rays.comp", false),
