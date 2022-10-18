@@ -112,8 +112,8 @@ int main()
 {
 	// Start engine
 	const std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 768; // Multiple of 128 for nrc batch size
-	uint32_t height = width;
+	uint32_t width = 1920;
+	uint32_t height = 1080;
 	en::Log::Info("Starting " + appName);
 	en::Window::Init(width, height, false, appName);
 	en::Input::Init(en::Window::GetGLFWHandle());

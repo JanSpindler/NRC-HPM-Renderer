@@ -35,12 +35,6 @@ namespace en
 		m_CudaStartSemaphore = cudaStartSemaphore;
 		m_CudaFinishedSemaphore = cudaFinishedSemaphore;
 
-		// Check batch size compatibility
-		if (inferCount % m_BatchSize != 0 || trainCount % m_BatchSize != 0)
-		{
-			Log::Error("NRC batch size is not compatible with infer count or train count", true);
-		}
-
 		// Init infer buffers
 		uint32_t inferBatchCount = inferCount / m_BatchSize;
 		m_InferInputBatches.resize(inferBatchCount);

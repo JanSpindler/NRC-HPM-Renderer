@@ -18,7 +18,12 @@ namespace en
 			Log::Error("Failed to initialize GLFW", true);
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
-		m_GLFWHandle = glfwCreateWindow(static_cast<int>(m_Width), static_cast<int>(m_Height), title.c_str(), nullptr, nullptr);
+		m_GLFWHandle = glfwCreateWindow(
+			static_cast<int>(m_Width), 
+			static_cast<int>(m_Height), 
+			title.c_str(), 
+			glfwGetPrimaryMonitor(),
+			nullptr);
 	}
 
 	void Window::Update()
