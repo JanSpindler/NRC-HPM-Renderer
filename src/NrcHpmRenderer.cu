@@ -166,8 +166,6 @@ namespace en
 		:
 		m_RenderWidth(width),
 		m_RenderHeight(height),
-		m_TrainWidth(128),
-		m_TrainHeight(128),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
 		m_PrepRayInfoShader("nrc/prep_ray_info.comp", false),
 		m_PrepTrainRaysShader("nrc/prep_train_rays.comp", false),
@@ -180,6 +178,14 @@ namespace en
 		m_HdrEnvMap(hdrEnvMap),
 		m_Nrc(nrc)
 	{
+		// Calc train sample extent
+		float sqrtTrainSampleRatio = std::sqrt(trainSampleRatio);
+		m_TrainWidth = sqrtTrainSampleRatio * m_RenderWidth;
+		m_TrainHeight = sqrtTrainSampleRatio * m_RenderHeight;
+		m_TrainWidth -= m_TrainWidth % 16;
+		m_TrainHeight -= m_TrainHeight % 16;
+
+		// Init components
 		VkDevice device = VulkanAPI::GetDevice();
 
 		CreateSyncObjects(device);

@@ -8,15 +8,10 @@
 
 namespace en
 {
-	NeuralRadianceCache::NeuralRadianceCache(
-		const nlohmann::json& config, 
-		uint32_t inputCount, 
-		uint32_t outputCount,
-		uint32_t log2BatchSize) 
-		:
-		m_Model(tcnn::create_from_config(inputCount, outputCount, config)),
-		m_InputCount(inputCount),
-		m_OutputCount(outputCount),
+	NeuralRadianceCache::NeuralRadianceCache(const nlohmann::json& config, uint32_t log2BatchSize) :
+		m_Model(tcnn::create_from_config(5, 3, config)),
+		m_InputCount(5),
+		m_OutputCount(3),
 		m_BatchSize(2 << (log2BatchSize - 1))
 	{
 	}
@@ -31,32 +26,56 @@ namespace en
 		cudaExternalSemaphore_t cudaStartSemaphore,
 		cudaExternalSemaphore_t cudaFinishedSemaphore)
 	{
+		// Check if sample counts are compatible
+		if (inferCount % 16 != 0) { en::Log::Error("NRC requires inferCount to be a multiple of 16", true); }
+		if (trainCount % 16 != 0) { en::Log::Error("NRC required trainCount to be a multiple of 16", true); }
+
 		// Init members
 		m_CudaStartSemaphore = cudaStartSemaphore;
 		m_CudaFinishedSemaphore = cudaFinishedSemaphore;
 
 		// Init infer buffers
 		uint32_t inferBatchCount = inferCount / m_BatchSize;
+		uint32_t inferLastBatchSize = inferCount - (inferBatchCount * m_BatchSize);
 		m_InferInputBatches.resize(inferBatchCount);
 		m_InferOutputBatches.resize(inferBatchCount);
+		
+		size_t floatInputOffset = 0;
+		size_t floatOutputOffset = 0;
 		for (uint32_t i = 0; i < inferBatchCount; i++)
 		{
-			const size_t floatInputOffset = i * m_BatchSize * m_InputCount;
-			const size_t floatOutputOffset = i * m_BatchSize * m_OutputCount;
 			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), m_InputCount, m_BatchSize);
 			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), m_OutputCount, m_BatchSize);
+			floatInputOffset += m_BatchSize * m_InputCount;
+			floatOutputOffset += m_BatchSize * m_OutputCount;
+		}
+
+		if (inferLastBatchSize > 0)
+		{
+			m_InferInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), m_InputCount, inferLastBatchSize));
+			m_InferOutputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), m_OutputCount, inferLastBatchSize));
 		}
 
 		// Init train buffers
 		uint32_t trainBatchCount = trainCount / m_BatchSize;
+		uint32_t trainLastBatchSize = trainCount - (trainBatchCount * m_BatchSize);
 		m_TrainInputBatches.resize(trainBatchCount);
 		m_TrainTargetBatches.resize(trainBatchCount);
+
+		floatInputOffset = 0;
+		floatOutputOffset = 0;
 		for (uint32_t i = 0; i < trainBatchCount; i++)
 		{
-			const size_t floatInputOffset = i * m_BatchSize * m_InputCount;
-			const size_t floatTargetOffset = i * m_BatchSize * m_OutputCount;
 			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), m_InputCount, m_BatchSize);
-			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatTargetOffset]), m_OutputCount, m_BatchSize);
+			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), m_OutputCount, m_BatchSize);
+			floatInputOffset += m_BatchSize * m_InputCount;
+			floatOutputOffset += m_BatchSize * m_OutputCount;
+		}
+
+		if (trainLastBatchSize > 0)
+		{
+			m_TrainInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), m_InputCount, trainLastBatchSize));
+			m_TrainTargetBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), m_OutputCount, trainLastBatchSize));
 		}
 	}
 

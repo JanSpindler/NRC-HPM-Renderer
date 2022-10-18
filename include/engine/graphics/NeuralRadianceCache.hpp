@@ -9,15 +9,11 @@ namespace en
 	class NeuralRadianceCache
 	{
 	public:
-		NeuralRadianceCache(
-			const nlohmann::json& config, 
-			uint32_t inputCount,
-			uint32_t outputCount,
-			uint32_t log2BatchSize);
+		NeuralRadianceCache(const nlohmann::json& config, uint32_t log2BatchSize);
 
 		void Init(
-			uint32_t inferCount, 
-			uint32_t trainCount, 
+			uint32_t inferCount,
+			uint32_t trainCount,
 			float* dCuInferInput, 
 			float* dCuInferOutput, 
 			float* dCuTrainInput, 

@@ -161,7 +161,7 @@ int main()
 	}},
 	};
 
-	en::NeuralRadianceCache nrc(config, 5, 3, 14);
+	en::NeuralRadianceCache nrc(config, 14);
 
 	// Lighting
 	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
@@ -233,12 +233,6 @@ int main()
 
 		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
 		uint32_t fps = en::Time::GetFps();
-		en::Window::SetTitle(appName + " | Delta time: " + std::to_string(deltaTime) + "s | Fps: " + std::to_string(fps));
-
-		if (frameCount % 100 == 0)
-		{
-			en::Log::Info("Loss: " + std::to_string(nrc.GetLoss()));
-		}
 
 		// Physics
 		en::Input::HandleUserCamInput(&camera, deltaTime);
@@ -252,6 +246,12 @@ int main()
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
+
+		ImGui::Begin("Statistics");
+		ImGui::Text("DeltaTime %f", deltaTime);
+		ImGui::Text("FPS %d", fps);
+		ImGui::Text("NRC Loss %f", nrc.GetLoss());
+		ImGui::End();
 
 		volumeData.RenderImGui();
 		volumeData.Update(camera.HasChanged());
