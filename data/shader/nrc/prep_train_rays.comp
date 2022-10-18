@@ -11,22 +11,26 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	const uint y = trainImageCoord.y;
 	const uint linearPixelIndex = (y * TRAIN_WIDTH) + x;
 
+	// Norm pos
+	const vec3 normPos = (pos / skySize) + (skySize / 2.0);
+
 	// Calc dir
 	const float theta = atan(dir.z, dir.x);
+	const float normTheta = (theta / PI) + 0.5;
 	const float phi = acos(dir.y / length(dir.xz));
+	const float normPhi = phi / PI;
 
 	// Store train input
-	nrcTrainInput[linearPixelIndex].posX = pos.x;
-	nrcTrainInput[linearPixelIndex].posY = pos.y;
-	nrcTrainInput[linearPixelIndex].posZ = pos.z;
-	nrcTrainInput[linearPixelIndex].theta = theta;
-	nrcTrainInput[linearPixelIndex].phi = phi;
+	nrcTrainInput[linearPixelIndex].posX = normPos.x;
+	nrcTrainInput[linearPixelIndex].posY = normPos.y;
+	nrcTrainInput[linearPixelIndex].posZ = normPos.z;
+	nrcTrainInput[linearPixelIndex].theta = normTheta;
+	nrcTrainInput[linearPixelIndex].phi = normPhi;
 
 	// Store train target
-	const vec3 regulatedTarget = clamp(target, 0.0, 1000.0);
-	nrcTrainTarget[linearPixelIndex].r = regulatedTarget.x;
-	nrcTrainTarget[linearPixelIndex].g = regulatedTarget.y;
-	nrcTrainTarget[linearPixelIndex].b = regulatedTarget.z;
+	nrcTrainTarget[linearPixelIndex].r = max(0.0, min(10.0, target.x));
+	nrcTrainTarget[linearPixelIndex].g = max(0.0, min(10.0, target.y));
+	nrcTrainTarget[linearPixelIndex].b = max(0.0, min(10.0, target.z));
 }
 
 #define PATH_SAMPLE_COUNT 32

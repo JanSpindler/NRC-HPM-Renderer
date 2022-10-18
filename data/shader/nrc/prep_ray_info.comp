@@ -11,16 +11,21 @@ void StoreNrcInferInput(const vec3 pos, const vec3 dir)
 	const uint y = gl_GlobalInvocationID.y;
 	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
 
+	// Norm pos
+	const vec3 normPos = (pos / skySize) + (skySize / 2.0);
+
 	// Calc dir
 	const float theta = atan(dir.z, dir.x);
+	const float normTheta = (theta / PI) + 0.5;
 	const float phi = acos(dir.y / length(dir.xz));
+	const float normPhi = phi / PI;
 
 	// Store infer input
-	nrcInferInput[linearPixelIndex].posX = pos.x;
-	nrcInferInput[linearPixelIndex].posY = pos.y;
-	nrcInferInput[linearPixelIndex].posZ = pos.z;
-	nrcInferInput[linearPixelIndex].theta = theta;
-	nrcInferInput[linearPixelIndex].phi = phi;
+	nrcInferInput[linearPixelIndex].posX = normPos.x;
+	nrcInferInput[linearPixelIndex].posY = normPos.y;
+	nrcInferInput[linearPixelIndex].posZ = normPos.z;
+	nrcInferInput[linearPixelIndex].theta = normTheta;
+	nrcInferInput[linearPixelIndex].phi = normPhi;
 }
 
 void main()

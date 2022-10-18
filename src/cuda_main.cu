@@ -142,7 +142,7 @@ int main()
 				{"n_levels", 16},
 				{"n_features_per_level", 2},
 				{"log2_hashmap_size", 19},
-				{"base_resolution", 4},
+				{"base_resolution", 16},
 				{"per_level_scale", 2.0},
 			},
 			{
