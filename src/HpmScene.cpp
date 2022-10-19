@@ -23,7 +23,7 @@ namespace en
 	HpmScene::HpmScene()
 	{
 		// Lighting
-		m_DirLight = new DirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
+		m_DirLight = new DirLight(-1.57f, 0.0f, glm::vec3(1.0f), 4.0f);
 		
 		m_PointLight = new PointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
 
@@ -32,7 +32,7 @@ namespace en
 		std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 		m_HdrEnvMap = new HdrEnvMap(
 			1.0f,
-			3.0f,
+			0.0f,
 			hdrWidth,
 			hdrHeight,
 			hdr4fData,

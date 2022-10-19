@@ -130,8 +130,8 @@ int main()
 	}},
 	{"optimizer", {
 		{"otype", "Adam"},
-		{"learning_rate", 1e-5},
-		{"relative_decay", 0.0},
+		{"learning_rate", 1e-4},
+		{"relative_decay", 1e-2},
 	}},
 	{"encoding", {
 		{"otype", "Composite"},
@@ -157,8 +157,8 @@ int main()
 		{"otype", "FullyFusedMLP"},
 		{"activation", "ReLU"},
 		{"output_activation", "None"},
-		{"n_neurons", 128},
-		{"n_hidden_layers", 6},
+		{"n_neurons", 64},
+		{"n_hidden_layers", 4},
 	}},
 	};
 
