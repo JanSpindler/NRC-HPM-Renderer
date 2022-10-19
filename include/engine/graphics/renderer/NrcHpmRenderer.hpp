@@ -7,6 +7,7 @@
 #include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/vulkan/Shader.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/HpmScene.hpp>
 #include <cuda_runtime.h>
 
 namespace en
@@ -24,10 +25,7 @@ namespace en
 			uint32_t height,
 			float trainSampleRatio,
 			const Camera& camera,
-			const VolumeData& volumeData,
-			const DirLight& dirLight,
-			const PointLight& pointLight,
-			const HdrEnvMap& hdrEnvMap,
+			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
 
 		void Render(VkQueue queue) const;
@@ -56,10 +54,7 @@ namespace en
 		uint32_t m_TrainHeight;
 
 		const Camera& m_Camera;
-		const VolumeData& m_VolumeData;
-		const DirLight& m_DirLight;
-		const PointLight& m_PointLight;
-		const HdrEnvMap& m_HdrEnvMap;
+		const HpmScene& m_HpmScene;
 		NeuralRadianceCache& m_Nrc;
 
 		VkSemaphore m_CudaStartSemaphore;

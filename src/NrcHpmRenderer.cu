@@ -158,10 +158,7 @@ namespace en
 		uint32_t height,
 		float trainSampleRatio,
 		const Camera& camera,
-		const VolumeData& volumeData,
-		const DirLight& dirLight,
-		const PointLight& pointLight,
-		const HdrEnvMap& hdrEnvMap,
+		const HpmScene& hpmScene,
 		NeuralRadianceCache& nrc)
 		:
 		m_RenderWidth(width),
@@ -172,10 +169,7 @@ namespace en
 		m_RenderShader("nrc/render.comp", false),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
-		m_VolumeData(volumeData),
-		m_DirLight(dirLight),
-		m_PointLight(pointLight),
-		m_HdrEnvMap(hdrEnvMap),
+		m_HpmScene(hpmScene),
 		m_Nrc(nrc)
 	{
 		// Calc train sample extent
@@ -1327,13 +1321,10 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Collect descriptor sets
-		std::vector<VkDescriptorSet> descSets = {
-			m_Camera.GetDescriptorSet(),
-			m_VolumeData.GetDescriptorSet(),
-			m_DirLight.GetDescriptorSet(),
-			m_PointLight.GetDescriptorSet(),
-			m_HdrEnvMap.GetDescriptorSet(),
-			m_DescSet };
+		std::vector<VkDescriptorSet> descSets = { m_Camera.GetDescriptorSet() };
+		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
+		descSets.insert(descSets.end(), hpmSceneDescSets.begin(), hpmSceneDescSets.end());
+		descSets.push_back(m_DescSet);
 
 		// Create memory barrier
 		VkMemoryBarrier memoryBarrier;
@@ -1396,13 +1387,10 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Collect descriptor sets
-		std::vector<VkDescriptorSet> descSets = {
-			m_Camera.GetDescriptorSet(),
-			m_VolumeData.GetDescriptorSet(),
-			m_DirLight.GetDescriptorSet(),
-			m_PointLight.GetDescriptorSet(),
-			m_HdrEnvMap.GetDescriptorSet(),
-			m_DescSet };
+		std::vector<VkDescriptorSet> descSets = { m_Camera.GetDescriptorSet() };
+		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
+		descSets.insert(descSets.end(), hpmSceneDescSets.begin(), hpmSceneDescSets.end());
+		descSets.push_back(m_DescSet);
 
 		// Create memory barrier
 		VkMemoryBarrier memoryBarrier;

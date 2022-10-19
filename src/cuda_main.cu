@@ -20,6 +20,7 @@
 #include <engine/util/read_file.hpp>
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
+#include <engine/HpmScene.hpp>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
@@ -163,30 +164,7 @@ int main()
 
 	en::NeuralRadianceCache nrc(config, 14);
 
-	// Lighting
-	en::DirLight dirLight(-1.57f, 0.0f, glm::vec3(1.0f), 0.0f);
-	en::PointLight pointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f);
-
-	int hdrWidth, hdrHeight;
-	std::vector<float> hdr4fData = en::ReadFileHdr4f("data/image/mountain.hdr", hdrWidth, hdrHeight, 100.0f);
-	std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
-	en::HdrEnvMap hdrEnvMap(
-		1.0f,
-		3.0f,
-		hdrWidth,
-		hdrHeight,
-		hdr4fData,
-		hdrCdf[0],
-		hdrCdf[1]);
-
-	// Load data
-	auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
-	en::vk::Texture3D density3DTex(
-		density3D,
-		VK_FILTER_LINEAR,
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-		VK_BORDER_COLOR_INT_OPAQUE_BLACK);
-	en::VolumeData volumeData(&density3DTex);
+	en::HpmScene hpmScene;
 
 	// Setup rendering
 	en::Camera camera(
@@ -205,11 +183,8 @@ int main()
 		width, 
 		height,
 		0.05f,
-		camera, 
-		volumeData, 
-		dirLight, 
-		pointLight, 
-		hdrEnvMap, 
+		camera,
+		hpmScene,
 		nrc);
 
 	en::ImGuiRenderer::Init(width, height);
@@ -253,11 +228,7 @@ int main()
 		ImGui::Text("NRC Loss %f", nrc.GetLoss());
 		ImGui::End();
 
-		volumeData.RenderImGui();
-		volumeData.Update(camera.HasChanged());
-		dirLight.RenderImgui();
-		pointLight.RenderImGui();
-		hdrEnvMap.RenderImGui();
+		hpmScene.Update(true);
 		
 		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
 		result = vkQueueWaitIdle(queue);
@@ -271,6 +242,8 @@ int main()
 	ASSERT_VULKAN(result);
 
 	// End
+	hpmScene.Destroy();
+
 	en::ImGuiRenderer::Shutdown();
 
 	swapchain.Destroy(true);

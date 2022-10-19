@@ -102,7 +102,7 @@ namespace en
 		UpdateDescriptorSet();
 	}
 
-	void VolumeData::Update(bool cameraChanged)
+	void VolumeData::Update()
 	{
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
 		m_UniformBuffer.SetData(sizeof(VolumeUniformData), &m_UniformData, 0, 0);

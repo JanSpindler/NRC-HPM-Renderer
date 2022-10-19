@@ -27,7 +27,7 @@ namespace en
 
 		VolumeData(const vk::Texture3D* densityTex);
 
-		void Update(bool cameraChanged);
+		void Update();
 		void Destroy();
 
 		void RenderImGui();
