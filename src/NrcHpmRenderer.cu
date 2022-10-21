@@ -157,12 +157,14 @@ namespace en
 		uint32_t width,
 		uint32_t height,
 		float trainSampleRatio,
+		uint32_t trainSpp,
 		const Camera& camera,
 		const HpmScene& hpmScene,
 		NeuralRadianceCache& nrc)
 		:
 		m_RenderWidth(width),
 		m_RenderHeight(height),
+		m_TrainSpp(trainSpp),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
 		m_PrepRayInfoShader("nrc/prep_ray_info.comp", false),
 		m_PrepTrainRaysShader("nrc/prep_train_rays.comp", false),
@@ -467,8 +469,9 @@ namespace en
 		m_SpecData.trainWidth = m_TrainWidth;
 		m_SpecData.trainHeight = m_TrainHeight;
 
+		m_SpecData.trainSpp = m_TrainSpp;
+
 		// Init map entries
-		// Render size
 		VkSpecializationMapEntry renderWidthEntry;
 		renderWidthEntry.constantID = 0;
 		renderWidthEntry.offset = offsetof(SpecializationData, SpecializationData::renderWidth);
@@ -479,7 +482,6 @@ namespace en
 		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
 		renderHeightEntry.size = sizeof(uint32_t);
 
-		// Train size
 		VkSpecializationMapEntry trainWidthEntry;
 		trainWidthEntry.constantID = 2;
 		trainWidthEntry.offset = offsetof(SpecializationData, SpecializationData::trainWidth);
@@ -490,12 +492,18 @@ namespace en
 		trainHeightEntry.offset = offsetof(SpecializationData, SpecializationData::trainHeight);
 		trainHeightEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry trainSppEntry;
+		trainSppEntry.constantID = 4;
+		trainSppEntry.offset = offsetof(SpecializationData, SpecializationData::trainSpp);
+		trainSppEntry.size = sizeof(uint32_t);
+
 		m_SpecMapEntries = {
 			renderWidthEntry,
 			renderHeightEntry,
-
 			trainWidthEntry,
-			trainHeightEntry };
+			trainHeightEntry,
+			trainSppEntry
+		};
 
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
 		m_SpecInfo.pMapEntries = m_SpecMapEntries.data();

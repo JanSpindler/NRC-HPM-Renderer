@@ -28,9 +28,9 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainInput[linearPixelIndex].phi = normPhi;
 
 	// Store train target
-	nrcTrainTarget[linearPixelIndex].r = max(0.0, min(10.0, target.x));
-	nrcTrainTarget[linearPixelIndex].g = max(0.0, min(10.0, target.y));
-	nrcTrainTarget[linearPixelIndex].b = max(0.0, min(10.0, target.z));
+	nrcTrainTarget[linearPixelIndex].r = target.x;//max(0.0, min(10.0, target.x));
+	nrcTrainTarget[linearPixelIndex].g = target.y;//max(0.0, min(10.0, target.y));
+	nrcTrainTarget[linearPixelIndex].b = target.z;//max(0.0, min(10.0, target.z));
 }
 
 #define PATH_SAMPLE_COUNT 32
@@ -91,9 +91,19 @@ void main()
 	const ivec2 trainImageCoord = ivec2(x, y);
 	const ivec2 renderImageCoord = trainImageCoord * ivec2(RENDER_OVER_TRAIN_WIDTH, RENDER_OVER_TRAIN_HEIGHT);
 
+	// Setup random
+	preRand = volumeData.random.x * float(x) * ONE_OVER_RENDER_WIDTH;
+	prePreRand = volumeData.random.y * float(y) * ONE_OVER_RENDER_WIDTH;
+
 	const vec3 rayOrigin = imageLoad(nrcRayOriginImage, renderImageCoord).xyz;
 	const vec3 rayDir = imageLoad(nrcRayDirImage, renderImageCoord).xyz;
-	const vec3 target = TracePath(rayOrigin, rayDir).xyz;
+
+	vec3 target = vec3(0.0);
+	for (uint i = 0; i < TRAIN_SPP; i++)
+	{
+		target += TracePath(rayOrigin, rayDir).xyz;
+	}
+	target /= float(TRAIN_SPP);
 
 	StoreNrcTrainData(trainImageCoord, rayOrigin, rayDir, target);
 }

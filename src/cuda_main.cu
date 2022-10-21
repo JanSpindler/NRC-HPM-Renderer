@@ -131,7 +131,7 @@ int main()
 	{"optimizer", {
 		{"otype", "Adam"},
 		{"learning_rate", 1e-4},
-		{"relative_decay", 1e-2},
+		{"clipping_magnitude", 10.0},
 	}},
 	{"encoding", {
 		{"otype", "Composite"},
@@ -158,7 +158,7 @@ int main()
 		{"activation", "ReLU"},
 		{"output_activation", "None"},
 		{"n_neurons", 64},
-		{"n_hidden_layers", 4},
+		{"n_hidden_layers", 6},
 	}},
 	};
 
@@ -183,6 +183,7 @@ int main()
 		width, 
 		height,
 		0.05f,
+		1,
 		camera,
 		hpmScene,
 		nrc);
@@ -196,7 +197,8 @@ int main()
 	// Main loop
 	VkResult result;
 	size_t frameCount = 0;
-	while (!en::Window::IsClosed())
+	bool shutdown = false;
+	while (!en::Window::IsClosed() && !shutdown)
 	{
 		// Update
 		en::Window::Update();
@@ -228,6 +230,10 @@ int main()
 		ImGui::Text("NRC Loss %f", nrc.GetLoss());
 		ImGui::End();
 
+		ImGui::Begin("Controls");
+		shutdown = ImGui::Button("Shutdown");
+		ImGui::End();
+
 		hpmScene.Update(true);
 		
 		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
@@ -242,11 +248,14 @@ int main()
 	ASSERT_VULKAN(result);
 
 	// End
-	hpmScene.Destroy();
-
+	hpmRenderer->Destroy();
+	delete hpmRenderer;
 	en::ImGuiRenderer::Shutdown();
-
 	swapchain.Destroy(true);
+
+	hpmScene.Destroy();
+	camera.Destroy();
+	nrc.Destroy();
 
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();

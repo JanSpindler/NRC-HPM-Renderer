@@ -24,6 +24,7 @@ namespace en
 			uint32_t width,
 			uint32_t height,
 			float trainSampleRatio,
+			uint32_t trainSpp,
 			const Camera& camera,
 			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
@@ -39,9 +40,9 @@ namespace en
 		{
 			uint32_t renderWidth;
 			uint32_t renderHeight;
-
 			uint32_t trainWidth;
 			uint32_t trainHeight;
+			uint32_t trainSpp;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -52,6 +53,8 @@ namespace en
 
 		uint32_t m_TrainWidth;
 		uint32_t m_TrainHeight;
+
+		uint32_t m_TrainSpp;
 
 		const Camera& m_Camera;
 		const HpmScene& m_HpmScene;
