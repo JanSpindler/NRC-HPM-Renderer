@@ -6,6 +6,7 @@
 #include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/vulkan/Texture3D.hpp>
 #include <engine/objects/VolumeData.hpp>
+#include <engine/AppConfig.hpp>
 
 namespace en
 {
@@ -14,7 +15,7 @@ namespace en
 	public:
 		static const std::vector<VkDescriptorSetLayout>& GetDescriptorSetLayout();
 		
-		HpmScene();
+		HpmScene(const AppConfig& appConfig);
 		
 		void Update(bool renderImgui);
 

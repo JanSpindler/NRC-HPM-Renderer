@@ -21,6 +21,7 @@
 #include <engine/util/Input.hpp>
 #include <engine/util/Time.hpp>
 #include <engine/HpmScene.hpp>
+#include <engine/AppConfig.hpp>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
@@ -109,159 +110,187 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
-int main()
+bool RunAppConfigInstance(const en::AppConfig& appConfig)
 {
 	// Start engine
 	const std::string appName("NRC-HPM-Renderer");
-	uint32_t width = 1920;
-	uint32_t height = 1080;
+	uint32_t width = appConfig.renderWidth;
+	uint32_t height = appConfig.renderHeight;
 	en::Log::Info("Starting " + appName);
 	en::Window::Init(width, height, false, appName);
 	en::Input::Init(en::Window::GetGLFWHandle());
 	en::VulkanAPI::Init(appName);
-	
+	const VkDevice device = en::VulkanAPI::GetDevice();
+	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
+	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
+
+	// Init nrc
+	nlohmann::json config = {
+	{"loss", {
+		{"otype", appConfig.lossFn}
+	}},
+	{"optimizer", {
+		{"otype", appConfig.optimizer},
+		{"learning_rate", appConfig.learningRate},
+		//{"clipping_magnitude", 0.1},
+	}},
+	{"encoding", {
+		{"otype", "Composite"},
+		{"reduction", "Concatenation"},
+		{"nested", {
+			{
+				{"otype", "HashGrid"},
+				{"n_dims_to_encode", 3},
+				{"n_levels", 16},
+				{"n_features_per_level", 2},
+				{"log2_hashmap_size", 19},
+				{"base_resolution", 16},
+				{"per_level_scale", 2.0},
+			},
+			{
+				{"otype", "OneBlob"},
+				{"n_dims_to_encode", 2},
+				{"n_bins", 4},
+			},
+		}},
+	}},
+	{"network", {
+		{"otype", "FullyFusedMLP"},
+		{"activation", "ReLU"},
+		{"output_activation", "None"},
+		{"n_neurons", appConfig.nnWidth},
+		{"n_hidden_layers", appConfig.nnDepth},
+	}},
+	};
+
+	en::NeuralRadianceCache nrc(config, 14);
+
+	en::HpmScene hpmScene(appConfig);
+
+	// Setup rendering
+	en::Camera camera(
+		glm::vec3(0.0f, 0.0f, -64.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		static_cast<float>(width) / static_cast<float>(height),
+		glm::radians(60.0f),
+		0.1f,
+		100.0f);
+
+	// Init rendering pipeline
+	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
+
+	hpmRenderer = new en::NrcHpmRenderer(
+		width,
+		height,
+		appConfig.trainSampleRatio,
+		appConfig.trainSpp,
+		camera,
+		hpmScene,
+		nrc);
+
+	en::ImGuiRenderer::Init(width, height);
+	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
+
+	// Swapchain rerecording because imgui renderer is now available
+	swapchain.Resize(width, height);
+
+	// Main loop
+	VkResult result;
+	size_t frameCount = 0;
+	bool shutdown = false;
+	bool restartAfterClose = false;
+	while (!en::Window::IsClosed() && !shutdown)
 	{
-		const VkDevice device = en::VulkanAPI::GetDevice();
-		const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
-		const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
+		// Update
+		en::Window::Update();
+		en::Input::Update();
+		en::Time::Update();
 
-		// Init nrc
-		nlohmann::json config = {
-		{"loss", {
-			{"otype", "RelativeL2"}
-		}},
-		{"optimizer", {
-			{"otype", "Adam"},
-			{"learning_rate", 1e-4},
-			{"clipping_magnitude", 10.0},
-		}},
-		{"encoding", {
-			{"otype", "Composite"},
-			{"reduction", "Concatenation"},
-			{"nested", {
-				{
-					{"otype", "HashGrid"},
-					{"n_dims_to_encode", 3},
-					{"n_levels", 16},
-					{"n_features_per_level", 2},
-					{"log2_hashmap_size", 19},
-					{"base_resolution", 16},
-					{"per_level_scale", 2.0},
-				},
-				{
-					{"otype", "OneBlob"},
-					{"n_dims_to_encode", 2},
-					{"n_bins", 4},
-				},
-			}},
-		}},
-		{"network", {
-			{"otype", "FullyFusedMLP"},
-			{"activation", "ReLU"},
-			{"output_activation", "None"},
-			{"n_neurons", 64},
-			{"n_hidden_layers", 6},
-		}},
-		};
+		width = en::Window::GetWidth();
+		height = en::Window::GetHeight();
 
-		en::NeuralRadianceCache nrc(config, 14);
+		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
+		uint32_t fps = en::Time::GetFps();
 
-		en::HpmScene hpmScene;
+		// Physics
+		en::Input::HandleUserCamInput(&camera, deltaTime);
+		camera.SetAspectRatio(width, height);
+		camera.UpdateUniformBuffer();
 
-		// Setup rendering
-		en::Camera camera(
-			glm::vec3(0.0f, 0.0f, -64.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			static_cast<float>(width) / static_cast<float>(height),
-			glm::radians(60.0f),
-			0.1f,
-			100.0f);
-		
-		// Init rendering pipeline
-		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
-
-		hpmRenderer = new en::NrcHpmRenderer(
-			width,
-			height,
-			0.05f,
-			1,
-			camera,
-			hpmScene,
-			nrc);
-
-		en::ImGuiRenderer::Init(width, height);
-		en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
-
-		// Swapchain rerecording because imgui renderer is now available
-		swapchain.Resize(width, height);
-		
-		// Main loop
-		VkResult result;
-		size_t frameCount = 0;
-		bool shutdown = false;
-		while (!en::Window::IsClosed() && !shutdown)
-		{
-			// Update
-			en::Window::Update();
-			en::Input::Update();
-			en::Time::Update();
-
-			width = en::Window::GetWidth();
-			height = en::Window::GetHeight();
-
-			float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
-			uint32_t fps = en::Time::GetFps();
-
-			// Physics
-			en::Input::HandleUserCamInput(&camera, deltaTime);
-			camera.SetAspectRatio(width, height);
-			camera.UpdateUniformBuffer();
-
-			// Render
-			hpmRenderer->Render(queue);
-			result = vkQueueWaitIdle(queue);
-			ASSERT_VULKAN(result);
-
-			// Imgui
-			en::ImGuiRenderer::StartFrame();
-
-			ImGui::Begin("Statistics");
-			ImGui::Text("DeltaTime %f", deltaTime);
-			ImGui::Text("FPS %d", fps);
-			ImGui::Text("NRC Loss %f", nrc.GetLoss());
-			ImGui::End();
-			
-			ImGui::Begin("Controls");
-			shutdown = ImGui::Button("Shutdown");
-			ImGui::End();
-
-			hpmScene.Update(true);
-
-			en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
-			result = vkQueueWaitIdle(queue);
-			ASSERT_VULKAN(result);
-
-			// Display
-			swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
-			frameCount++;
-		}
-		result = vkDeviceWaitIdle(device);
+		// Render
+		hpmRenderer->Render(queue);
+		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
-		
-		// End
-		hpmRenderer->Destroy();
-		delete hpmRenderer;
-		en::ImGuiRenderer::Shutdown();
-		swapchain.Destroy(true);
-		
-		hpmScene.Destroy();
-		camera.Destroy();
-		nrc.Destroy();
+
+		// Imgui
+		en::ImGuiRenderer::StartFrame();
+
+		ImGui::Begin("Statistics");
+		ImGui::Text("DeltaTime %f", deltaTime);
+		ImGui::Text("FPS %d", fps);
+		ImGui::Text("NRC Loss %f", nrc.GetLoss());
+		ImGui::End();
+
+		ImGui::Begin("Controls");
+		shutdown = ImGui::Button("Shutdown");
+		ImGui::Checkbox("Restart after shutdown", &restartAfterClose);
+		ImGui::End();
+
+		hpmScene.Update(true);
+
+		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+
+		// Display
+		swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
+		frameCount++;
 	}
+	result = vkDeviceWaitIdle(device);
+	ASSERT_VULKAN(result);
+
+	// End
+	hpmRenderer->Destroy();
+	delete hpmRenderer;
+	en::ImGuiRenderer::Shutdown();
+	swapchain.Destroy(true);
+
+	hpmScene.Destroy();
+	camera.Destroy();
+	nrc.Destroy();
 
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();
 	en::Log::Info("Ending " + appName);
+
+	return restartAfterClose;
+}
+
+int main()
+{
+	en::AppConfig appConfig;
+	appConfig.lossFn = "RelativeL2";
+	appConfig.optimizer = "Adam";
+	appConfig.learningRate = 1e-3f;
+
+	appConfig.dirLightStrength = 4.0f;
+	appConfig.pointLightStrength = 0.0f;
+	appConfig.hdrEnvMapPath = "data/image/photostudio.hdr";
+	appConfig.hdrEnvMapDirectStrength = 1.0f;
+	appConfig.hdrEnvMapHpmStrength = 0.0f;
+	
+	appConfig.renderWidth = 1920;
+	appConfig.renderHeight = 1080;
+	appConfig.trainSampleRatio = 0.05f;
+	appConfig.trainSpp = 1;
+	appConfig.nnWidth = 64;
+	appConfig.nnDepth = 6;
+
+	bool restartRunConfig;
+	do {
+		restartRunConfig = RunAppConfigInstance(appConfig);
+	} while (restartRunConfig);
+
 	return 0;
 }

@@ -22,7 +22,7 @@ namespace en
 			static_cast<int>(m_Width), 
 			static_cast<int>(m_Height), 
 			title.c_str(), 
-			glfwGetPrimaryMonitor(),
+			nullptr,
 			nullptr);
 	}
 
