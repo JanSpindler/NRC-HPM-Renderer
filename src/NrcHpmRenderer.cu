@@ -298,18 +298,25 @@ namespace en
 	
 		m_NrcTrainTargetBuffer->Destroy();
 		delete m_NrcTrainTargetBuffer;
+		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcTrainTargetCuExtMem));
 
 		m_NrcTrainInputBuffer->Destroy();
 		delete m_NrcTrainInputBuffer;
+		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcTrainInputCuExtMem));
 
 		m_NrcInferOutputBuffer->Destroy();
 		delete m_NrcInferOutputBuffer;
-		
+		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcInferOutputCuExtMem));
+
 		m_NrcInferInputBuffer->Destroy();
 		delete m_NrcInferInputBuffer;
+		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcInferInputCuExtMem));
 
 		vkDestroySemaphore(device, m_CudaFinishedSemaphore, nullptr);
+		ASSERT_CUDA(cudaDestroyExternalSemaphore(m_CuExtCudaFinishedSemaphore));
+		
 		vkDestroySemaphore(device, m_CudaStartSemaphore, nullptr);
+		ASSERT_CUDA(cudaDestroyExternalSemaphore(m_CuExtCudaStartSemaphore));
 	}
 
 	VkImage NrcHpmRenderer::GetImage() const

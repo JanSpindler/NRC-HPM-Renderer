@@ -119,148 +119,149 @@ int main()
 	en::Window::Init(width, height, false, appName);
 	en::Input::Init(en::Window::GetGLFWHandle());
 	en::VulkanAPI::Init(appName);
-	const VkDevice device = en::VulkanAPI::GetDevice();
-	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
-	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
-
-	// Init nrc
-	nlohmann::json config = {
-	{"loss", {
-		{"otype", "RelativeL2"}
-	}},
-	{"optimizer", {
-		{"otype", "Adam"},
-		{"learning_rate", 1e-4},
-		{"clipping_magnitude", 10.0},
-	}},
-	{"encoding", {
-		{"otype", "Composite"},
-		{"reduction", "Concatenation"},
-		{"nested", {
-			{
-				{"otype", "HashGrid"},
-				{"n_dims_to_encode", 3},
-				{"n_levels", 16},
-				{"n_features_per_level", 2},
-				{"log2_hashmap_size", 19},
-				{"base_resolution", 16},
-				{"per_level_scale", 2.0},
-			},
-			{
-				{"otype", "OneBlob"},
-				{"n_dims_to_encode", 2},
-				{"n_bins", 4},
-			},
-		}},
-	}},
-	{"network", {
-		{"otype", "FullyFusedMLP"},
-		{"activation", "ReLU"},
-		{"output_activation", "None"},
-		{"n_neurons", 64},
-		{"n_hidden_layers", 6},
-	}},
-	};
-
-	en::NeuralRadianceCache nrc(config, 14);
-
-	en::HpmScene hpmScene;
-
-	// Setup rendering
-	en::Camera camera(
-		glm::vec3(0.0f, 0.0f, -64.0f),
-		glm::vec3(0.0f, 0.0f, 1.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f),
-		static_cast<float>(width) / static_cast<float>(height),
-		glm::radians(60.0f),
-		0.1f,
-		100.0f);
-
-	// Init rendering pipeline
-	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
-
-	hpmRenderer = new en::NrcHpmRenderer(
-		width, 
-		height,
-		0.05f,
-		1,
-		camera,
-		hpmScene,
-		nrc);
-
-	en::ImGuiRenderer::Init(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
-
-	// Swapchain rerecording because imgui renderer is now available
-	swapchain.Resize(width, height);
-
-	// Main loop
-	VkResult result;
-	size_t frameCount = 0;
-	bool shutdown = false;
-	while (!en::Window::IsClosed() && !shutdown)
+	
 	{
-		// Update
-		en::Window::Update();
-		en::Input::Update();
-		en::Time::Update();
+		const VkDevice device = en::VulkanAPI::GetDevice();
+		const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
+		const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 
-		width = en::Window::GetWidth();
-		height = en::Window::GetHeight();
+		// Init nrc
+		nlohmann::json config = {
+		{"loss", {
+			{"otype", "RelativeL2"}
+		}},
+		{"optimizer", {
+			{"otype", "Adam"},
+			{"learning_rate", 1e-4},
+			{"clipping_magnitude", 10.0},
+		}},
+		{"encoding", {
+			{"otype", "Composite"},
+			{"reduction", "Concatenation"},
+			{"nested", {
+				{
+					{"otype", "HashGrid"},
+					{"n_dims_to_encode", 3},
+					{"n_levels", 16},
+					{"n_features_per_level", 2},
+					{"log2_hashmap_size", 19},
+					{"base_resolution", 16},
+					{"per_level_scale", 2.0},
+				},
+				{
+					{"otype", "OneBlob"},
+					{"n_dims_to_encode", 2},
+					{"n_bins", 4},
+				},
+			}},
+		}},
+		{"network", {
+			{"otype", "FullyFusedMLP"},
+			{"activation", "ReLU"},
+			{"output_activation", "None"},
+			{"n_neurons", 64},
+			{"n_hidden_layers", 6},
+		}},
+		};
 
-		float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
-		uint32_t fps = en::Time::GetFps();
+		en::NeuralRadianceCache nrc(config, 14);
 
-		// Physics
-		en::Input::HandleUserCamInput(&camera, deltaTime);
-		camera.SetAspectRatio(width, height);
-		camera.UpdateUniformBuffer();
+		en::HpmScene hpmScene;
 
-		// Render
-		hpmRenderer->Render(queue);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-
-		// Imgui
-		en::ImGuiRenderer::StartFrame();
-
-		ImGui::Begin("Statistics");
-		ImGui::Text("DeltaTime %f", deltaTime);
-		ImGui::Text("FPS %d", fps);
-		ImGui::Text("NRC Loss %f", nrc.GetLoss());
-		ImGui::End();
-
-		ImGui::Begin("Controls");
-		shutdown = ImGui::Button("Shutdown");
-		ImGui::End();
-
-		hpmScene.Update(true);
+		// Setup rendering
+		en::Camera camera(
+			glm::vec3(0.0f, 0.0f, -64.0f),
+			glm::vec3(0.0f, 0.0f, 1.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			static_cast<float>(width) / static_cast<float>(height),
+			glm::radians(60.0f),
+			0.1f,
+			100.0f);
 		
-		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
-		result = vkQueueWaitIdle(queue);
+		// Init rendering pipeline
+		en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
+
+		hpmRenderer = new en::NrcHpmRenderer(
+			width,
+			height,
+			0.05f,
+			1,
+			camera,
+			hpmScene,
+			nrc);
+
+		en::ImGuiRenderer::Init(width, height);
+		en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
+
+		// Swapchain rerecording because imgui renderer is now available
+		swapchain.Resize(width, height);
+		
+		// Main loop
+		VkResult result;
+		size_t frameCount = 0;
+		bool shutdown = false;
+		while (!en::Window::IsClosed() && !shutdown)
+		{
+			// Update
+			en::Window::Update();
+			en::Input::Update();
+			en::Time::Update();
+
+			width = en::Window::GetWidth();
+			height = en::Window::GetHeight();
+
+			float deltaTime = static_cast<float>(en::Time::GetDeltaTime());
+			uint32_t fps = en::Time::GetFps();
+
+			// Physics
+			en::Input::HandleUserCamInput(&camera, deltaTime);
+			camera.SetAspectRatio(width, height);
+			camera.UpdateUniformBuffer();
+
+			// Render
+			hpmRenderer->Render(queue);
+			result = vkQueueWaitIdle(queue);
+			ASSERT_VULKAN(result);
+
+			// Imgui
+			en::ImGuiRenderer::StartFrame();
+
+			ImGui::Begin("Statistics");
+			ImGui::Text("DeltaTime %f", deltaTime);
+			ImGui::Text("FPS %d", fps);
+			ImGui::Text("NRC Loss %f", nrc.GetLoss());
+			ImGui::End();
+			
+			ImGui::Begin("Controls");
+			shutdown = ImGui::Button("Shutdown");
+			ImGui::End();
+
+			hpmScene.Update(true);
+
+			en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
+			result = vkQueueWaitIdle(queue);
+			ASSERT_VULKAN(result);
+
+			// Display
+			swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
+			frameCount++;
+		}
+		result = vkDeviceWaitIdle(device);
 		ASSERT_VULKAN(result);
-
-		// Display
-		swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
-		frameCount++;
+		
+		// End
+		hpmRenderer->Destroy();
+		delete hpmRenderer;
+		en::ImGuiRenderer::Shutdown();
+		swapchain.Destroy(true);
+		
+		hpmScene.Destroy();
+		camera.Destroy();
+		nrc.Destroy();
 	}
-	result = vkDeviceWaitIdle(device);
-	ASSERT_VULKAN(result);
-
-	// End
-	hpmRenderer->Destroy();
-	delete hpmRenderer;
-	en::ImGuiRenderer::Shutdown();
-	swapchain.Destroy(true);
-
-	hpmScene.Destroy();
-	camera.Destroy();
-	nrc.Destroy();
 
 	en::VulkanAPI::Shutdown();
 	en::Window::Shutdown();
-
 	en::Log::Info("Ending " + appName);
-
 	return 0;
 }
