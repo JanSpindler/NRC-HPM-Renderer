@@ -132,7 +132,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	{"optimizer", {
 		{"otype", appConfig.optimizer},
 		{"learning_rate", appConfig.learningRate},
-		//{"clipping_magnitude", 0.1},
 	}},
 	{"encoding", {
 		{"otype", "Composite"},
@@ -284,8 +283,8 @@ int main()
 	appConfig.renderHeight = 1080;
 	appConfig.trainSampleRatio = 0.05f;
 	appConfig.trainSpp = 1;
-	appConfig.nnWidth = 64;
-	appConfig.nnDepth = 6;
+	appConfig.nnWidth = 128;
+	appConfig.nnDepth = 10;
 
 	bool restartRunConfig;
 	do {

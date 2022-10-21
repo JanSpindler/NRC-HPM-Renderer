@@ -127,3 +127,16 @@ vec3 TraceScene(const vec3 pos, const vec3 dir, const vec3 hdrEnvMapUniformDir)
 	const vec3 totalLight = TraceDirLight(pos, dir) + TracePointLight(pos, dir) + hdrEnvMapLight;
 	return totalLight;
 }
+
+vec3 DeltaTrack(const vec3 rayOrigin, const vec3 rayDir, const vec3 exit)
+{
+	const float tMax = distance(exit, rayOrigin);
+	float t = 0.0;
+	while (t < tMax)
+	{
+		t -= log(1.0 - RandFloat(1.0));
+		const vec3 nextSamplePoint = rayOrigin + (t * rayDir);
+		if (1.0 - getDensity(nextSamplePoint) > RandFloat(1.0)) { return nextSamplePoint; }
+	}
+	return rayOrigin + (RandFloat(tMax) * rayDir);
+}

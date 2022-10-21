@@ -63,9 +63,10 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 
 		// Generate new point
 		const vec3 exit = find_entry_exit(currentPoint, currentDir)[1];
-		const float maxDistance = distance(exit, currentPoint) * 0.1;
-		const float nextDistance = RandFloat(maxDistance);
-		currentPoint = currentPoint + (currentDir * nextDistance);
+		currentPoint = DeltaTrack(currentPoint, currentDir, exit);
+		//const float maxDistance = distance(exit, currentPoint) * 0.1;
+		//const float nextDistance = RandFloat(maxDistance);
+		//currentPoint = currentPoint + (currentDir * nextDistance);
 	}
 
 	return vec4(scatteredLight, transmittance);
