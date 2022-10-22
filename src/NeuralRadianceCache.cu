@@ -115,6 +115,18 @@ namespace en
 			auto forwardContext = m_Model.trainer->training_step(inputBatch, targetBatch);
 			m_Loss = m_Model.trainer->loss(*forwardContext.get());
 		}
+
+		//m_TrainCounter++;
+		//if (m_TrainCounter == 32)
+		//{
+		//	m_Model.trainer.get()->update_hyperparams(
+		//		{"optimizer", {
+		//			{"otype", "Adam"},
+		//			{"learning_rate", 1e-3f},
+		//			{"absolute_decay", 0.0f}
+		//		}});
+		//	en::Log::Info("Hello");
+		//}
 	}
 
 	void NeuralRadianceCache::AwaitCudaStartSemaphore()

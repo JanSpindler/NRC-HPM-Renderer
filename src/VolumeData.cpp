@@ -84,7 +84,7 @@ namespace en
 			.useNN = 0,
 			.showNonNN = 0,
 			.densityFactor = 0.2f,
-			.g = 0.7f,
+			.g = 0.85f,
 			.noNnSpp = 1,
 			.withNnSpp = 1 })
 	{
@@ -100,6 +100,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		UpdateDescriptorSet();
+		Update();
 	}
 
 	void VolumeData::Update()

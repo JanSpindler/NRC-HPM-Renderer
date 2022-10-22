@@ -42,6 +42,7 @@ namespace en
 		cudaExternalSemaphore_t m_CudaFinishedSemaphore;
 
 		float m_Loss = 0.0f;
+		size_t m_TrainCounter = 0;
 
 		void Inference();
 		void Train();

@@ -275,7 +275,7 @@ int main()
 
 	appConfig.dirLightStrength = 4.0f;
 	appConfig.pointLightStrength = 0.0f;
-	appConfig.hdrEnvMapPath = "data/image/photostudio.hdr";
+	appConfig.hdrEnvMapPath = "data/image/mountain.hdr";
 	appConfig.hdrEnvMapDirectStrength = 1.0f;
 	appConfig.hdrEnvMapHpmStrength = 0.0f;
 	
@@ -284,7 +284,7 @@ int main()
 	appConfig.trainSampleRatio = 0.05f;
 	appConfig.trainSpp = 1;
 	appConfig.nnWidth = 128;
-	appConfig.nnDepth = 10;
+	appConfig.nnDepth = 6;
 
 	bool restartRunConfig;
 	do {
