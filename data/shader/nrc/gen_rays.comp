@@ -4,7 +4,7 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-#define PATH_SAMPLE_COUNT 128
+#define PATH_SAMPLE_COUNT 32
 vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 {
 	vec3 scatteredLight = vec3(0.0);

@@ -33,7 +33,7 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainTarget[linearPixelIndex].b = min(32.0, target.z);
 }
 
-#define PATH_SAMPLE_COUNT 128
+#define PATH_SAMPLE_COUNT 32
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
 	vec3 scatteredLight = vec3(0.0);

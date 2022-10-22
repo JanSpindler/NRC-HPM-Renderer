@@ -273,7 +273,7 @@ int main()
 	appConfig.optimizer = "Adam";
 	appConfig.learningRate = 1e-3f;
 
-	appConfig.dirLightStrength = 4.0f;
+	appConfig.dirLightStrength = 16.0f;
 	appConfig.pointLightStrength = 0.0f;
 	appConfig.hdrEnvMapPath = "data/image/mountain.hdr";
 	appConfig.hdrEnvMapDirectStrength = 1.0f;
