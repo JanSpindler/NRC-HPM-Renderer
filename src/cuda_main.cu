@@ -271,11 +271,11 @@ int main()
 	en::AppConfig appConfig;
 	appConfig.lossFn = "RelativeL2";
 	appConfig.optimizer = "Adam";
-	appConfig.learningRate = 1e-3f;
+	appConfig.learningRate = 1e-6f;
 
 	appConfig.dirLightStrength = 16.0f;
 	appConfig.pointLightStrength = 0.0f;
-	appConfig.hdrEnvMapPath = "data/image/mountain.hdr";
+	appConfig.hdrEnvMapPath = "data/image/photostudio.hdr";
 	appConfig.hdrEnvMapDirectStrength = 1.0f;
 	appConfig.hdrEnvMapHpmStrength = 0.0f;
 	

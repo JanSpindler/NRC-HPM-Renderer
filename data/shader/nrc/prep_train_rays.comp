@@ -28,9 +28,9 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainInput[linearPixelIndex].phi = normPhi;
 
 	// Store train target
-	nrcTrainTarget[linearPixelIndex].r = min(32.0, target.x);
-	nrcTrainTarget[linearPixelIndex].g = min(32.0, target.y);
-	nrcTrainTarget[linearPixelIndex].b = min(32.0, target.z);
+	nrcTrainTarget[linearPixelIndex].r = min(10.0, target.x);
+	nrcTrainTarget[linearPixelIndex].g = min(10.0, target.y);
+	nrcTrainTarget[linearPixelIndex].b = min(10.0, target.z);
 }
 
 #define PATH_SAMPLE_COUNT 32
@@ -62,7 +62,8 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 			// Transmittance calculation
 			const vec3 s_int = density * sceneLighting * phase;
-			const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
+			//const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
+			const float t_r = RatioTrack(lastPoint, currentPoint);
 
 			scatteredLight += transmittance * s_int;
 			transmittance *= t_r;

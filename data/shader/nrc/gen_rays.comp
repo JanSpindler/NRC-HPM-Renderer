@@ -49,7 +49,8 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 
 			// Transmittance calculation
 			const vec3 s_int = density * sceneLighting * phase;
-			const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
+			//const float t_r = GetTransmittance(currentPoint, lastPoint, 32);
+			const float t_r = RatioTrack(lastPoint, currentPoint);
 
 			scatteredLight += transmittance * s_int;
 			transmittance *= t_r;
