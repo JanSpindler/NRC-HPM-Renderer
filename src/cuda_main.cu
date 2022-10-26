@@ -232,22 +232,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 int main(int argc, char** argv)
 {
 	en::AppConfig appConfig(argc, argv);
-	//appConfig.lossFn = "RelativeL2";
-	//appConfig.optimizer = "Adam";
-	//appConfig.learningRate = 1e-3f;
-	//
-	//appConfig.dirLightStrength = 16.0f;
-	//appConfig.pointLightStrength = 0.0f;
-	//appConfig.hdrEnvMapPath = "data/image/photostudio.hdr";
-	//appConfig.hdrEnvMapDirectStrength = 1.0f;
-	//appConfig.hdrEnvMapHpmStrength = 0.0f;
-	//
-	//appConfig.renderWidth = 1920;
-	//appConfig.renderHeight = 1080;
-	//appConfig.trainSampleRatio = 0.05f;
-	//appConfig.trainSpp = 1;
-	//appConfig.nnWidth = 128;
-	//appConfig.nnDepth = 6;
 
 	bool restartRunConfig;
 	do {

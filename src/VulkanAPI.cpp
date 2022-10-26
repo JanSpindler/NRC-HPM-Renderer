@@ -184,7 +184,9 @@ namespace en
 
 		// Select wanted layers
 		std::vector<const char*> layers = {
+#ifdef _DEBUG
 			"VK_LAYER_KHRONOS_validation"
+#endif
 		};
 
 		// List supported extensions
@@ -401,7 +403,11 @@ namespace en
 			Log::Info("\t-" + std::string(layer.layerName) + " | " + std::string(layer.description));
 
 		// Select wanted layers
-		std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
+		std::vector<const char*> layers = {
+#ifdef _DEBUG
+			"VK_LAYER_KHRONOS_validation"
+#endif	
+		};
 
 		// List supported extensions
 		uint32_t supportedExtensionCount;
