@@ -1,7 +1,7 @@
-from ast import arguments
 import os
 import shutil
 import itertools
+import time
 
 
 def remove_old_copies():
@@ -13,29 +13,38 @@ def remove_old_copies():
     if os.path.exists("./glfw3.dll"):
         os.remove("./glfw3.dll")
     
+    if os.path.exists("./imgui.ini"):
+        os.remove("./imgui.ini")
+
     if os.path.exists("./data"):
         shutil.rmtree("./data")
 
 
 def copy_executable_file():
-    print("Copying the executable file")
+    print("Copying NRC-HPM-Renderer.exe")
     shutil.copy("../Debug/NRC-HPM-Renderer.exe", ".")
 
 
 def copy_dlls():
-    print("Copying required dll's for executable")
+    print("Copying glfw3.dll")
     shutil.copy("../Debug/glfw3.dll", ".")
 
 
 def copy_data_dir():
-    print("Copying the data folder")
+    print("Copying data/")
     shutil.copytree("../data", "./data")
+
+
+def copy_imgui_file():
+    print("Copying imgui.ini")
+    shutil.copy("../imgui.ini", ".")
 
 
 def update_file_hierarchy():
     remove_old_copies()
     copy_executable_file()
     copy_dlls()
+    copy_imgui_file()
     copy_data_dir()
 
 
@@ -87,7 +96,11 @@ def generate_configs():
 
 def execute_config(index, arguments):
     print("Executing config " + str(index) + ": " + str(arguments))
+    
+    start_time = time.time()
     os.system("NRC-HPM-Renderer " + arguments)
+    end_time = time.time()
+    print("Execution took " + str(end_time - start_time) + " seconds")
 
 
 def execute_configs():

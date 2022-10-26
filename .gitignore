@@ -11,7 +11,8 @@
 /NRC-HPM-Renderer.dir
 /Release
 /x64
-/data/output
+/data
+/output
 
 CMakeCache.txt
 cmake_install.cmake
