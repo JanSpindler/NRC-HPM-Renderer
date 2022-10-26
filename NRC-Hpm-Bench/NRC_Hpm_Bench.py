@@ -85,6 +85,11 @@ def generate_configs():
     configs_file.close()
 
 
+def execute_config(index, arguments):
+    print("Executing config " + str(index) + ": " + str(arguments))
+    os.system("NRC-HPM-Renderer " + arguments)
+
+
 def execute_configs():
     print("Executing app configs")
 
@@ -97,7 +102,7 @@ def execute_configs():
     for index, arguments in enumerate(arguments_list):
         arguments = arguments.strip()
         arguments_list[index] = arguments
-        #print(str(index) + ": " + str(arguments))
+        execute_config(index, arguments)
 
 
 def evaluate_results():
