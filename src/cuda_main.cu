@@ -205,6 +205,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 		hpmScene.Update(true);
 
+		appConfig.RenderImGui();
+
 		en::ImGuiRenderer::EndFrame(queue, VK_NULL_HANDLE);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);

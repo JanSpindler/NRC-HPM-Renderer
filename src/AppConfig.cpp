@@ -1,5 +1,6 @@
 #include <engine/AppConfig.hpp>
 #include <engine/util/Log.hpp>
+#include <imgui.h>
 
 namespace en
 {
@@ -7,7 +8,8 @@ namespace en
 	{
 	}
 
-	AppConfig::NNEncodingConfig::NNEncodingConfig(uint32_t id)
+	AppConfig::NNEncodingConfig::NNEncodingConfig(uint32_t id) :
+		id(id)
 	{
 		switch (id)
 		{
@@ -44,7 +46,8 @@ namespace en
 	{
 	}
 
-	AppConfig::HpmSceneConfig::HpmSceneConfig(uint32_t id)
+	AppConfig::HpmSceneConfig::HpmSceneConfig(uint32_t id) :
+		id(id)
 	{
 		switch (id)
 		{
@@ -85,5 +88,23 @@ namespace en
 		renderHeight = std::stoi(argv[index++]);
 		trainSampleRatio = std::stof(argv[index++]);
 		trainSpp = std::stoi(argv[index++]);
+	}
+
+	void AppConfig::RenderImGui() const
+	{
+		ImGui::Begin("AppConfig");
+		ImGui::Text(lossFn.c_str());
+		ImGui::Text(optimizer.c_str());
+		ImGui::Text("Learning rate %f", learningRate);
+		ImGui::Text("Encoding %d", encoding.id);
+		ImGui::Text("NN Width %d", nnWidth);
+		ImGui::Text("NN Depth %d", nnDepth);
+		ImGui::Text("Log2 batch size %d", log2BatchSize);
+		ImGui::Text("Scene %d", scene.id);
+		ImGui::Text("Render width %d", renderWidth);
+		ImGui::Text("Render height %d", renderHeight);
+		ImGui::Text("Train sample ratio %f", trainSampleRatio);
+		ImGui::Text("Train spp %d", trainSpp);
+		ImGui::End();
 	}
 }

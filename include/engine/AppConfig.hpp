@@ -11,6 +11,7 @@ namespace en
 		struct NNEncodingConfig
 		{
 			// TODO
+			uint32_t id;
 			nlohmann::json jsonConfig;
 
 			NNEncodingConfig();
@@ -19,6 +20,8 @@ namespace en
 
 		struct HpmSceneConfig
 		{
+			uint32_t id;
+
 			float dirLightStrength;
 			float pointLightStrength;
 			std::string hdrEnvMapPath;
@@ -49,5 +52,7 @@ namespace en
 
 		AppConfig();
 		AppConfig(int argc, char** argv);
+
+		void RenderImGui() const;
 	};
 }
