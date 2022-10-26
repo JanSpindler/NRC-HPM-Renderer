@@ -1,1 +1,6 @@
 *.pyproj
+*.pyproj.user
+*.exe
+*.dll
+/data
+/output
