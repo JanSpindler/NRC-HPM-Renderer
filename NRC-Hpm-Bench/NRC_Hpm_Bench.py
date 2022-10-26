@@ -6,10 +6,13 @@ import itertools
 
 def remove_old_copies():
     print("Removing old copies of executable file and data directory")
+    
     if os.path.exists("./NRC-HPM-Renderer.exe"):
         os.remove("./NRC-HPM-Renderer.exe")
+    
     if os.path.exists("./glfw3.dll"):
         os.remove("./glfw3.dll")
+    
     if os.path.exists("./data"):
         shutil.rmtree("./data")
 
@@ -66,7 +69,7 @@ def generate_configs():
         train_sample_ratio_options,
         train_spp_options))
     arguments_list_len = len(arguments_list)
-    print(arguments_list_len)
+    print(str(arguments_list_len) + " configs created")
     
     configs_file = open("configs.csv", "w")
 
@@ -75,14 +78,26 @@ def generate_configs():
         for arg in arguments:
             arguments_str += str(arg) + " "
         arguments_list[index] = arguments_str
+
         configs_file.write(arguments_str + "\n")
-        print(str(index) + ": " + str(arguments_str))
+        #print(str(index) + ": " + str(arguments_str))
 
     configs_file.close()
 
 
 def execute_configs():
     print("Executing app configs")
+
+    config_file = open("configs.csv", "r")
+    arguments_list = config_file.readlines()
+    config_file.close()
+
+    print(str(len(arguments_list)) + " configs loaded")
+
+    for index, arguments in enumerate(arguments_list):
+        arguments = arguments.strip()
+        arguments_list[index] = arguments
+        #print(str(index) + ": " + str(arguments))
 
 
 def evaluate_results():
