@@ -3,13 +3,14 @@
 #include <tiny-cuda-nn/config.h>
 #include <engine/graphics/vulkan/Buffer.hpp>
 #include <vector>
+#include <engine/AppConfig.hpp>
 
 namespace en
 {
 	class NeuralRadianceCache
 	{
 	public:
-		NeuralRadianceCache(const nlohmann::json& config, uint32_t log2BatchSize);
+		NeuralRadianceCache(const AppConfig& appConfig);
 
 		void Init(
 			uint32_t inferCount,
@@ -28,8 +29,9 @@ namespace en
 		float GetLoss() const;
 
 	private:
-		const uint32_t m_InputCount;
-		const uint32_t m_OutputCount;
+		static const uint32_t sc_InputCount;
+		static const uint32_t sc_OutputCount;
+
 		const uint32_t m_BatchSize;
 
 		tcnn::TrainableModel m_Model;

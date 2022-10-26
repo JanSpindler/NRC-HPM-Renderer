@@ -8,12 +8,51 @@
 
 namespace en
 {
-	NeuralRadianceCache::NeuralRadianceCache(const nlohmann::json& config, uint32_t log2BatchSize) :
-		m_Model(tcnn::create_from_config(5, 3, config)),
-		m_InputCount(5),
-		m_OutputCount(3),
-		m_BatchSize(2 << (log2BatchSize - 1))
+	const uint32_t NeuralRadianceCache::sc_InputCount = 5;
+	const uint32_t NeuralRadianceCache::sc_OutputCount = 3;
+
+	NeuralRadianceCache::NeuralRadianceCache(const AppConfig& appConfig) :
+		m_BatchSize(2 << (appConfig.log2BatchSize - 1))
 	{
+		nlohmann::json modelConfig = {
+			{"loss", {
+				{"otype", appConfig.lossFn}
+			}},
+			{"optimizer", {
+				{"otype", appConfig.optimizer},
+				{"learning_rate", appConfig.learningRate},
+			}},
+			appConfig.encoding.jsonConfig,
+			//{"encoding", {
+			//	{"otype", "Composite"},
+			//	{"reduction", "Concatenation"},
+			//	{"nested", {
+			//		{
+			//			{"otype", "HashGrid"},
+			//			{"n_dims_to_encode", 3},
+			//			{"n_levels", 16},
+			//			{"n_features_per_level", 2},
+			//			{"log2_hashmap_size", 19},
+			//			{"base_resolution", 16},
+			//			{"per_level_scale", 2.0},
+			//		},
+			//		{
+			//			{"otype", "OneBlob"},
+			//			{"n_dims_to_encode", 2},
+			//			{"n_bins", 4},
+			//		},
+			//	}},
+			//}},
+			{"network", {
+				{"otype", "FullyFusedMLP"},
+				{"activation", "ReLU"},
+				{"output_activation", "None"},
+				{"n_neurons", appConfig.nnWidth},
+				{"n_hidden_layers", appConfig.nnDepth},
+			}},
+		};
+
+		m_Model = tcnn::create_from_config(sc_InputCount, sc_OutputCount, modelConfig);
 	}
 
 	void NeuralRadianceCache::Init(
@@ -44,16 +83,16 @@ namespace en
 		size_t floatOutputOffset = 0;
 		for (uint32_t i = 0; i < inferBatchCount; i++)
 		{
-			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), m_InputCount, m_BatchSize);
-			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), m_OutputCount, m_BatchSize);
-			floatInputOffset += m_BatchSize * m_InputCount;
-			floatOutputOffset += m_BatchSize * m_OutputCount;
+			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), sc_InputCount, m_BatchSize);
+			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), sc_OutputCount, m_BatchSize);
+			floatInputOffset += m_BatchSize * sc_InputCount;
+			floatOutputOffset += m_BatchSize * sc_OutputCount;
 		}
 
 		if (inferLastBatchSize > 0)
 		{
-			m_InferInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), m_InputCount, inferLastBatchSize));
-			m_InferOutputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), m_OutputCount, inferLastBatchSize));
+			m_InferInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), sc_InputCount, inferLastBatchSize));
+			m_InferOutputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), sc_OutputCount, inferLastBatchSize));
 		}
 
 		// Init train buffers
@@ -66,16 +105,16 @@ namespace en
 		floatOutputOffset = 0;
 		for (uint32_t i = 0; i < trainBatchCount; i++)
 		{
-			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), m_InputCount, m_BatchSize);
-			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), m_OutputCount, m_BatchSize);
-			floatInputOffset += m_BatchSize * m_InputCount;
-			floatOutputOffset += m_BatchSize * m_OutputCount;
+			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), sc_InputCount, m_BatchSize);
+			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), sc_OutputCount, m_BatchSize);
+			floatInputOffset += m_BatchSize * sc_InputCount;
+			floatOutputOffset += m_BatchSize * sc_OutputCount;
 		}
 
 		if (trainLastBatchSize > 0)
 		{
-			m_TrainInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), m_InputCount, trainLastBatchSize));
-			m_TrainTargetBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), m_OutputCount, trainLastBatchSize));
+			m_TrainInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), sc_InputCount, trainLastBatchSize));
+			m_TrainTargetBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), sc_OutputCount, trainLastBatchSize));
 		}
 	}
 

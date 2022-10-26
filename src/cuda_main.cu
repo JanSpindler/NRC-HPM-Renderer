@@ -124,45 +124,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
 	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 
-	// Init nrc
-	nlohmann::json config = {
-	{"loss", {
-		{"otype", appConfig.lossFn}
-	}},
-	{"optimizer", {
-		{"otype", appConfig.optimizer},
-		{"learning_rate", appConfig.learningRate},
-	}},
-	{"encoding", {
-		{"otype", "Composite"},
-		{"reduction", "Concatenation"},
-		{"nested", {
-			{
-				{"otype", "HashGrid"},
-				{"n_dims_to_encode", 3},
-				{"n_levels", 16},
-				{"n_features_per_level", 2},
-				{"log2_hashmap_size", 19},
-				{"base_resolution", 16},
-				{"per_level_scale", 2.0},
-			},
-			{
-				{"otype", "OneBlob"},
-				{"n_dims_to_encode", 2},
-				{"n_bins", 4},
-			},
-		}},
-	}},
-	{"network", {
-		{"otype", "FullyFusedMLP"},
-		{"activation", "ReLU"},
-		{"output_activation", "None"},
-		{"n_neurons", appConfig.nnWidth},
-		{"n_hidden_layers", appConfig.nnDepth},
-	}},
-	};
-
-	en::NeuralRadianceCache nrc(config, 14);
+	// Init resources
+	en::NeuralRadianceCache nrc(appConfig);
 
 	en::HpmScene hpmScene(appConfig);
 
@@ -266,25 +229,25 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	return restartAfterClose;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-	en::AppConfig appConfig;
-	appConfig.lossFn = "RelativeL2";
-	appConfig.optimizer = "Adam";
-	appConfig.learningRate = 1e-6f;
-
-	appConfig.dirLightStrength = 16.0f;
-	appConfig.pointLightStrength = 0.0f;
-	appConfig.hdrEnvMapPath = "data/image/photostudio.hdr";
-	appConfig.hdrEnvMapDirectStrength = 1.0f;
-	appConfig.hdrEnvMapHpmStrength = 0.0f;
-	
-	appConfig.renderWidth = 1920;
-	appConfig.renderHeight = 1080;
-	appConfig.trainSampleRatio = 0.05f;
-	appConfig.trainSpp = 1;
-	appConfig.nnWidth = 128;
-	appConfig.nnDepth = 6;
+	en::AppConfig appConfig(argc, argv);
+	//appConfig.lossFn = "RelativeL2";
+	//appConfig.optimizer = "Adam";
+	//appConfig.learningRate = 1e-3f;
+	//
+	//appConfig.dirLightStrength = 16.0f;
+	//appConfig.pointLightStrength = 0.0f;
+	//appConfig.hdrEnvMapPath = "data/image/photostudio.hdr";
+	//appConfig.hdrEnvMapDirectStrength = 1.0f;
+	//appConfig.hdrEnvMapHpmStrength = 0.0f;
+	//
+	//appConfig.renderWidth = 1920;
+	//appConfig.renderHeight = 1080;
+	//appConfig.trainSampleRatio = 0.05f;
+	//appConfig.trainSpp = 1;
+	//appConfig.nnWidth = 128;
+	//appConfig.nnDepth = 6;
 
 	bool restartRunConfig;
 	do {

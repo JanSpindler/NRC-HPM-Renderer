@@ -23,16 +23,16 @@ namespace en
 	HpmScene::HpmScene(const AppConfig& appConfig)
 	{
 		// Lighting
-		m_DirLight = new DirLight(-1.57f, 0.0f, glm::vec3(1.0f), appConfig.dirLightStrength);
+		m_DirLight = new DirLight(-1.57f, 0.0f, glm::vec3(1.0f), appConfig.scene.dirLightStrength);
 		
-		m_PointLight = new PointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), appConfig.pointLightStrength);
+		m_PointLight = new PointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), appConfig.scene.pointLightStrength);
 
 		int hdrWidth, hdrHeight;
-		std::vector<float> hdr4fData = en::ReadFileHdr4f(appConfig.hdrEnvMapPath, hdrWidth, hdrHeight, 1000.0f);
+		std::vector<float> hdr4fData = en::ReadFileHdr4f(appConfig.scene.hdrEnvMapPath, hdrWidth, hdrHeight, 1000.0f);
 		std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 		m_HdrEnvMap = new HdrEnvMap(
-			appConfig.hdrEnvMapDirectStrength,
-			appConfig.hdrEnvMapHpmStrength,
+			appConfig.scene.hdrEnvMapDirectStrength,
+			appConfig.scene.hdrEnvMapHpmStrength,
 			hdrWidth,
 			hdrHeight,
 			hdr4fData,
