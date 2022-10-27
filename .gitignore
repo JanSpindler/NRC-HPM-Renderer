@@ -12,7 +12,6 @@
 /Release
 /x64
 /data
-/output
 
 CMakeCache.txt
 cmake_install.cmake
