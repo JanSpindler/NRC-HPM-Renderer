@@ -35,7 +35,7 @@ namespace en
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 
-		std::vector<float> GetImageData() const;
+		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 
 	private:
 		struct SpecializationData

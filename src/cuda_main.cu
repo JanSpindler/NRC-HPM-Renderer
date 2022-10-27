@@ -131,8 +131,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 	// Setup rendering
 	en::Camera camera(
-		glm::vec3(0.0f, 0.0f, -64.0f),
-		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(64.0f, 0.0f, 0.0f),
+		glm::vec3(-1.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f),
 		static_cast<float>(width) / static_cast<float>(height),
 		glm::radians(60.0f),
@@ -217,7 +217,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	}
 
 	// Evaluate at end
-
+	std::string exrOutputFilePath = "output/test.exr";
+	hpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
 
 	// Stop gpu work
 	result = vkDeviceWaitIdle(device);

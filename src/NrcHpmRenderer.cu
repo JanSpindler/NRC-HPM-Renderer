@@ -10,6 +10,9 @@
 #include <engine/util/Log.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 
+#define TINYEXR_IMPLEMENTATION
+#include <tinyexr.h>
+
 #define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
 namespace en
@@ -330,11 +333,12 @@ namespace en
 		return m_OutputImageView;
 	}
 
-	std::vector<float> NrcHpmRenderer::GetImageData() const
+	void NrcHpmRenderer::ExportImageToFile(VkQueue queue, const std::string& filePath) const
 	{
-		const size_t bufferSize = m_RenderWidth * m_RenderHeight * sizeof(float) * 4;
+		const size_t floatCount = m_RenderWidth * m_RenderHeight * 4;
+		const size_t bufferSize = floatCount * sizeof(float);
 		
-		vk::Buffer buffer(
+		vk::Buffer vkBuffer(
 			bufferSize,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -358,13 +362,32 @@ namespace en
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { m_RenderWidth, m_RenderHeight, 1 };
 
-		vkCmdCopyImageToBuffer(m_RandomTasksCmdBuf, m_OutputImage, VK_IMAGE_LAYOUT_GENERAL, buffer.GetVulkanHandle(), 1, &region);
+		vkCmdCopyImageToBuffer(m_RandomTasksCmdBuf, m_OutputImage, VK_IMAGE_LAYOUT_GENERAL, vkBuffer.GetVulkanHandle(), 1, &region);
 
 		ASSERT_VULKAN(vkEndCommandBuffer(m_RandomTasksCmdBuf));
 
-		buffer.Destroy();
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
 
-		return {};
+		ASSERT_VULKAN(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+		ASSERT_VULKAN(vkQueueWaitIdle(queue));
+
+		std::vector<float> buffer(floatCount);
+		vkBuffer.GetData(bufferSize, buffer.data(), 0, 0);
+		vkBuffer.Destroy();
+
+		if (TINYEXR_SUCCESS != SaveEXR(buffer.data(), m_RenderWidth, m_RenderHeight, 4, 0, filePath.c_str(), nullptr))
+		{ 
+			en::Log::Error("TINYEXR Error", true);
+		}
 	}
 
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
@@ -668,7 +691,7 @@ namespace en
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;
@@ -1444,13 +1467,6 @@ namespace en
 		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
 		descSets.insert(descSets.end(), hpmSceneDescSets.begin(), hpmSceneDescSets.end());
 		descSets.push_back(m_DescSet);
-
-		// Create memory barrier
-		VkMemoryBarrier memoryBarrier;
-		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-		memoryBarrier.pNext = nullptr;
-		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
