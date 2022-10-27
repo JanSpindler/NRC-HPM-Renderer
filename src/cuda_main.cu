@@ -22,7 +22,7 @@
 #include <engine/util/Time.hpp>
 #include <engine/HpmScene.hpp>
 #include <engine/AppConfig.hpp>
-#include <openvdb/openvdb.h>
+#include <filesystem>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
@@ -218,7 +218,12 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	}
 
 	// Evaluate at end
-	std::string exrOutputFilePath = "output/test.exr";
+	std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
+	if (!std::filesystem::is_directory(outputDirPath) || std::filesystem::exists(outputDirPath))
+	{
+		std::filesystem::create_directory(outputDirPath);
+	}
+	std::string exrOutputFilePath =  outputDirPath + "1.exr";
 	hpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
 
 	// Stop gpu work

@@ -90,6 +90,24 @@ namespace en
 		trainSpp = std::stoi(argv[index++]);
 	}
 
+	std::string AppConfig::GetName() const
+	{
+		std::string str = "";
+		str += lossFn + "_";
+		str += optimizer + "_";
+		str += std::to_string(learningRate) + "_";
+		str += std::to_string(encoding.id) + "_";
+		str += std::to_string(nnWidth) + "_";
+		str += std::to_string(nnDepth) + "_";
+		str += std::to_string(log2BatchSize) + "_";
+		str += std::to_string(scene.id) + "_";
+		str += std::to_string(renderWidth) + "_";
+		str += std::to_string(renderHeight) + "_";
+		str += std::to_string(trainSampleRatio) + "_";
+		str += std::to_string(trainSpp);
+		return str;
+	}
+
 	void AppConfig::RenderImGui() const
 	{
 		ImGui::Begin("AppConfig");
