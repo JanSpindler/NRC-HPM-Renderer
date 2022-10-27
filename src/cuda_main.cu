@@ -215,6 +215,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
 		frameCount++;
 	}
+
+	// Evaluate at end
+
+
+	// Stop gpu work
 	result = vkDeviceWaitIdle(device);
 	ASSERT_VULKAN(result);
 

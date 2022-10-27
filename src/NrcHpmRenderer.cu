@@ -198,9 +198,10 @@ namespace en
 			m_CuExtCudaStartSemaphore, 
 			m_CuExtCudaFinishedSemaphore);
 
-		m_CommandPool.AllocateBuffers(2, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		m_CommandPool.AllocateBuffers(3, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_PreCudaCommandBuffer = m_CommandPool.GetBuffer(0);
 		m_PostCudaCommandBuffer = m_CommandPool.GetBuffer(1);
+		m_RandomTasksCmdBuf = m_CommandPool.GetBuffer(2);
 
 		CreatePipelineLayout(device);
 
@@ -327,6 +328,11 @@ namespace en
 	VkImageView NrcHpmRenderer::GetImageView() const
 	{
 		return m_OutputImageView;
+	}
+
+	std::vector<float> NrcHpmRenderer::GetImageData() const
+	{
+		return {};
 	}
 
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
@@ -685,11 +691,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_PreCudaCommandBuffer,
+			m_RandomTasksCmdBuf,
 			m_OutputImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -698,7 +704,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -708,7 +714,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -790,11 +796,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_PreCudaCommandBuffer,
+			m_RandomTasksCmdBuf,
 			m_PrimaryRayColorImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -803,7 +809,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -813,7 +819,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -895,11 +901,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_PreCudaCommandBuffer,
+			m_RandomTasksCmdBuf,
 			m_PrimaryRayInfoImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -908,7 +914,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -918,7 +924,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -1000,11 +1006,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_PreCudaCommandBuffer,
+			m_RandomTasksCmdBuf,
 			m_NrcRayOriginImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -1013,7 +1019,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -1023,7 +1029,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 
@@ -1105,11 +1111,11 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
 		ASSERT_VULKAN(result);
 
 		vk::CommandRecorder::ImageLayoutTransfer(
-			m_PreCudaCommandBuffer,
+			m_RandomTasksCmdBuf,
 			m_NrcRayDirImage,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -1118,7 +1124,7 @@ namespace en
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
 		ASSERT_VULKAN(result);
 
 		VkSubmitInfo submitInfo;
@@ -1128,7 +1134,7 @@ namespace en
 		submitInfo.pWaitSemaphores = nullptr;
 		submitInfo.pWaitDstStageMask = nullptr;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_PreCudaCommandBuffer;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
 		submitInfo.signalSemaphoreCount = 0;
 		submitInfo.pSignalSemaphores = nullptr;
 

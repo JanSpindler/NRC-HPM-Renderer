@@ -56,13 +56,13 @@ def generate_configs():
     learning_rate_options = ["0.01", "0.001", "0.0001", "0.00001"]
     encoding_options = ["0"]
     nn_width_options = ["64", "128"]
-    nn_depth_options = ["2", "4", "6", "8", "10"]
-    log2_batch_size_options = ["12", "13", "14", "15", "16"]
+    nn_depth_options = ["2", "6", "10"]
+    log2_batch_size_options = ["12", "14", "16"]
     scene_options = ["0"]
     render_width_options = ["1920"]
     render_height_options = ["1080"]
     train_sample_ratio_options = ["0.01", "0.02", "0.05", "0.1"]
-    train_spp_options = ["1", "2", "4", "8"]
+    train_spp_options = ["1", "2", "4"]
     
     arguments_list = list(itertools.product(
         loss_fn_options, 

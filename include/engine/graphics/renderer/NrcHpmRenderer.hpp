@@ -35,6 +35,8 @@ namespace en
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 
+		std::vector<float> GetImageData() const;
+
 	private:
 		struct SpecializationData
 		{
@@ -129,6 +131,7 @@ namespace en
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_PreCudaCommandBuffer;
 		VkCommandBuffer m_PostCudaCommandBuffer;
+		VkCommandBuffer m_RandomTasksCmdBuf;
 
 		void CreateSyncObjects(VkDevice device);
 
