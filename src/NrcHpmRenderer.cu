@@ -332,6 +332,38 @@ namespace en
 
 	std::vector<float> NrcHpmRenderer::GetImageData() const
 	{
+		const size_t bufferSize = m_RenderWidth * m_RenderHeight * sizeof(float) * 4;
+		
+		vk::Buffer buffer(
+			bufferSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		VkCommandBufferBeginInfo cmdBufBI;
+		cmdBufBI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBufBI.pNext = nullptr;
+		cmdBufBI.flags = 0;
+		cmdBufBI.pInheritanceInfo = nullptr;
+		ASSERT_VULKAN(vkBeginCommandBuffer(m_RandomTasksCmdBuf, &cmdBufBI));
+
+		VkBufferImageCopy region;
+		region.bufferOffset = 0;
+		region.bufferRowLength = m_RenderWidth;
+		region.bufferImageHeight = m_RenderHeight;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = { 0, 0, 0 };
+		region.imageExtent = { m_RenderWidth, m_RenderHeight, 1 };
+
+		vkCmdCopyImageToBuffer(m_RandomTasksCmdBuf, m_OutputImage, VK_IMAGE_LAYOUT_GENERAL, buffer.GetVulkanHandle(), 1, &region);
+
+		ASSERT_VULKAN(vkEndCommandBuffer(m_RandomTasksCmdBuf));
+
+		buffer.Destroy();
+
 		return {};
 	}
 
