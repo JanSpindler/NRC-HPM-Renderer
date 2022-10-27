@@ -52,26 +52,20 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${STB_INCLUDE_DIRS})
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
 
-# OPENVDB
-#find_package(OpenVDB CONFIG REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE OpenVDB::openvdb)
-
 # TINYEXR
 find_package(tinyexr CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::tinyexr::tinyexr)
 
-# OPENEXR
-#find_package(IlmBase CONFIG REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE IlmBase::Iex IlmBase::Half IlmBase::Imath IlmBase::IexMath)
-#find_package(OpenEXR CONFIG REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE OpenEXR::IlmImf OpenEXR::IlmImfUtil OpenEXR::IlmImfConfig)
-#find_package(OpenEXR CONFIG REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE OpenEXR::OpenEXR)
-
 # TCNN
 add_compile_definitions(TCNN_MIN_GPU_ARCH=86)
-
 add_subdirectory("dependencies/tiny-cuda-nn")
 target_include_directories(${PROJECT_NAME} PRIVATE "dependencies/tiny-cuda-nn/include" "dependencies/tiny-cuda-nn/dependencies")
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
 
+# TBB
+find_package(TBB CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+
+# OPENVDB
+target_include_directories(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\include")
+target_link_libraries(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\lib")

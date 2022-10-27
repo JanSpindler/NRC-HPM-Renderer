@@ -22,6 +22,7 @@
 #include <engine/util/Time.hpp>
 #include <engine/HpmScene.hpp>
 #include <engine/AppConfig.hpp>
+#include <openvdb/openvdb.h>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
