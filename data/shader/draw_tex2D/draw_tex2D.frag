@@ -10,5 +10,5 @@ layout(location = 0) out vec4 out_color;
 void main()
 {
 	vec4 val = texture(tex, frag_uv);
-	out_color = val;
+	out_color = vec4(pow(val.xyz, vec3(1.0 / 2.2)), val.w);
 }

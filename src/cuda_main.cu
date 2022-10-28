@@ -177,7 +177,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	while (!en::Window::IsClosed() && !shutdown)
 	{
 		// Exit
-		//if (frameCount == 10000) { break; }
+		//if (frameCount == 10) { break; }
 
 		// Update
 		en::Window::Update();

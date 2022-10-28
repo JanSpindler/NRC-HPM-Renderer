@@ -55,7 +55,7 @@ namespace en
 			dirLightStrength = 16.0f;
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/photostudio.hdr";
-			hdrEnvMapStrength = 0.0;
+			hdrEnvMapStrength = 0.0f;
 			break;
 		default:
 			Log::Error("HpmSceneConfig ID is invalid", true);
