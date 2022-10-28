@@ -29,7 +29,7 @@ namespace en
 			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
 
-		void Render(VkQueue queue) const;
+		void Render(VkQueue queue);
 		void Destroy();
 
 		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
@@ -46,6 +46,16 @@ namespace en
 			uint32_t trainWidth;
 			uint32_t trainHeight;
 			uint32_t trainSpp;
+
+			float volumeDensityFactor;
+			float volumeG;
+
+			float hdrEnvMapStrength;
+		};
+
+		struct UniformData
+		{
+			glm::vec4 random;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -94,6 +104,9 @@ namespace en
 		SpecializationData m_SpecData;
 		std::vector<VkSpecializationMapEntry> m_SpecMapEntries;
 		VkSpecializationInfo m_SpecInfo;
+
+		UniformData m_UniformData = { glm::vec4(0.0f) };
+		vk::Buffer m_UniformBuffer;
 
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;

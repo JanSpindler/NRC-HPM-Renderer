@@ -13,8 +13,7 @@ namespace en
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
 		HdrEnvMap(
-			float directStrength,
-			float hpmStrength,
+			float strength,
 			uint32_t width, 
 			uint32_t height, 
 			const std::vector<float>& hdr4f,
@@ -23,19 +22,14 @@ namespace en
 
 		void Destroy();
 
-		void RenderImGui();
-
+		float GetStrength() const;
 		VkDescriptorSet GetDescriptorSet() const;
 
 	private:
-		struct UniformData
-		{
-			float directStrength;
-			float hpmStrength;
-		};
-
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
+
+		float m_Strength;
 
 		uint32_t m_Width;
 		uint32_t m_Height;
@@ -59,9 +53,6 @@ namespace en
 		VkDeviceMemory m_CdfYImageMemory;
 
 		VkSampler m_Sampler;
-
-		UniformData m_UniformData;
-		vk::Buffer m_UniformBuffer;
 
 		VkDescriptorSet m_DescSet;
 

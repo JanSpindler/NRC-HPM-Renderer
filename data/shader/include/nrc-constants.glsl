@@ -4,6 +4,11 @@ layout(constant_id = 2) const uint TRAIN_WIDTH = 1;
 layout(constant_id = 3) const uint TRAIN_HEIGHT = 1;
 layout(constant_id = 4) const uint TRAIN_SPP = 1;
 
+layout(constant_id = 5) const float VOLUME_DENSITY_FACTOR = 1.0;
+layout(constant_id = 6) const float VOLUME_G = 0.7;
+
+layout(constant_id = 7) const float HDR_ENV_MAP_STRENGTH = 1.0;
+
 const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
 const vec3 skyPos = vec3(0.0);
 

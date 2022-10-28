@@ -25,8 +25,7 @@ namespace en
 			float dirLightStrength;
 			float pointLightStrength;
 			std::string hdrEnvMapPath;
-			float hdrEnvMapDirectStrength;
-			float hdrEnvMapHpmStrength;
+			float hdrEnvMapStrength;
 
 			HpmSceneConfig();
 			HpmSceneConfig(uint32_t id);

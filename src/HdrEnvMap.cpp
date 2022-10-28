@@ -35,18 +35,11 @@ namespace en
 		cdfYBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		cdfYBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding uniformBinding;
-		uniformBinding.binding = 3;
-		uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uniformBinding.descriptorCount = 1;
-		uniformBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		uniformBinding.pImmutableSamplers = nullptr;
-
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
 			hdrTexBinding, 
 			cdfXBinding,
-			cdfYBinding,
-			uniformBinding };
+			cdfYBinding
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -63,11 +56,7 @@ namespace en
 		imagePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		imagePoolSize.descriptorCount = 3;
 
-		VkDescriptorPoolSize uniformPoolSize;
-		uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uniformPoolSize.descriptorCount = 1;
-
-		std::vector<VkDescriptorPoolSize> poolSizes = { imagePoolSize, uniformPoolSize };
+		std::vector<VkDescriptorPoolSize> poolSizes = { imagePoolSize };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -93,33 +82,24 @@ namespace en
 	}
 
 	HdrEnvMap::HdrEnvMap(
-		float directStrength,
-		float hpmStrength,
+		float strength,
 		uint32_t width, 
 		uint32_t height, 
 		const std::vector<float>& hdr4f,
 		const std::vector<float>& cdfX,
 		const std::vector<float>& cdfY)
 		:
+		m_Strength(strength),
 		m_Width(width),
 		m_Height(height),
 		m_RawColorSize(width * height * 4 * sizeof(float)),
 		m_RawCdfXSize(width * height * sizeof(float)),
 		m_RawCdfYSize(height * sizeof(float)),
-		m_ColorImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED),
-		m_UniformData({ .directStrength = directStrength, .hpmStrength = hpmStrength }),
-		m_UniformBuffer(
-			sizeof(UniformData), 
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			{})
+		m_ColorImageLayout(VK_IMAGE_LAYOUT_PREINITIALIZED)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 		VkQueue queue = VulkanAPI::GetGraphicsQueue();
 		
-		// Uniform
-		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
-
 		// Create images and resources
 		CreateColorImage(device, queue, hdr4f);
 		CreateCdfXImage(device, queue, cdfX);
@@ -215,24 +195,7 @@ namespace en
 		cdfYWrite.pBufferInfo = nullptr;
 		cdfYWrite.pTexelBufferView = nullptr;
 
-		VkDescriptorBufferInfo uniformBufferInfo;
-		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
-		uniformBufferInfo.offset = 0;
-		uniformBufferInfo.range = sizeof(UniformData);
-
-		VkWriteDescriptorSet uniformWrite;
-		uniformWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		uniformWrite.pNext = nullptr;
-		uniformWrite.dstSet = m_DescSet;
-		uniformWrite.dstBinding = 3;
-		uniformWrite.dstArrayElement = 0;
-		uniformWrite.descriptorCount = 1;
-		uniformWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uniformWrite.pImageInfo = nullptr;
-		uniformWrite.pBufferInfo = &uniformBufferInfo;
-		uniformWrite.pTexelBufferView = nullptr;
-
-		std::vector<VkWriteDescriptorSet> writes = { hdrTexWrite, cdfXWrite, cdfYWrite, uniformWrite };
+		std::vector<VkWriteDescriptorSet> writes = { hdrTexWrite, cdfXWrite, cdfYWrite };
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
@@ -240,8 +203,6 @@ namespace en
 	void HdrEnvMap::Destroy()
 	{
 		VkDevice device = VulkanAPI::GetDevice();
-
-		m_UniformBuffer.Destroy();
 
 		vkDestroySampler(device, m_Sampler, nullptr);
 
@@ -258,26 +219,9 @@ namespace en
 		vkDestroyImage(device, m_ColorImage, nullptr);
 	}
 
-	void HdrEnvMap::RenderImGui()
+	float HdrEnvMap::GetStrength() const
 	{
-		ImGui::Begin("Hdr Env Map");
-		
-		ImGui::DragFloat("Direct Strength", &m_UniformData.directStrength, 0.01f);
-		ImGui::DragFloat("HPM Strength", &m_UniformData.hpmStrength, 0.01f);
-
-		if (m_UniformData.directStrength < 0.0f)
-		{
-			m_UniformData.directStrength = 0.0f;
-		}
-
-		if (m_UniformData.hpmStrength < 0.0f)
-		{
-			m_UniformData.hpmStrength = 0.0f;
-		}
-
-		ImGui::End();
-
-		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
+		return m_Strength;
 	}
 
 	VkDescriptorSet HdrEnvMap::GetDescriptorSet() const

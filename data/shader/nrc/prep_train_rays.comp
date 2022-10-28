@@ -95,8 +95,8 @@ void main()
 	const ivec2 renderImageCoord = trainImageCoord * ivec2(RENDER_OVER_TRAIN_WIDTH, RENDER_OVER_TRAIN_HEIGHT);
 
 	// Setup random
-	preRand = volumeData.random.x * float(x) * ONE_OVER_RENDER_WIDTH;
-	prePreRand = volumeData.random.y * float(y) * ONE_OVER_RENDER_WIDTH;
+	preRand = random.x * float(x) * ONE_OVER_RENDER_WIDTH;
+	prePreRand = random.y * float(y) * ONE_OVER_RENDER_WIDTH;
 
 	const vec3 rayOrigin = imageLoad(nrcRayOriginImage, renderImageCoord).xyz;
 	const vec3 rayDir = imageLoad(nrcRayDirImage, renderImageCoord).xyz;

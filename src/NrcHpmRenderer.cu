@@ -9,6 +9,7 @@
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/util/Log.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
+#include <glm/gtc/random.hpp>
 
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
@@ -106,6 +107,13 @@ namespace en
 		nrcTrainTargetBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcTrainTargetBufferBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding uniformBufferBinding;
+		uniformBufferBinding.binding = 9;
+		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferBinding.descriptorCount = 1;
+		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		uniformBufferBinding.pImmutableSamplers = nullptr;
+
 		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
 			outputImageBinding,
 			primaryRayColorImageBinding,
@@ -115,7 +123,9 @@ namespace en
 			nrcInferInputBufferBinding,
 			nrcInferOutputBufferBinding,
 			nrcTrainInputBufferBinding,
-			nrcTrainTargetBufferBinding };
+			nrcTrainTargetBufferBinding,
+			uniformBufferBinding
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutCI;
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -136,7 +146,11 @@ namespace en
 		storageBufferPS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		storageBufferPS.descriptorCount = 4;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePS, storageBufferPS };
+		VkDescriptorPoolSize uniformBufferPS;
+		uniformBufferPS.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferPS.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePS, storageBufferPS, uniformBufferPS };
 
 		VkDescriptorPoolCreateInfo poolCI;
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -175,7 +189,12 @@ namespace en
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
 		m_Camera(camera),
 		m_HpmScene(hpmScene),
-		m_Nrc(nrc)
+		m_Nrc(nrc),
+		m_UniformBuffer(
+			sizeof(UniformData), 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			{})
 	{
 		// Calc train sample extent
 		float sqrtTrainSampleRatio = std::sqrt(trainSampleRatio);
@@ -229,8 +248,13 @@ namespace en
 		RecordPostCudaCommandBuffer();
 	}
 
-	void NrcHpmRenderer::Render(VkQueue queue) const
+	void NrcHpmRenderer::Render(VkQueue queue)
 	{
+		// Generate random
+		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
+		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
+
+		// Pre cuda
 		VkSubmitInfo submitInfo;
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
@@ -245,8 +269,10 @@ namespace en
 		VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
 
+		// Cuda
 		m_Nrc.InferAndTrain();
 		
+		// Post cuda
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
 		submitInfo.waitSemaphoreCount = 1;
@@ -267,6 +293,8 @@ namespace en
 		VkDevice device = VulkanAPI::GetDevice();
 
 		m_CommandPool.Destroy();
+
+		m_UniformBuffer.Destroy();
 
 		vkDestroyQueryPool(device, m_QueryPool, nullptr);
 
@@ -567,6 +595,11 @@ namespace en
 
 		m_SpecData.trainSpp = m_TrainSpp;
 
+		m_SpecData.volumeDensityFactor = m_HpmScene.GetVolumeData()->GetDensityFactor();
+		m_SpecData.volumeG = m_HpmScene.GetVolumeData()->GetG();
+
+		m_SpecData.hdrEnvMapStrength = m_HpmScene.GetHdrEnvMap()->GetStrength();
+
 		// Init map entries
 		VkSpecializationMapEntry renderWidthEntry;
 		renderWidthEntry.constantID = 0;
@@ -593,12 +626,30 @@ namespace en
 		trainSppEntry.offset = offsetof(SpecializationData, SpecializationData::trainSpp);
 		trainSppEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry volumeDensityFactorEntry;
+		volumeDensityFactorEntry.constantID = 5;
+		volumeDensityFactorEntry.offset = offsetof(SpecializationData, SpecializationData::volumeDensityFactor);
+		volumeDensityFactorEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry volumeGEntry;
+		volumeGEntry.constantID = 6;
+		volumeGEntry.offset = offsetof(SpecializationData, SpecializationData::volumeG);
+		volumeGEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry hdrEnvMapStrengthEntry;
+		hdrEnvMapStrengthEntry.constantID = 7;
+		hdrEnvMapStrengthEntry.offset = offsetof(SpecializationData, SpecializationData::hdrEnvMapStrength);
+		hdrEnvMapStrengthEntry.size = sizeof(float);
+
 		m_SpecMapEntries = {
 			renderWidthEntry,
 			renderHeightEntry,
 			trainWidthEntry,
 			trainHeightEntry,
-			trainSppEntry
+			trainSppEntry,
+			volumeDensityFactorEntry,
+			volumeGEntry,
+			hdrEnvMapStrengthEntry
 		};
 
 		m_SpecInfo.mapEntryCount = m_SpecMapEntries.size();
@@ -1397,6 +1448,24 @@ namespace en
 		nrcTrainTargetBufferWrite.pBufferInfo = &nrcTrainTargetBufferInfo;
 		nrcTrainTargetBufferWrite.pTexelBufferView = nullptr;
 
+		// Uniform buffer write
+		VkDescriptorBufferInfo uniformBufferInfo;
+		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
+		uniformBufferInfo.offset = 0;
+		uniformBufferInfo.range = sizeof(UniformData);
+
+		VkWriteDescriptorSet uniformBufferWrite;
+		uniformBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		uniformBufferWrite.pNext = nullptr;
+		uniformBufferWrite.dstSet = m_DescSet;
+		uniformBufferWrite.dstBinding = 9;
+		uniformBufferWrite.dstArrayElement = 0;
+		uniformBufferWrite.descriptorCount = 1;
+		uniformBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniformBufferWrite.pImageInfo = nullptr;
+		uniformBufferWrite.pBufferInfo = &uniformBufferInfo;
+		uniformBufferWrite.pTexelBufferView = nullptr;
+
 		// Write writes
 		std::vector<VkWriteDescriptorSet> writes = { 
 			outputImageWrite,
@@ -1407,7 +1476,9 @@ namespace en
 			nrcInferInputBufferWrite,
 			nrcInferOutputBufferWrite,
 			nrcTrainInputBufferWrite,
-			nrcTrainTargetBufferWrite };
+			nrcTrainTargetBufferWrite,
+			uniformBufferWrite
+		};
 
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}

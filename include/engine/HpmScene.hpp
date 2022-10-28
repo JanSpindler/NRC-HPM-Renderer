@@ -22,6 +22,8 @@ namespace en
 		void Destroy();
 
 		const std::vector<VkDescriptorSet>& GetDescriptorSets() const;
+		const VolumeData* GetVolumeData() const;
+		const HdrEnvMap* GetHdrEnvMap() const;
 
 	private:
 		static std::vector<VkDescriptorSetLayout> s_DescriptorSetLayout;

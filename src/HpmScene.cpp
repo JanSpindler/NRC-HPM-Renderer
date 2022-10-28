@@ -31,8 +31,7 @@ namespace en
 		std::vector<float> hdr4fData = en::ReadFileHdr4f(appConfig.scene.hdrEnvMapPath, hdrWidth, hdrHeight, 1000.0f);
 		std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 		m_HdrEnvMap = new HdrEnvMap(
-			appConfig.scene.hdrEnvMapDirectStrength,
-			appConfig.scene.hdrEnvMapHpmStrength,
+			appConfig.scene.hdrEnvMapStrength,
 			hdrWidth,
 			hdrHeight,
 			hdr4fData,
@@ -46,7 +45,7 @@ namespace en
 			VK_FILTER_LINEAR,
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
 			VK_BORDER_COLOR_INT_OPAQUE_BLACK);
-		m_VolumeData = new VolumeData(m_Density3DTex);
+		m_VolumeData = new VolumeData(m_Density3DTex, 0.3f, 0.7f);
 
 		// Store desc sets
 		m_DescSets = {
@@ -64,10 +63,7 @@ namespace en
 			m_VolumeData->RenderImGui();
 			m_DirLight->RenderImgui();
 			m_PointLight->RenderImGui();
-			m_HdrEnvMap->RenderImGui();
 		}
-
-		m_VolumeData->Update();
 	}
 
 	void HpmScene::Destroy()
@@ -91,5 +87,15 @@ namespace en
 	const std::vector<VkDescriptorSet>& HpmScene::GetDescriptorSets() const
 	{
 		return m_DescSets;
+	}
+
+	const VolumeData* HpmScene::GetVolumeData() const
+	{
+		return m_VolumeData;
+	}
+
+	const HdrEnvMap* HpmScene::GetHdrEnvMap() const
+	{
+		return m_HdrEnvMap;
 	}
 }

@@ -7,17 +7,6 @@
 
 namespace en
 {
-	struct VolumeUniformData
-	{
-		glm::vec4 random;
-		uint32_t useNN;
-		uint32_t showNonNN;
-		float densityFactor;
-		float g;
-		int noNnSpp;
-		int withNnSpp;
-	};
-
 	class VolumeData
 	{
 	public:
@@ -25,25 +14,26 @@ namespace en
 		static void Shutdown(VkDevice device);
 		static VkDescriptorSetLayout GetDescriptorSetLayout();
 
-		VolumeData(const vk::Texture3D* densityTex);
+		VolumeData(const vk::Texture3D* densityTex, float densityFactor, float g);
 
-		void Update();
 		void Destroy();
 
 		void RenderImGui();
 
+		float GetDensityFactor() const;
+		float GetG() const;
 		VkDescriptorSet GetDescriptorSet() const;
 
 	private:
 		static VkDescriptorSetLayout m_DescriptorSetLayout;
 		static VkDescriptorPool m_DescriptorPool;
 
+		float m_DensityFactor = 0.0;
+		float m_G = 0.0;
+
 		VkDescriptorSet m_DescriptorSet;
 
 		const vk::Texture3D* m_DensityTex;
-
-		VolumeUniformData m_UniformData;
-		vk::Buffer m_UniformBuffer;
 
 		void UpdateDescriptorSet();
 	};

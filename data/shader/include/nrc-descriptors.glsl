@@ -11,17 +11,6 @@ layout(set = 0, binding = 1) uniform camera_t
 
 layout(set = 1, binding = 0) uniform sampler3D densityTex;
 
-layout(set = 1, binding = 1) uniform volumeData_t
-{
-	vec4 random;
-	uint useNN;
-	uint showNonNN;
-	float densityFactor;
-	float g;
-	int noNnSpp;
-	int withNnSpp;
-} volumeData;
-
 layout(set = 2, binding = 0) uniform dir_light_t
 {
 	vec3 color;
@@ -43,12 +32,6 @@ layout(set = 4, binding = 0) uniform sampler2D hdrEnvMap;
 layout(set = 4, binding = 1) uniform sampler2D hdrEnvMapInvCdfX;
 
 layout(set = 4, binding = 2) uniform sampler1D hdrEnvMapInvCdfY;
-
-layout(set = 4, binding = 3) uniform HdrEnvMapData
-{
-	float directStrength;
-	float hpmStrength;
-} hdrEnvMapData;
 
 layout(set = 5, binding = 0, rgba32f) uniform image2D outputImage;
 
@@ -78,24 +61,25 @@ struct NrcOutput
 
 layout(std430, set = 5, binding = 5) buffer NrcInferInput
 {
-	//float nrcInferInput[];
 	NrcInput nrcInferInput[];
 };
 
 layout(std430, set = 5, binding = 6) buffer NrcInferOutput
 {
-	//float nrcInferOutput[];
 	NrcOutput nrcInferOutput[];
 };
 
 layout(std430, set = 5, binding = 7) buffer NrcTrainInput
 {
-	//float nrcTrainInput[];
 	NrcInput nrcTrainInput[];
 };
 
 layout(std430, set = 5, binding = 8) buffer NrcTrainTarget
 {
-	//float nrcTrainTarget[];
 	NrcOutput nrcTrainTarget[];
+};
+
+layout(set = 5, binding = 9) uniform Renderer
+{
+	vec4 random;
 };

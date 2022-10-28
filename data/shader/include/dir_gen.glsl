@@ -1,6 +1,6 @@
 float hg_phase_func(const float cos_theta)
 {
-	const float g = volumeData.g;
+	const float g = VOLUME_G;
 	const float g2 = g * g;
 	const float result = 0.5 * (1 - g2) / pow(1 + g2 - (2 * g * cos_theta), 1.5);
 	return result;
@@ -35,7 +35,7 @@ vec3 NewRayDir(vec3 oldRayDir, const bool phaseFuncSampling)
 	float angle;
 	if (phaseFuncSampling)
 	{
-		float g = volumeData.g;
+		float g = VOLUME_G;
 		float cosTheta;
 		if (abs(g) < 0.001)
 		{

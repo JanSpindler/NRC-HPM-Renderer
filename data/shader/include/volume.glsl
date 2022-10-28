@@ -42,5 +42,5 @@ vec3 get_sky_uvw(vec3 pos)
 
 float getDensity(vec3 pos)
 {
-	return volumeData.densityFactor * texture(densityTex, get_sky_uvw(pos)).x;
+	return VOLUME_DENSITY_FACTOR * texture(densityTex, get_sky_uvw(pos)).x;
 }
