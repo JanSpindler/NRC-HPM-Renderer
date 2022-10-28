@@ -446,7 +446,8 @@ namespace en
 		ImGui::Text("Cuda Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Render Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Total Time %f ms", m_TimePeriods[periodIndex++]);
-		
+		ImGui::Text("Theoretical FPS %f", 1000.0f / m_TimePeriods[c_QueryCount - 1]);
+
 		ImGui::End();
 	}
 
