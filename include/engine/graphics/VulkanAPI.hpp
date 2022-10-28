@@ -45,6 +45,8 @@ namespace en
 		static VkQueue GetComputeQueue();
 		static VkQueue GetPresentQueue();
 
+		static float GetTimestampPeriod();
+
 	private:
 		static VkInstance m_Instance;
 

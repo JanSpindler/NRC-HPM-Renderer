@@ -170,6 +170,11 @@ namespace en
 		return m_PresentQueue;
 	}
 
+	float VulkanAPI::GetTimestampPeriod()
+	{
+		return m_PhysicalDeviceInfo.properties.limits.timestampPeriod;
+	}
+
 	void VulkanAPI::CreateInstance(const std::string& appName)
 	{
 		// List supported layers
@@ -445,12 +450,19 @@ namespace en
 		queueCreateInfo.queueCount = 2;
 		queueCreateInfo.pQueuePriorities = priorities;
 
-		// Features
+		// Features 1.0
 		VkPhysicalDeviceFeatures features10{};
 
+		// Time query reset
+		VkPhysicalDeviceHostQueryResetFeatures queryResetFeatures;
+		queryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
+		queryResetFeatures.pNext = nullptr;
+		queryResetFeatures.hostQueryReset = VK_TRUE;
+
+		// Features 1.1
 		VkPhysicalDeviceVulkan11Features features11{};
 		features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-		features11.pNext = nullptr;
+		features11.pNext = &queryResetFeatures;
 		features11.storageBuffer16BitAccess = VK_TRUE;
 
 		// Vulkan memory model features
