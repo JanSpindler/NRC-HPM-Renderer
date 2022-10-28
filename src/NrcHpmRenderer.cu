@@ -431,7 +431,7 @@ namespace en
 		const float timestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
 		std::vector<float> timePeriods(timePeriodCount);
 		for (size_t i = 0; i < timePeriodCount; i++)
-		{ 
+		{
 			timePeriods[i] = timestampPeriodInMS * static_cast<float>(queryResults[i + 1] - queryResults[i]);
 		}
 	}
@@ -1498,6 +1498,8 @@ namespace en
 
 	void NrcHpmRenderer::RecordPreCudaCommandBuffer()
 	{
+		m_QueryIndex = 0;
+
 		// Begin
 		VkCommandBufferBeginInfo beginInfo;
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

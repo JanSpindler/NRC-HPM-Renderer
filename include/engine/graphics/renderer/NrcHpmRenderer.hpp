@@ -1,10 +1,6 @@
 #pragma once
 
 #include <engine/graphics/Camera.hpp>
-#include <engine/objects/VolumeData.hpp>
-#include <engine/graphics/DirLight.hpp>
-#include <engine/graphics/PointLight.hpp>
-#include <engine/graphics/HdrEnvMap.hpp>
 #include <engine/graphics/vulkan/Shader.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/HpmScene.hpp>

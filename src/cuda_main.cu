@@ -23,6 +23,7 @@
 #include <engine/HpmScene.hpp>
 #include <engine/AppConfig.hpp>
 #include <filesystem>
+#include <engine/graphics/renderer/McHpmRenderer.hpp>
 
 #include <cuda_runtime.h>
 #include <tiny-cuda-nn/config.h>
@@ -30,7 +31,8 @@
 
 #define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
-en::NrcHpmRenderer* hpmRenderer = nullptr;
+en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
+en::McHpmRenderer* mcHpmRenderer = nullptr;
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -57,7 +59,7 @@ void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	if (hpmRenderer != nullptr && en::ImGuiRenderer::IsInitialized())
+	if (nrcHpmRenderer != nullptr && mcHpmRenderer != nullptr && en::ImGuiRenderer::IsInitialized())
 	{
 		VkImageCopy imageCopy;
 		imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -143,7 +145,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	// Init rendering pipeline
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 
-	hpmRenderer = new en::NrcHpmRenderer(
+	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width,
 		height,
 		appConfig.trainSampleRatio,
@@ -152,8 +154,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, camera, hpmScene);
+
 	en::ImGuiRenderer::Init(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(hpmRenderer->GetImageView());
+	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
 
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
@@ -185,10 +189,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		camera.UpdateUniformBuffer();
 
 		// Render
-		hpmRenderer->Render(queue);
+		nrcHpmRenderer->Render(queue);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
-		hpmRenderer->EvaluateTimestampQueries();
+		nrcHpmRenderer->EvaluateTimestampQueries();
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -225,15 +229,18 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		std::filesystem::create_directory(outputDirPath);
 	}
 	std::string exrOutputFilePath =  outputDirPath + "1.exr";
-	hpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
+	nrcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
 
 	// Stop gpu work
 	result = vkDeviceWaitIdle(device);
 	ASSERT_VULKAN(result);
 
 	// End
-	hpmRenderer->Destroy();
-	delete hpmRenderer;
+	mcHpmRenderer->Destroy();
+	delete mcHpmRenderer;
+	
+	nrcHpmRenderer->Destroy();
+	delete nrcHpmRenderer;
 	en::ImGuiRenderer::Shutdown();
 	swapchain.Destroy(true);
 
