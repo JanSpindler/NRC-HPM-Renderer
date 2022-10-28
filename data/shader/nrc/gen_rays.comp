@@ -39,7 +39,7 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 				// Return prematurly terminated ray color
 				return vec4(scatteredLight, transmittance);
 			}
-			totalTermProb *= 0.1;
+			totalTermProb *= 0.5;
 
 			// Get scene lighting
 			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);

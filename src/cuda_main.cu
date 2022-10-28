@@ -223,6 +223,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		ImGui::Checkbox("Restart after shutdown", &restartAfterClose);
 		ImGui::End();
 
+#ifdef NRC
+		nrcHpmRenderer->RenderImGui();
+#endif
+
 		hpmScene.Update(true);
 
 		appConfig.RenderImGui();

@@ -30,6 +30,7 @@ namespace en
 
 		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
+		void RenderImGui() const;
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
@@ -138,7 +139,9 @@ namespace en
 
 		VkDescriptorSet m_DescSet;
 
+		const float c_TimestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
 		const uint32_t c_QueryCount = 6;
+		std::vector<float> m_TimePeriods = std::vector<float>(c_QueryCount);
 		uint32_t m_QueryIndex = 0;
 		VkQueryPool m_QueryPool;
 

@@ -10,6 +10,7 @@
 #include <engine/util/Log.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 #include <glm/gtc/random.hpp>
+#include <imgui.h>
 
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
@@ -427,13 +428,26 @@ namespace en
 			VK_QUERY_RESULT_64_BIT));
 		vkResetQueryPool(device, m_QueryPool, 0, c_QueryCount);
 
-		const size_t timePeriodCount = c_QueryCount - 1;
-		const float timestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
-		std::vector<float> timePeriods(timePeriodCount);
-		for (size_t i = 0; i < timePeriodCount; i++)
+		for (size_t i = 0; i < c_QueryCount - 1; i++)
 		{
-			timePeriods[i] = timestampPeriodInMS * static_cast<float>(queryResults[i + 1] - queryResults[i]);
+			m_TimePeriods[i] = c_TimestampPeriodInMS * static_cast<float>(queryResults[i + 1] - queryResults[i]);
 		}
+		m_TimePeriods[c_QueryCount - 1] = c_TimestampPeriodInMS * static_cast<float>(queryResults[c_QueryCount - 1] - queryResults[0]);
+	}
+
+	void NrcHpmRenderer::RenderImGui() const
+	{
+		ImGui::Begin("NrcHpmRenderer stats");
+		
+		size_t periodIndex = 0;
+		ImGui::Text("GenRays Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("PrepRayInfo Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("PrepTrainRays Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("Cuda Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("Render Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("Total Time %f ms", m_TimePeriods[periodIndex++]);
+		
+		ImGui::End();
 	}
 
 	VkImage NrcHpmRenderer::GetImage() const
