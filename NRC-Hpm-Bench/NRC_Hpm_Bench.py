@@ -40,12 +40,19 @@ def copy_imgui_file():
     shutil.copy("../imgui.ini", ".")
 
 
+def create_output_dir():
+    print("Creating output folder")
+    if not os.path.exists("output"):
+        os.makedirs("output")
+
+
 def update_file_hierarchy():
     remove_old_copies()
     copy_executable_file()
     copy_dlls()
     copy_imgui_file()
     copy_data_dir()
+    create_output_dir()
 
 
 def generate_configs():

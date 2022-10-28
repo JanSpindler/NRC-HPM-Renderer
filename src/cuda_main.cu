@@ -158,8 +158,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
 
-	en::Log::Info(std::to_string(en::VulkanAPI::GetTimestampPeriod()));
-
 	// Main loop
 	VkResult result;
 	size_t frameCount = 0;
