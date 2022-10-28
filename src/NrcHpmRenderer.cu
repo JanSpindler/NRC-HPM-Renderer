@@ -223,6 +223,8 @@ namespace en
 
 		AllocateAndUpdateDescriptorSet(device);
 
+		CreateQueryPool(device);
+
 		RecordPreCudaCommandBuffer();
 		RecordPostCudaCommandBuffer();
 	}
@@ -265,6 +267,8 @@ namespace en
 		VkDevice device = VulkanAPI::GetDevice();
 
 		m_CommandPool.Destroy();
+
+		vkDestroyQueryPool(device, m_QueryPool, nullptr);
 
 		vkDestroyImageView(device, m_NrcRayDirImageView, nullptr);
 		vkFreeMemory(device, m_NrcRayDirImageMemory, nullptr);
@@ -1384,6 +1388,20 @@ namespace en
 		vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 	}
 
+	void NrcHpmRenderer::CreateQueryPool(VkDevice device)
+	{
+		VkQueryPoolCreateInfo queryPoolCI;
+		queryPoolCI.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+		queryPoolCI.pNext = nullptr;
+		queryPoolCI.flags = 0;
+		queryPoolCI.queryType = VK_QUERY_TYPE_TIMESTAMP;
+		queryPoolCI.queryCount = 6;
+		queryPoolCI.pipelineStatistics = 0;
+
+		ASSERT_VULKAN(vkCreateQueryPool(device, &queryPoolCI, nullptr, &m_QueryPool));
+		//vkResetQueryPool(device, m_QueryPool, 0, 6);
+	}
+
 	void NrcHpmRenderer::RecordPreCudaCommandBuffer()
 	{
 		// Begin
@@ -1395,6 +1413,9 @@ namespace en
 
 		VkResult result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
+
+		// Reset query pool
+		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, 6);
 
 		// Collect descriptor sets
 		std::vector<VkDescriptorSet> descSets = { m_Camera.GetDescriptorSet() };
@@ -1415,6 +1436,9 @@ namespace en
 			0, descSets.size(), descSets.data(),
 			0, nullptr);
 
+		// Timestamp
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_QueryPool, m_QueryIndex++);
+
 		// Gen rays pipeline
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
@@ -1427,6 +1451,9 @@ namespace en
 			1, &memoryBarrier,
 			0, nullptr,
 			0, nullptr);
+
+		// Timestamp
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
 		// Prep ray info
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepRayInfoPipeline);
@@ -1441,9 +1468,15 @@ namespace en
 			0, nullptr,
 			0, nullptr);
 
+		// Timestamp
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
+
 		// Prep train rays
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepTrainRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_TrainWidth / 32, m_TrainHeight, 1);
+
+		// Timestamp
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
 		// End
 		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
@@ -1474,9 +1507,15 @@ namespace en
 			0, descSets.size(), descSets.data(),
 			0, nullptr);
 
+		// Timestamp
+		vkCmdWriteTimestamp(m_PostCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
+
 		// Render pipeline
 		vkCmdBindPipeline(m_PostCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_RenderPipeline);
 		vkCmdDispatch(m_PostCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
+
+		// Timestamp
+		vkCmdWriteTimestamp(m_PostCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
 		// End command buffer
 		result = vkEndCommandBuffer(m_PostCudaCommandBuffer);

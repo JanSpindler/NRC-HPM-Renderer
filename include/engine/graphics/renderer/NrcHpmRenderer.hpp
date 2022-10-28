@@ -128,6 +128,9 @@ namespace en
 
 		VkDescriptorSet m_DescSet;
 
+		uint32_t m_QueryIndex = 0;
+		VkQueryPool m_QueryPool;
+
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_PreCudaCommandBuffer;
 		VkCommandBuffer m_PostCudaCommandBuffer;
@@ -153,6 +156,8 @@ namespace en
 		void CreateNrcRayDirImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
+
+		void CreateQueryPool(VkDevice device);
 
 		void RecordPreCudaCommandBuffer();
 		void RecordPostCudaCommandBuffer();
