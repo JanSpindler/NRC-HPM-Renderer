@@ -18,6 +18,7 @@ namespace en
 		void Render(VkQueue queue);
 		void Destroy();
 
+		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
 
 		VkImage GetImage() const;

@@ -1,5 +1,7 @@
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
+#include <glm/gtc/random.hpp>
+#include <tinyexr.h>
 
 namespace en
 {
@@ -114,6 +116,11 @@ namespace en
 
 	void McHpmRenderer::Render(VkQueue queue)
 	{
+		// Generate random
+		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
+		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
+
+		// Render
 		VkSubmitInfo submitInfo;
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
@@ -150,6 +157,63 @@ namespace en
 		m_RenderShader.Destroy();
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
+	}
+
+	void McHpmRenderer::ExportImageToFile(VkQueue queue, const std::string& filePath) const
+	{
+		const size_t floatCount = m_RenderWidth * m_RenderHeight * 4;
+		const size_t bufferSize = floatCount * sizeof(float);
+
+		vk::Buffer vkBuffer(
+			bufferSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		VkCommandBufferBeginInfo cmdBufBI;
+		cmdBufBI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBufBI.pNext = nullptr;
+		cmdBufBI.flags = 0;
+		cmdBufBI.pInheritanceInfo = nullptr;
+		ASSERT_VULKAN(vkBeginCommandBuffer(m_RandomTasksCmdBuf, &cmdBufBI));
+
+		VkBufferImageCopy region;
+		region.bufferOffset = 0;
+		region.bufferRowLength = m_RenderWidth;
+		region.bufferImageHeight = m_RenderHeight;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = { 0, 0, 0 };
+		region.imageExtent = { m_RenderWidth, m_RenderHeight, 1 };
+
+		vkCmdCopyImageToBuffer(m_RandomTasksCmdBuf, m_OutputImage, VK_IMAGE_LAYOUT_GENERAL, vkBuffer.GetVulkanHandle(), 1, &region);
+
+		ASSERT_VULKAN(vkEndCommandBuffer(m_RandomTasksCmdBuf));
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		ASSERT_VULKAN(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+		ASSERT_VULKAN(vkQueueWaitIdle(queue));
+
+		std::vector<float> buffer(floatCount);
+		vkBuffer.GetData(bufferSize, buffer.data(), 0, 0);
+		vkBuffer.Destroy();
+
+		if (TINYEXR_SUCCESS != SaveEXR(buffer.data(), m_RenderWidth, m_RenderHeight, 4, 0, filePath.c_str(), nullptr))
+		{
+			en::Log::Error("TINYEXR Error", true);
+		}
 	}
 
 	void McHpmRenderer::EvaluateTimestampQueries()

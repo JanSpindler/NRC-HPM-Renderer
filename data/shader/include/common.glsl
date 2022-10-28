@@ -10,6 +10,11 @@
 #include "restir-descriptors.glsl"
 #endif
 
+#ifdef MC
+#include "mc-constants.glsl"
+#include "mc-descriptors.glsl"
+#endif
+
 #include "random.glsl"
 #include "volume.glsl"
 #include "dir_gen.glsl"

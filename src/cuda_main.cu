@@ -31,6 +31,7 @@
 
 #define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
+#define NRC
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
 
@@ -157,7 +158,13 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+	en::ImGuiRenderer::SetBackgroundImageView(
+#ifdef NRC
+		nrcHpmRenderer->GetImageView()
+#else
+		mcHpmRenderer->GetImageView()
+#endif
+	);
 
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
@@ -170,7 +177,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	while (!en::Window::IsClosed() && !shutdown)
 	{
 		// Exit
-		if (frameCount == 10000) { break; }
+		//if (frameCount == 10000) { break; }
 
 		// Update
 		en::Window::Update();
@@ -189,10 +196,17 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		camera.UpdateUniformBuffer();
 
 		// Render
+#ifdef NRC
 		nrcHpmRenderer->Render(queue);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 		nrcHpmRenderer->EvaluateTimestampQueries();
+#else
+		mcHpmRenderer->Render(queue);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+		mcHpmRenderer->EvaluateTimestampQueries();
+#endif
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -229,7 +243,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		std::filesystem::create_directory(outputDirPath);
 	}
 	std::string exrOutputFilePath =  outputDirPath + "1.exr";
+#ifdef NRC
 	nrcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
+#else 
+	mcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
+#endif
 
 	// Stop gpu work
 	result = vkDeviceWaitIdle(device);

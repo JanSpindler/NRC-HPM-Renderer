@@ -28,13 +28,6 @@ vec3[2] find_entry_exit(vec3 ro, vec3 rd)
 	return vec3[2]( entry, exit );
 }
 
-void gen_sample_points(vec3 start_pos, vec3 end_pos, out vec3 samples[SAMPLE_COUNT])
-{
-	vec3 dir = end_pos - start_pos;
-	for (int i = 0; i < SAMPLE_COUNT; i++)
-		samples[i] = start_pos + dir * (float(i) / float(SAMPLE_COUNT));
-}
-
 vec3 get_sky_uvw(vec3 pos)
 {
 	return ((pos - skyPos) / skySize) + vec3(0.5);
