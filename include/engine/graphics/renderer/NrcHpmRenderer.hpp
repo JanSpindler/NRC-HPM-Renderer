@@ -32,10 +32,11 @@ namespace en
 		void Render(VkQueue queue) const;
 		void Destroy();
 
+		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
+		void EvaluateTimestampQueries();
+
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
-
-		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 
 	private:
 		struct SpecializationData
@@ -128,6 +129,7 @@ namespace en
 
 		VkDescriptorSet m_DescSet;
 
+		const uint32_t c_QueryCount = 6;
 		uint32_t m_QueryIndex = 0;
 		VkQueryPool m_QueryPool;
 

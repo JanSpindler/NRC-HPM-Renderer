@@ -190,6 +190,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmRenderer->Render(queue);
 		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
+		hpmRenderer->EvaluateTimestampQueries();
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();

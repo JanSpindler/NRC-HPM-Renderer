@@ -327,21 +327,11 @@ namespace en
 		ASSERT_CUDA(cudaDestroyExternalSemaphore(m_CuExtCudaStartSemaphore));
 	}
 
-	VkImage NrcHpmRenderer::GetImage() const
-	{
-		return m_OutputImage;
-	}
-
-	VkImageView NrcHpmRenderer::GetImageView() const
-	{
-		return m_OutputImageView;
-	}
-
 	void NrcHpmRenderer::ExportImageToFile(VkQueue queue, const std::string& filePath) const
 	{
 		const size_t floatCount = m_RenderWidth * m_RenderHeight * 4;
 		const size_t bufferSize = floatCount * sizeof(float);
-		
+
 		vk::Buffer vkBuffer(
 			bufferSize,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -389,9 +379,43 @@ namespace en
 		vkBuffer.Destroy();
 
 		if (TINYEXR_SUCCESS != SaveEXR(buffer.data(), m_RenderWidth, m_RenderHeight, 4, 0, filePath.c_str(), nullptr))
-		{ 
+		{
 			en::Log::Error("TINYEXR Error", true);
 		}
+	}
+
+	void NrcHpmRenderer::EvaluateTimestampQueries()
+	{
+		VkDevice device = VulkanAPI::GetDevice();
+		std::vector<uint64_t> queryResults(c_QueryCount);
+		ASSERT_VULKAN(vkGetQueryPoolResults(
+			device,
+			m_QueryPool,
+			0,
+			c_QueryCount,
+			sizeof(uint64_t) * c_QueryCount,
+			queryResults.data(),
+			sizeof(uint64_t),
+			VK_QUERY_RESULT_64_BIT));
+		vkResetQueryPool(device, m_QueryPool, 0, c_QueryCount);
+
+		const size_t timePeriodCount = c_QueryCount - 1;
+		const float timestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
+		std::vector<float> timePeriods(timePeriodCount);
+		for (size_t i = 0; i < timePeriodCount; i++)
+		{ 
+			timePeriods[i] = timestampPeriodInMS * static_cast<float>(queryResults[i + 1] - queryResults[i]);
+		}
+	}
+
+	VkImage NrcHpmRenderer::GetImage() const
+	{
+		return m_OutputImage;
+	}
+
+	VkImageView NrcHpmRenderer::GetImageView() const
+	{
+		return m_OutputImageView;
 	}
 
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
@@ -1395,11 +1419,10 @@ namespace en
 		queryPoolCI.pNext = nullptr;
 		queryPoolCI.flags = 0;
 		queryPoolCI.queryType = VK_QUERY_TYPE_TIMESTAMP;
-		queryPoolCI.queryCount = 6;
+		queryPoolCI.queryCount = c_QueryCount;
 		queryPoolCI.pipelineStatistics = 0;
 
 		ASSERT_VULKAN(vkCreateQueryPool(device, &queryPoolCI, nullptr, &m_QueryPool));
-		//vkResetQueryPool(device, m_QueryPool, 0, 6);
 	}
 
 	void NrcHpmRenderer::RecordPreCudaCommandBuffer()
@@ -1415,7 +1438,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Reset query pool
-		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, 6);
+		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, c_QueryCount);
 
 		// Collect descriptor sets
 		std::vector<VkDescriptorSet> descSets = { m_Camera.GetDescriptorSet() };
