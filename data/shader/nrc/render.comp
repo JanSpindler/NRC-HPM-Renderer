@@ -29,7 +29,7 @@ void main()
 	const vec4 neuralRayColor = vec4(LoadNrcInferOutput(invertedYImageCoord), 0.0);
 
 	vec4 outputColor = vec4(primaryRayColor.xyz, 1.0);
-	if (primaryRayInfo.x > 0.0)
+	if (showNrc == 1 && primaryRayInfo.x > 0.0)
 	{
 		outputColor.xyz += neuralRayColor.xyz * primaryRayColor.w;
 	}

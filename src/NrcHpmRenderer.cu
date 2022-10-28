@@ -435,9 +435,9 @@ namespace en
 		m_TimePeriods[c_QueryCount - 1] = c_TimestampPeriodInMS * static_cast<float>(queryResults[c_QueryCount - 1] - queryResults[0]);
 	}
 
-	void NrcHpmRenderer::RenderImGui() const
+	void NrcHpmRenderer::RenderImGui()
 	{
-		ImGui::Begin("NrcHpmRenderer stats");
+		ImGui::Begin("NrcHpmRenderer");
 		
 		size_t periodIndex = 0;
 		ImGui::Text("GenRays Time %f ms", m_TimePeriods[periodIndex++]);
@@ -447,6 +447,8 @@ namespace en
 		ImGui::Text("Render Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Total Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Theoretical FPS %f", 1000.0f / m_TimePeriods[c_QueryCount - 1]);
+
+		ImGui::Checkbox("Show NRC", reinterpret_cast<bool*>(&m_UniformData.showNrc));
 
 		ImGui::End();
 	}

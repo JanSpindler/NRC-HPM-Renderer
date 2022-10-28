@@ -45,7 +45,7 @@ namespace en
 			VK_FILTER_LINEAR,
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
 			VK_BORDER_COLOR_INT_OPAQUE_BLACK);
-		m_VolumeData = new VolumeData(m_Density3DTex, 0.3f, 0.7f);
+		m_VolumeData = new VolumeData(m_Density3DTex, 0.75f, 0.8f);
 
 		// Store desc sets
 		m_DescSets = {

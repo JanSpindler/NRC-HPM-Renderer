@@ -30,7 +30,7 @@ namespace en
 
 		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
-		void RenderImGui() const;
+		void RenderImGui();
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
@@ -53,6 +53,7 @@ namespace en
 		struct UniformData
 		{
 			glm::vec4 random;
+			uint32_t showNrc;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -102,7 +103,7 @@ namespace en
 		std::vector<VkSpecializationMapEntry> m_SpecMapEntries;
 		VkSpecializationInfo m_SpecInfo;
 
-		UniformData m_UniformData = { glm::vec4(0.0f) };
+		UniformData m_UniformData = { glm::vec4(0.0f), 1 };
 		vk::Buffer m_UniformBuffer;
 
 		vk::Shader m_GenRaysShader;
