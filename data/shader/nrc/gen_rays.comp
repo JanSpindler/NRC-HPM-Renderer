@@ -83,8 +83,9 @@ void main()
 	const vec3 pixelWorldPos = worldPos.xyz / worldPos.w;
 
 	// Setup random
-	preRand = random.x * fragUV.x;
-	prePreRand = random.y * fragUV.y;
+	InitRandom(fragUV);
+	//preRand = random.x * fragUV.x;
+	//prePreRand = random.y * fragUV.y;
 
 	// Setup ray
 	const vec3 ro = camera.pos;
