@@ -2,6 +2,7 @@
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 #include <glm/gtc/random.hpp>
 #include <tinyexr.h>
+#include <imgui.h>
 
 namespace en
 {
@@ -231,13 +232,16 @@ namespace en
 			VK_QUERY_RESULT_64_BIT));
 		vkResetQueryPool(device, m_QueryPool, 0, c_QueryCount);
 
-		const size_t timePeriodCount = c_QueryCount - 1;
 		const float timestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
-		std::vector<float> timePeriods(timePeriodCount);
-		for (size_t i = 0; i < timePeriodCount; i++)
-		{
-			timePeriods[i] = timestampPeriodInMS * static_cast<float>(queryResults[i + 1] - queryResults[i]);
-		}
+		m_TimePeriod = timestampPeriodInMS * static_cast<float>(queryResults[1] - queryResults[0]);
+	}
+
+	void McHpmRenderer::RenderImGui() const
+	{
+		ImGui::Begin("McHpmRenderer");
+		ImGui::Text("Total Time %f ms", m_TimePeriod);
+		ImGui::Text("Theoretical FPS %f", 1000.0f / m_TimePeriod);
+		ImGui::End();
 	}
 
 	VkImage McHpmRenderer::GetImage() const

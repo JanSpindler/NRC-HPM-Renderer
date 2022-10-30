@@ -175,14 +175,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		en::Log::Error("Renderer ID is invalid", true);
 		break;
 	}
-	
-//	en::ImGuiRenderer::SetBackgroundImageView(
-//#ifdef NRC
-//		nrcHpmRenderer->GetImageView()
-//#else
-//		mcHpmRenderer->GetImageView()
-//#endif
-//	);
 
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
@@ -214,6 +206,12 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		camera.UpdateUniformBuffer();
 
 		// Render
+		// Always render nrc for training
+		nrcHpmRenderer->Render(queue);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+		nrcHpmRenderer->EvaluateTimestampQueries();
+
 		switch (rendererId)
 		{
 		case 0: // MC
@@ -223,27 +221,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			mcHpmRenderer->EvaluateTimestampQueries();
 			break;
 		case 1: // NRC
-			nrcHpmRenderer->Render(queue);
-			result = vkQueueWaitIdle(queue);
-			ASSERT_VULKAN(result);
-			nrcHpmRenderer->EvaluateTimestampQueries();
 			break;
 		default: // Error
 			en::Log::Error("Renderer ID is invalid", true);
 			break;
 		}
-
-//#ifdef NRC
-//		nrcHpmRenderer->Render(queue);
-//		result = vkQueueWaitIdle(queue);
-//		ASSERT_VULKAN(result);
-//		nrcHpmRenderer->EvaluateTimestampQueries();
-//#else
-//		mcHpmRenderer->Render(queue);
-//		result = vkQueueWaitIdle(queue);
-//		ASSERT_VULKAN(result);
-//		mcHpmRenderer->EvaluateTimestampQueries();
-//#endif
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -291,17 +273,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 		ImGui::End();
 
-		switch (rendererId)
-		{
-		case 0: // MC
-			break;
-		case 1: // NRC
-			nrcHpmRenderer->RenderImGui();
-			break;
-		default: // Error
-			en::Log::Error("Renderer ID is invalid", true);
-			break;
-		}
+		mcHpmRenderer->RenderImGui();
+		nrcHpmRenderer->RenderImGui();
 
 		hpmScene.Update(true);
 
@@ -323,11 +296,20 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		std::filesystem::create_directory(outputDirPath);
 	}
 	std::string exrOutputFilePath =  outputDirPath + "1.exr";
-#ifdef NRC
-	nrcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
-#else 
-	mcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
-#endif
+
+	// TODO: end evaluation
+	switch (rendererId)
+	{
+	case 0: // MC
+		mcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
+		break;
+	case 1: // NRC
+		nrcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
+		break;
+	default: // Error
+		en::Log::Error("Renderer ID is invalid", true);
+		break;
+	}
 
 	// Stop gpu work
 	result = vkDeviceWaitIdle(device);

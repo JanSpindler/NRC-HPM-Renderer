@@ -20,6 +20,7 @@ namespace en
 
 		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
+		void RenderImGui() const;
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
@@ -77,6 +78,7 @@ namespace en
 		const uint32_t c_QueryCount = 2;
 		uint32_t m_QueryIndex = 0;
 		VkQueryPool m_QueryPool;
+		float m_TimePeriod = 0.0f;
 
 		vk::CommandPool m_CommandPool;
 		VkCommandBuffer m_RenderCommandBuffer;
