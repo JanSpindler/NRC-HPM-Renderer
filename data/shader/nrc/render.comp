@@ -4,10 +4,10 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-vec3 LoadNrcInferOutput(const ivec2 invertedYImageCoord)
+vec3 LoadNrcInferOutput(const ivec2 imageCoord)
 {
-	const uint x = invertedYImageCoord.x;
-	const uint y = invertedYImageCoord.y;
+	const uint x = imageCoord.x;
+	const uint y = imageCoord.y;
 	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
 
 	vec3 color;
@@ -22,11 +22,10 @@ void main()
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 	const ivec2 outputImageCoord = ivec2(x, y);
-	const ivec2 invertedYImageCoord = ivec2(x, RENDER_HEIGHT - (y + 1));
 
-	const vec4 primaryRayColor = imageLoad(primaryRayColorImage, invertedYImageCoord);
-	const vec4 primaryRayInfo = imageLoad(primaryRayInfoImage, invertedYImageCoord);
-	const vec4 neuralRayColor = vec4(LoadNrcInferOutput(invertedYImageCoord), 0.0);
+	const vec4 primaryRayColor = imageLoad(primaryRayColorImage, outputImageCoord);
+	const vec4 primaryRayInfo = imageLoad(primaryRayInfoImage, outputImageCoord);
+	const vec4 neuralRayColor = vec4(LoadNrcInferOutput(outputImageCoord), 0.0);
 
 	vec4 outputColor = vec4(primaryRayColor.xyz, 1.0);
 	if (showNrc == 1 && primaryRayInfo.x > 0.0)

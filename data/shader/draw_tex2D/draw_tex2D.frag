@@ -9,6 +9,6 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
-	vec4 val = texture(tex, frag_uv);
+	vec4 val = texture(tex, vec2(frag_uv.x, 1.0 - frag_uv.y));
 	out_color = vec4(pow(val.xyz, vec3(1.0 / 2.2)), val.w);
 }

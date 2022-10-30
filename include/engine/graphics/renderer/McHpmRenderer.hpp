@@ -13,7 +13,7 @@ namespace en
 		static void Init(VkDevice device);
 		static void Shutdown(VkDevice device);
 
-		McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, const Camera& camera, const HpmScene& scene);
+		McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, uint32_t pathLength, const Camera& camera, const HpmScene& scene);
 
 		void Render(VkQueue queue);
 		void Destroy();
@@ -31,6 +31,7 @@ namespace en
 			uint32_t renderWidth;
 			uint32_t renderHeight;
 			uint32_t spp;
+			uint32_t pathLength;
 
 			float volumeDensityFactor;
 			float volumeG;
@@ -49,6 +50,7 @@ namespace en
 		uint32_t m_RenderWidth;
 		uint32_t m_RenderHeight;
 		uint32_t m_Spp;
+		uint32_t m_PathLength;
 
 		const Camera& m_Camera;
 		const HpmScene& m_HpmScene;

@@ -78,10 +78,11 @@ namespace en
 		vkDestroyDescriptorSetLayout(device, s_DescSetLayout, nullptr);
 	}
 
-	McHpmRenderer::McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, const Camera& camera, const HpmScene& scene) :
+	McHpmRenderer::McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, uint32_t pathLength, const Camera& camera, const HpmScene& scene) :
 		m_RenderWidth(width),
 		m_RenderHeight(height),
 		m_Spp(spp),
+		m_PathLength(pathLength),
 		m_Camera(camera),
 		m_HpmScene(scene),
 		m_UniformBuffer(
@@ -283,6 +284,7 @@ namespace en
 		m_SpecData.renderWidth = m_RenderWidth;
 		m_SpecData.renderHeight = m_RenderHeight;
 		m_SpecData.spp = m_Spp;
+		m_SpecData.pathLength = m_PathLength;
 
 		m_SpecData.volumeDensityFactor = m_HpmScene.GetVolumeData()->GetDensityFactor();
 		m_SpecData.volumeG = m_HpmScene.GetVolumeData()->GetG();
@@ -290,33 +292,40 @@ namespace en
 		m_SpecData.hdrEnvMapStrength = m_HpmScene.GetHdrEnvMap()->GetStrength();
 
 		// Init map entries
+		uint32_t mapEntryIndex = 0;
+
 		VkSpecializationMapEntry renderWidthEntry;
-		renderWidthEntry.constantID = 0;
+		renderWidthEntry.constantID = mapEntryIndex++;
 		renderWidthEntry.offset = offsetof(SpecializationData, SpecializationData::renderWidth);
 		renderWidthEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry renderHeightEntry;
-		renderHeightEntry.constantID = 1;
+		renderHeightEntry.constantID = mapEntryIndex++;
 		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
 		renderHeightEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry sppEntry;
-		sppEntry.constantID = 2;
+		sppEntry.constantID = mapEntryIndex++;
 		sppEntry.offset = offsetof(SpecializationData, SpecializationData::spp);
 		sppEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry pathLengthEntry;
+		pathLengthEntry.constantID = mapEntryIndex++;
+		pathLengthEntry.offset = offsetof(SpecializationData, SpecializationData::pathLength);
+		pathLengthEntry.size = sizeof(uint32_t);
+
 		VkSpecializationMapEntry volumeDensityFactorEntry;
-		volumeDensityFactorEntry.constantID = 3;
+		volumeDensityFactorEntry.constantID = mapEntryIndex++;
 		volumeDensityFactorEntry.offset = offsetof(SpecializationData, SpecializationData::volumeDensityFactor);
 		volumeDensityFactorEntry.size = sizeof(float);
 
 		VkSpecializationMapEntry volumeGEntry;
-		volumeGEntry.constantID = 4;
+		volumeGEntry.constantID = mapEntryIndex++;
 		volumeGEntry.offset = offsetof(SpecializationData, SpecializationData::volumeG);
 		volumeGEntry.size = sizeof(float);
 
 		VkSpecializationMapEntry hdrEnvMapStrengthEntry;
-		hdrEnvMapStrengthEntry.constantID = 5;
+		hdrEnvMapStrengthEntry.constantID = mapEntryIndex++;
 		hdrEnvMapStrengthEntry.offset = offsetof(SpecializationData, SpecializationData::hdrEnvMapStrength);
 		hdrEnvMapStrengthEntry.size = sizeof(float);
 
@@ -324,6 +333,7 @@ namespace en
 			renderWidthEntry,
 			renderHeightEntry,
 			sppEntry,
+			pathLengthEntry,
 			volumeDensityFactorEntry,
 			volumeGEntry,
 			hdrEnvMapStrengthEntry

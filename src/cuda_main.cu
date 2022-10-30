@@ -160,7 +160,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, 32, camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
 	switch (rendererId)
