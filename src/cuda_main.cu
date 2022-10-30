@@ -128,6 +128,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	const uint32_t qfi = en::VulkanAPI::GetGraphicsQFI();
 	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 
+	// Renderer select
+	const std::vector<char*> rendererMenuItems = { "MC", "NRC" }; // TODO: Restir
+	const char* currentRendererMenuItem = rendererMenuItems[1];
+	uint32_t rendererId = 1;
+
 	// Init resources
 	en::NeuralRadianceCache nrc(appConfig);
 
@@ -158,13 +163,26 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
-	en::ImGuiRenderer::SetBackgroundImageView(
-#ifdef NRC
-		nrcHpmRenderer->GetImageView()
-#else
-		mcHpmRenderer->GetImageView()
-#endif
-	);
+	switch (rendererId)
+	{
+	case 0: // MC
+		en::ImGuiRenderer::SetBackgroundImageView(mcHpmRenderer->GetImageView());
+		break;
+	case 1: // NRC
+		en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+		break;
+	default: // Error
+		en::Log::Error("Renderer ID is invalid", true);
+		break;
+	}
+	
+//	en::ImGuiRenderer::SetBackgroundImageView(
+//#ifdef NRC
+//		nrcHpmRenderer->GetImageView()
+//#else
+//		mcHpmRenderer->GetImageView()
+//#endif
+//	);
 
 	// Swapchain rerecording because imgui renderer is now available
 	swapchain.Resize(width, height);
@@ -196,17 +214,36 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		camera.UpdateUniformBuffer();
 
 		// Render
-#ifdef NRC
-		nrcHpmRenderer->Render(queue);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-		nrcHpmRenderer->EvaluateTimestampQueries();
-#else
-		mcHpmRenderer->Render(queue);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-		mcHpmRenderer->EvaluateTimestampQueries();
-#endif
+		switch (rendererId)
+		{
+		case 0: // MC
+			mcHpmRenderer->Render(queue);
+			result = vkQueueWaitIdle(queue);
+			ASSERT_VULKAN(result);
+			mcHpmRenderer->EvaluateTimestampQueries();
+			break;
+		case 1: // NRC
+			nrcHpmRenderer->Render(queue);
+			result = vkQueueWaitIdle(queue);
+			ASSERT_VULKAN(result);
+			nrcHpmRenderer->EvaluateTimestampQueries();
+			break;
+		default: // Error
+			en::Log::Error("Renderer ID is invalid", true);
+			break;
+		}
+
+//#ifdef NRC
+//		nrcHpmRenderer->Render(queue);
+//		result = vkQueueWaitIdle(queue);
+//		ASSERT_VULKAN(result);
+//		nrcHpmRenderer->EvaluateTimestampQueries();
+//#else
+//		mcHpmRenderer->Render(queue);
+//		result = vkQueueWaitIdle(queue);
+//		ASSERT_VULKAN(result);
+//		mcHpmRenderer->EvaluateTimestampQueries();
+//#endif
 
 		// Imgui
 		en::ImGuiRenderer::StartFrame();
@@ -221,11 +258,50 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		ImGui::Begin("Controls");
 		shutdown = ImGui::Button("Shutdown");
 		ImGui::Checkbox("Restart after shutdown", &restartAfterClose);
+		
+		if (ImGui::BeginCombo("##combo", currentRendererMenuItem))
+		{
+			for (int i = 0; i < rendererMenuItems.size(); i++)
+			{
+				bool selected = (currentRendererMenuItem == rendererMenuItems[i]);
+				if (ImGui::Selectable(rendererMenuItems[i], selected))
+				{
+					if (i != rendererId)
+					{
+						rendererId = i;
+						switch (rendererId)
+						{
+						case 0: // MC
+							en::ImGuiRenderer::SetBackgroundImageView(mcHpmRenderer->GetImageView());
+							break;
+						case 1: // NRC
+							en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+							break;
+						default: // Error
+							en::Log::Error("Renderer ID is invalid", true);
+							break;
+						}
+					}
+					currentRendererMenuItem = rendererMenuItems[i]; 
+				};
+				if (selected) { ImGui::SetItemDefaultFocus(); }
+			}
+			ImGui::EndCombo();
+		}
+
 		ImGui::End();
 
-#ifdef NRC
-		nrcHpmRenderer->RenderImGui();
-#endif
+		switch (rendererId)
+		{
+		case 0: // MC
+			break;
+		case 1: // NRC
+			nrcHpmRenderer->RenderImGui();
+			break;
+		default: // Error
+			en::Log::Error("Renderer ID is invalid", true);
+			break;
+		}
 
 		hpmScene.Update(true);
 
