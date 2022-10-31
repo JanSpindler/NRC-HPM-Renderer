@@ -31,7 +31,6 @@
 
 #define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
-#define NRC
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
 
@@ -114,6 +113,115 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
+void Benchmark(
+	uint32_t width, 
+	uint32_t height, 
+	uint32_t sceneID, 
+	const en::AppConfig& appConfig, 
+	const en::HpmScene& scene, 
+	VkQueue queue)
+{
+	// Create benchmark camera
+	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
+	std::array<en::Camera, 6> cameras = {
+		en::Camera(
+			glm::vec3(64.0f, 0.0f, 0.0f),
+			glm::vec3(-1.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f),
+		en::Camera(
+			glm::vec3(-64.0f, 0.0f, 0.0f),
+			glm::vec3(1.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f),
+		en::Camera(
+			glm::vec3(0.0f, 64.0f, 0.0f),
+			glm::vec3(0.0f, -1.0f, 0.0f),
+			glm::vec3(1.0f, 0.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f),
+		en::Camera(
+			glm::vec3(0.0f, -64.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			glm::vec3(1.0f, 0.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f),
+		en::Camera(
+			glm::vec3(0.0f, 0.0f, 64.0f),
+			glm::vec3(0.0f, 0.0f, -1.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f),
+		en::Camera(
+			glm::vec3(0.0f, 0.0f, -64.0f),
+			glm::vec3(0.0f, 0.0f, 1.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f),
+	};
+
+	// Create output path if not exists
+	std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
+	if (!std::filesystem::is_directory(outputDirPath) || !std::filesystem::exists(outputDirPath))
+	{
+		std::filesystem::create_directory(outputDirPath);
+	}
+
+	// Create reference folder if not exists
+	std::string referenceDirPath = "output/" + std::to_string(sceneID) + "/";
+	if (!std::filesystem::is_directory(referenceDirPath) || !std::filesystem::exists(referenceDirPath))
+	{
+		en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
+
+		// Create folder
+		std::filesystem::create_directory(referenceDirPath);
+
+		for (size_t i = 0; i < cameras.size(); i++)
+		{
+			en::Log::Info("Generating reference image " + std::to_string(i));
+
+			// Create ground truth renderer
+			en::McHpmRenderer gtHpmRenderer(width, height, 1, 64, cameras[i], scene);
+
+			// Generate reference image
+			for (size_t frame = 0; frame < 100; frame++)
+			{
+				gtHpmRenderer.Render(queue);
+				ASSERT_VULKAN(vkQueueWaitIdle(queue));
+			}
+
+			// Export reference image
+			gtHpmRenderer.ExportImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
+
+			// Destroy resources
+			gtHpmRenderer.Destroy();
+		}
+	}
+
+	mcHpmRenderer->Render(queue);
+	ASSERT_VULKAN(vkQueueWaitIdle(queue));
+	mcHpmRenderer->ExportImageToFile(queue, outputDirPath + "mc_1.exr");
+	nrcHpmRenderer->ExportImageToFile(queue, outputDirPath + "nrc_1.exr");
+
+	// Destroy resources
+	for (size_t i = 0; i < cameras.size(); i++) { cameras[i].Destroy(); }
+}
+
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
 {
 	// Start engine
@@ -160,7 +268,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, 32, camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, 32, camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
 	switch (rendererId)
@@ -290,26 +398,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	}
 
 	// Evaluate at end
-	std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
-	if (!std::filesystem::is_directory(outputDirPath) || std::filesystem::exists(outputDirPath))
-	{
-		std::filesystem::create_directory(outputDirPath);
-	}
-	std::string exrOutputFilePath =  outputDirPath + "1.exr";
-
-	// TODO: end evaluation
-	switch (rendererId)
-	{
-	case 0: // MC
-		mcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
-		break;
-	case 1: // NRC
-		nrcHpmRenderer->ExportImageToFile(queue, exrOutputFilePath);
-		break;
-	default: // Error
-		en::Log::Error("Renderer ID is invalid", true);
-		break;
-	}
+	Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, queue);
 
 	// Stop gpu work
 	result = vkDeviceWaitIdle(device);
