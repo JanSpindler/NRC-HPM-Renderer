@@ -20,7 +20,7 @@ namespace en
 
 		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
-		void RenderImGui() const;
+		void RenderImGui();
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
@@ -42,6 +42,7 @@ namespace en
 		struct UniformData
 		{
 			glm::vec4 random;
+			float blendFactor;
 		};
 
 		static VkDescriptorSetLayout s_DescSetLayout;
@@ -51,6 +52,9 @@ namespace en
 		uint32_t m_RenderHeight;
 		uint32_t m_Spp;
 		uint32_t m_PathLength;
+
+		bool m_ShouldBlend = false;
+		uint32_t m_BlendIndex = 1;
 
 		const Camera& m_Camera;
 		const HpmScene& m_HpmScene;
@@ -74,7 +78,7 @@ namespace en
 		VkImage m_InfoImage;
 		VkDeviceMemory m_InfoImageMemory;
 		VkImageView m_InfoImageView;
-	
+
 		VkDescriptorSet m_DescSet;
 
 		const uint32_t c_QueryCount = 2;

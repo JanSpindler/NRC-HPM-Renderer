@@ -118,8 +118,12 @@ namespace en
 
 	void McHpmRenderer::Render(VkQueue queue)
 	{
+		//
+		if (m_ShouldBlend) { m_BlendIndex++; }
+
 		// Generate random
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
+		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 
 		// Render
@@ -237,11 +241,14 @@ namespace en
 		m_TimePeriod = timestampPeriodInMS * static_cast<float>(queryResults[1] - queryResults[0]);
 	}
 
-	void McHpmRenderer::RenderImGui() const
+	void McHpmRenderer::RenderImGui()
 	{
 		ImGui::Begin("McHpmRenderer");
 		ImGui::Text("Total Time %f ms", m_TimePeriod);
 		ImGui::Text("Theoretical FPS %f", 1000.0f / m_TimePeriod);
+		ImGui::Checkbox("Blend", &m_ShouldBlend);
+		ImGui::Text("Blend index %u", m_BlendIndex);
+		if (ImGui::Button("Reset blending")) { m_BlendIndex = 1; }
 		ImGui::End();
 	}
 
