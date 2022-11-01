@@ -196,22 +196,24 @@ void Benchmark(
 			en::Log::Info("Generating reference image " + std::to_string(i));
 
 			// Create ground truth renderer
-			en::McHpmRenderer gtHpmRenderer(width, height, 1, 64, cameras[i], scene);
+			en::McHpmRenderer gtRenderer(width, height, 1, 64, cameras[i], scene);
 
 			// Generate reference image
 			for (size_t frame = 0; frame < 100; frame++)
 			{
-				gtHpmRenderer.Render(queue);
+				gtRenderer.Render(queue);
 				ASSERT_VULKAN(vkQueueWaitIdle(queue));
 			}
 
 			// Export reference image
-			gtHpmRenderer.ExportImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
+			gtRenderer.ExportImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
 
 			// Destroy resources
-			gtHpmRenderer.Destroy();
+			gtRenderer.Destroy();
 		}
 	}
+
+	// TODO: render nrc images with same camera
 
 	mcHpmRenderer->Render(queue);
 	ASSERT_VULKAN(vkQueueWaitIdle(queue));
