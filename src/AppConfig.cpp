@@ -52,10 +52,10 @@ namespace en
 		switch (id)
 		{
 		case 0:
-			dirLightStrength = 16.0f;
+			dirLightStrength = 0.0f;
 			pointLightStrength = 0.0f;
-			hdrEnvMapPath = "data/image/photostudio.hdr";
-			hdrEnvMapStrength = 0.0f;
+			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapStrength = 1.0f;
 			break;
 		default:
 			Log::Error("HpmSceneConfig ID is invalid", true);
@@ -80,7 +80,6 @@ namespace en
 		nnWidth = std::stoi(argv[index++]);
 		nnDepth = std::stoi(argv[index++]);
 		log2BatchSize = std::stoi(argv[index++]);
-
 		scene = HpmSceneConfig(std::stoi(argv[index++]));
 
 		renderWidth = std::stoi(argv[index++]);

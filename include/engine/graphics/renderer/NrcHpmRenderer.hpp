@@ -68,7 +68,7 @@ namespace en
 		uint32_t m_TrainHeight;
 		uint32_t m_TrainSpp;
 
-		bool m_ShouldBlend = true;
+		bool m_ShouldBlend = false;
 		uint32_t m_BlendIndex = 1;
 
 		const Camera* m_Camera;
@@ -100,6 +100,9 @@ namespace en
 		vk::Buffer* m_NrcTrainTargetBuffer = nullptr;
 		cudaExternalMemory_t m_NrcTrainTargetCuExtMem;
 		void* m_NrcTrainTargetDCuBuffer;
+
+		VkDeviceSize m_NrcInferFilterBufferSize = 0;
+		vk::Buffer* m_NrcInferFilterBuffer = nullptr;
 
 		VkPipelineLayout m_PipelineLayout;
 

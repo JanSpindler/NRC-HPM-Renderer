@@ -108,8 +108,15 @@ namespace en
 		nrcTrainTargetBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcTrainTargetBufferBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding nrcInferFilterBufferBinding;
+		nrcInferFilterBufferBinding.binding = 9;
+		nrcInferFilterBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcInferFilterBufferBinding.descriptorCount = 1;
+		nrcInferFilterBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcInferFilterBufferBinding.pImmutableSamplers = nullptr;
+
 		VkDescriptorSetLayoutBinding uniformBufferBinding;
-		uniformBufferBinding.binding = 9;
+		uniformBufferBinding.binding = 10;
 		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uniformBufferBinding.descriptorCount = 1;
 		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -125,6 +132,7 @@ namespace en
 			nrcInferOutputBufferBinding,
 			nrcTrainInputBufferBinding,
 			nrcTrainTargetBufferBinding,
+			nrcInferFilterBufferBinding,
 			uniformBufferBinding
 		};
 
@@ -145,7 +153,7 @@ namespace en
 
 		VkDescriptorPoolSize storageBufferPS;
 		storageBufferPS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageBufferPS.descriptorCount = 4;
+		storageBufferPS.descriptorCount = 5;
 
 		VkDescriptorPoolSize uniformBufferPS;
 		uniformBufferPS.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -220,6 +228,13 @@ namespace en
 			reinterpret_cast<float*>(m_NrcTrainTargetDCuBuffer),
 			m_CuExtCudaStartSemaphore, 
 			m_CuExtCudaFinishedSemaphore);
+
+		m_NrcInferFilterBufferSize = sizeof(uint32_t) * m_Nrc.GetInferBatchCount();
+		m_NrcInferFilterBuffer = new vk::Buffer(
+			m_NrcInferFilterBufferSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			{});
 
 		m_CommandPool.AllocateBuffers(3, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_PreCudaCommandBuffer = m_CommandPool.GetBuffer(0);
@@ -344,6 +359,9 @@ namespace en
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 	
+		m_NrcInferFilterBuffer->Destroy();
+		delete m_NrcInferFilterBuffer;
+
 		m_NrcTrainTargetBuffer->Destroy();
 		delete m_NrcTrainTargetBuffer;
 		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcTrainTargetCuExtMem));
@@ -1488,6 +1506,23 @@ namespace en
 		nrcTrainTargetBufferWrite.pBufferInfo = &nrcTrainTargetBufferInfo;
 		nrcTrainTargetBufferWrite.pTexelBufferView = nullptr;
 
+		VkDescriptorBufferInfo nrcInferFilterBufferInfo;
+		nrcInferFilterBufferInfo.buffer = m_NrcInferFilterBuffer->GetVulkanHandle();
+		nrcInferFilterBufferInfo.offset = 0;
+		nrcInferFilterBufferInfo.range = m_NrcInferFilterBufferSize;
+
+		VkWriteDescriptorSet nrcInferFilterBufferWrite;
+		nrcInferFilterBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcInferFilterBufferWrite.pNext = nullptr;
+		nrcInferFilterBufferWrite.dstSet = m_DescSet;
+		nrcInferFilterBufferWrite.dstBinding = 9;
+		nrcInferFilterBufferWrite.dstArrayElement = 0;
+		nrcInferFilterBufferWrite.descriptorCount = 1;
+		nrcInferFilterBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcInferFilterBufferWrite.pImageInfo = nullptr;
+		nrcInferFilterBufferWrite.pBufferInfo = &nrcInferFilterBufferInfo;
+		nrcInferFilterBufferWrite.pTexelBufferView = nullptr;
+
 		// Uniform buffer write
 		VkDescriptorBufferInfo uniformBufferInfo;
 		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
@@ -1498,7 +1533,7 @@ namespace en
 		uniformBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		uniformBufferWrite.pNext = nullptr;
 		uniformBufferWrite.dstSet = m_DescSet;
-		uniformBufferWrite.dstBinding = 9;
+		uniformBufferWrite.dstBinding = 10;
 		uniformBufferWrite.dstArrayElement = 0;
 		uniformBufferWrite.descriptorCount = 1;
 		uniformBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1517,6 +1552,7 @@ namespace en
 			nrcInferOutputBufferWrite,
 			nrcTrainInputBufferWrite,
 			nrcTrainTargetBufferWrite,
+			nrcInferFilterBufferWrite,
 			uniformBufferWrite
 		};
 

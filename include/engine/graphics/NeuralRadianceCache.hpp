@@ -27,6 +27,8 @@ namespace en
 		void Destroy();
 
 		float GetLoss() const;
+		size_t GetInferBatchCount() const;
+		size_t GetTrainBatchCount() const;
 
 	private:
 		static const uint32_t sc_InputCount;

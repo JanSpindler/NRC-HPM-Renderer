@@ -135,6 +135,16 @@ namespace en
 		return m_Loss;
 	}
 
+	size_t NeuralRadianceCache::GetInferBatchCount() const
+	{
+		return m_InferInputBatches.size();
+	}
+
+	size_t NeuralRadianceCache::GetTrainBatchCount() const
+	{
+		return m_TrainInputBatches.size();
+	}
+
 	void NeuralRadianceCache::Inference()
 	{
 		for (size_t i = 0; i < m_InferInputBatches.size(); i++)

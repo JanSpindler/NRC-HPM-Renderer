@@ -80,7 +80,12 @@ layout(std430, set = 5, binding = 8) buffer NrcTrainTarget
 	NrcOutput nrcTrainTarget[];
 };
 
-layout(set = 5, binding = 9) uniform Renderer
+layout(std430, set = 5, binding = 9) buffer NrcInferFilter
+{
+	uint nrcInferFilter[];
+};
+
+layout(set = 5, binding = 10) uniform Renderer
 {
 	vec4 random;
 	uint showNrc;

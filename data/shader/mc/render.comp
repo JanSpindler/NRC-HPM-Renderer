@@ -84,14 +84,21 @@ void main()
 	const vec3 entry = entry_exit[0];
 	const vec3 exit = entry_exit[1];
 
-	vec4 volumeColor;
+	vec4 outputColor;
 	bool didScatter = false;
 	vec3 firstVolumeHit;
-	if (sky_sdf(entry) > MAX_RAY_DISTANCE) { volumeColor = vec4(0.0); }
-	else { volumeColor = TracePath(imageCoord, ro, rd, didScatter, firstVolumeHit); }
+	if (sky_sdf(entry) > MAX_RAY_DISTANCE)
+	{ 
+		outputColor = vec4(SampleHdrEnvMap(rd), 1.0);
+	}
+	else
+	{ 
+		outputColor = TracePath(imageCoord, ro, rd, didScatter, firstVolumeHit);
+		if (!didScatter) { outputColor = vec4(SampleHdrEnvMap(rd), 1.0); }
+	}
 	
 	// Store output
-	vec4 blendedVolumeColor = (blendFactor * volumeColor) + ((1.0 - blendFactor) * imageLoad(outputImage, imageCoord));
+	vec4 blendedVolumeColor = (blendFactor * outputColor) + ((1.0 - blendFactor) * imageLoad(outputImage, imageCoord));
 	imageStore(outputImage, imageCoord, blendedVolumeColor);
 	imageStore(infoImage, imageCoord, vec4(didScatter ? 1.0 : 0.0, 0.0, 0.0, 0.0));
 }
