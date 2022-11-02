@@ -78,10 +78,9 @@ namespace en
 		vkDestroyDescriptorSetLayout(device, s_DescSetLayout, nullptr);
 	}
 
-	McHpmRenderer::McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, uint32_t pathLength, const Camera* camera, const HpmScene& scene) :
+	McHpmRenderer::McHpmRenderer(uint32_t width, uint32_t height, uint32_t pathLength, const Camera* camera, const HpmScene& scene) :
 		m_RenderWidth(width),
 		m_RenderHeight(height),
-		m_Spp(spp),
 		m_PathLength(pathLength),
 		m_Camera(camera),
 		m_HpmScene(scene),
@@ -307,7 +306,6 @@ namespace en
 		// Fill struct
 		m_SpecData.renderWidth = m_RenderWidth;
 		m_SpecData.renderHeight = m_RenderHeight;
-		m_SpecData.spp = m_Spp;
 		m_SpecData.pathLength = m_PathLength;
 
 		m_SpecData.volumeDensityFactor = m_HpmScene.GetVolumeData()->GetDensityFactor();
@@ -327,11 +325,6 @@ namespace en
 		renderHeightEntry.constantID = mapEntryIndex++;
 		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
 		renderHeightEntry.size = sizeof(uint32_t);
-
-		VkSpecializationMapEntry sppEntry;
-		sppEntry.constantID = mapEntryIndex++;
-		sppEntry.offset = offsetof(SpecializationData, SpecializationData::spp);
-		sppEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry pathLengthEntry;
 		pathLengthEntry.constantID = mapEntryIndex++;
@@ -356,7 +349,6 @@ namespace en
 		m_SpecMapEntries = {
 			renderWidthEntry,
 			renderHeightEntry,
-			sppEntry,
 			pathLengthEntry,
 			volumeDensityFactorEntry,
 			volumeGEntry,

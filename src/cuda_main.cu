@@ -199,7 +199,7 @@ void Benchmark(
 			en::Log::Info("Generating reference image " + std::to_string(i));
 
 			// Set new camera
-			if (gtRenderer == nullptr) { gtRenderer = new en::McHpmRenderer(width, height, 1, 64, &cameras[i], scene); }
+			if (gtRenderer == nullptr) { gtRenderer = new en::McHpmRenderer(width, height, 64, &cameras[i], scene); }
 			else { gtRenderer->SetCamera(&cameras[i]); }
 
 			// Generate reference image
@@ -273,7 +273,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, 32, &camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 64, &camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
 	switch (rendererId)

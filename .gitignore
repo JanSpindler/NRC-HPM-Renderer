@@ -2,6 +2,8 @@
 *.vcxproj.filters
 *.vcxproj.user
 *.sln
+*.exe
+*.pdb
 
 /.vs
 /.vscode
@@ -11,7 +13,6 @@
 /NRC-HPM-Renderer.dir
 /Release
 /x64
-/data
 
 CMakeCache.txt
 cmake_install.cmake

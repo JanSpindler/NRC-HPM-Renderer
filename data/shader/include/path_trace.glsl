@@ -68,7 +68,6 @@ vec3 TracePointLight(const vec3 pos, const vec3 dir)
 
 vec3 SampleHdrEnvMap(const vec2 dir)
 {
-	// Assert: dir is normalized
 	const vec2 invAtan = vec2(0.1591, 0.3183);
 
 	vec2 uv = dir;
@@ -80,7 +79,6 @@ vec3 SampleHdrEnvMap(const vec2 dir)
 
 vec3 SampleHdrEnvMap(const vec3 dir)
 {
-	// Assert: dir is normalized
 	vec2 phiTheta = vec2(atan(dir.z, dir.x), asin(dir.y));
 	return SampleHdrEnvMap(phiTheta);
 }
