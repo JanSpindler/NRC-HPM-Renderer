@@ -66,7 +66,7 @@ namespace en
 		uint32_t m_TrainHeight;
 		uint32_t m_TrainSpp;
 
-		bool m_ShouldBlend = false;
+		bool m_ShouldBlend = true;
 		uint32_t m_BlendIndex = 1;
 
 		const Camera& m_Camera;

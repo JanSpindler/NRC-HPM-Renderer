@@ -53,7 +53,7 @@ namespace en
 		uint32_t m_Spp;
 		uint32_t m_PathLength;
 
-		bool m_ShouldBlend = false;
+		bool m_ShouldBlend = true;
 		uint32_t m_BlendIndex = 1;
 
 		const Camera& m_Camera;
