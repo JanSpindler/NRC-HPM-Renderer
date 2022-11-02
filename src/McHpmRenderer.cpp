@@ -118,13 +118,15 @@ namespace en
 
 	void McHpmRenderer::Render(VkQueue queue)
 	{
-		//
+		// Blending
 		if (m_ShouldBlend) { m_BlendIndex++; }
 		if (m_Camera.HasChanged()) { m_BlendIndex = 1; }
+		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
 
 		// Generate random
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
-		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
+		
+		// Update uniform buffer
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 
 		// Render
