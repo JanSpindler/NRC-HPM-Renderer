@@ -120,6 +120,7 @@ namespace en
 	{
 		//
 		if (m_ShouldBlend) { m_BlendIndex++; }
+		if (m_Camera.HasChanged()) { m_BlendIndex = 1; }
 
 		// Generate random
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
