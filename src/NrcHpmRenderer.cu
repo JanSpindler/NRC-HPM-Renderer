@@ -251,9 +251,7 @@ namespace en
 
 	void NrcHpmRenderer::Render(VkQueue queue)
 	{
-		// Blending
-		if (m_ShouldBlend) { m_BlendIndex++; }
-		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
+		// Calc blending factor
 		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
 
 		// Generate random
@@ -261,6 +259,10 @@ namespace en
 
 		// Update uniform buffer
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
+
+		// Update blending
+		if (m_ShouldBlend) { m_BlendIndex++; }
+		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
 
 		// Pre cuda
 		VkSubmitInfo submitInfo;

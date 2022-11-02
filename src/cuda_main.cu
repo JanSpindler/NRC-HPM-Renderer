@@ -199,8 +199,8 @@ void Benchmark(
 			en::Log::Info("Generating reference image " + std::to_string(i));
 
 			// Set new camera
-			if (gtRenderer == nullptr) { gtRenderer = new en::McHpmRenderer(width, height, 1, 64, &cameras[0], scene); }
-			else { gtRenderer->SetCamera(&cameras[1]); }
+			if (gtRenderer == nullptr) { gtRenderer = new en::McHpmRenderer(width, height, 1, 64, &cameras[i], scene); }
+			else { gtRenderer->SetCamera(&cameras[i]); }
 
 			// Generate reference image
 			for (size_t frame = 0; frame < 1024; frame++)
