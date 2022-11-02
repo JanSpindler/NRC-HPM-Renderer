@@ -21,19 +21,21 @@ namespace en
 			uint32_t height,
 			float trainSampleRatio,
 			uint32_t trainSpp,
-			const Camera& camera,
+			const Camera* camera,
 			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
 
 		void Render(VkQueue queue);
 		void Destroy();
 
-		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
+		void ExportOutputImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
 		void RenderImGui();
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
+
+		void SetCamera(const Camera* camera);
 
 	private:
 		struct SpecializationData
@@ -69,7 +71,7 @@ namespace en
 		bool m_ShouldBlend = true;
 		uint32_t m_BlendIndex = 1;
 
-		const Camera& m_Camera;
+		const Camera* m_Camera;
 		const HpmScene& m_HpmScene;
 		NeuralRadianceCache& m_Nrc;
 

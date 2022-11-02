@@ -176,7 +176,7 @@ namespace en
 		uint32_t height,
 		float trainSampleRatio,
 		uint32_t trainSpp,
-		const Camera& camera,
+		const Camera* camera,
 		const HpmScene& hpmScene,
 		NeuralRadianceCache& nrc)
 		:
@@ -253,7 +253,7 @@ namespace en
 	{
 		// Blending
 		if (m_ShouldBlend) { m_BlendIndex++; }
-		if (m_Camera.HasChanged()) { m_BlendIndex = 1; }
+		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
 		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
 
 		// Generate random
@@ -363,7 +363,7 @@ namespace en
 		ASSERT_CUDA(cudaDestroyExternalSemaphore(m_CuExtCudaStartSemaphore));
 	}
 
-	void NrcHpmRenderer::ExportImageToFile(VkQueue queue, const std::string& filePath) const
+	void NrcHpmRenderer::ExportOutputImageToFile(VkQueue queue, const std::string& filePath) const
 	{
 		const size_t floatCount = m_RenderWidth * m_RenderHeight * 4;
 		const size_t bufferSize = floatCount * sizeof(float);
@@ -472,6 +472,14 @@ namespace en
 	VkImageView NrcHpmRenderer::GetImageView() const
 	{
 		return m_OutputImageView;
+	}
+
+	void NrcHpmRenderer::SetCamera(const Camera* camera)
+	{
+		m_BlendIndex = 1;
+		m_Camera = camera;
+		RecordPreCudaCommandBuffer();
+		RecordPostCudaCommandBuffer();
 	}
 
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
@@ -1542,7 +1550,7 @@ namespace en
 		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, c_QueryCount);
 
 		// Collect descriptor sets
-		std::vector<VkDescriptorSet> descSets = { m_Camera.GetDescriptorSet() };
+		std::vector<VkDescriptorSet> descSets = { m_Camera->GetDescriptorSet() };
 		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
 		descSets.insert(descSets.end(), hpmSceneDescSets.begin(), hpmSceneDescSets.end());
 		descSets.push_back(m_DescSet);
@@ -1620,7 +1628,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Collect descriptor sets
-		std::vector<VkDescriptorSet> descSets = { m_Camera.GetDescriptorSet() };
+		std::vector<VkDescriptorSet> descSets = { m_Camera->GetDescriptorSet() };
 		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
 		descSets.insert(descSets.end(), hpmSceneDescSets.begin(), hpmSceneDescSets.end());
 		descSets.push_back(m_DescSet);

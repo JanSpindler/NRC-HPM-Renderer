@@ -165,6 +165,7 @@ namespace en
 	{
 		glm::mat4 projMat = glm::perspective(m_Fov, m_AspectRatio, m_NearPlane, m_FarPlane);
 		glm::mat4 viewMat = glm::lookAt(m_Pos, m_Pos + m_ViewDir, m_Up);
+		m_Matrices.prevProjView = projMat;
 		m_Matrices.projView = projMat * viewMat;
 		m_Matrices.invProjView = glm::inverse(m_Matrices.projView);
 

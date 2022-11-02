@@ -191,34 +191,37 @@ void Benchmark(
 		// Create folder
 		std::filesystem::create_directory(referenceDirPath);
 
+		// Create ground truth renderer
+		en::McHpmRenderer* gtRenderer = nullptr;
+
 		for (size_t i = 0; i < cameras.size(); i++)
 		{
 			en::Log::Info("Generating reference image " + std::to_string(i));
 
-			// Create ground truth renderer
-			en::McHpmRenderer gtRenderer(width, height, 1, 64, cameras[i], scene);
+			// Set new camera
+			if (gtRenderer == nullptr) { gtRenderer = new en::McHpmRenderer(width, height, 1, 64, &cameras[0], scene); }
+			else { gtRenderer->SetCamera(&cameras[1]); }
 
 			// Generate reference image
 			for (size_t frame = 0; frame < 1024; frame++)
 			{
-				gtRenderer.Render(queue);
+				gtRenderer->Render(queue);
 				ASSERT_VULKAN(vkQueueWaitIdle(queue));
 			}
 
 			// Export reference image
-			gtRenderer.ExportImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
-
-			// Destroy resources
-			gtRenderer.Destroy();
+			gtRenderer->ExportOutputImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
 		}
+
+		// Destroy resources
+		gtRenderer->Destroy();
+		delete gtRenderer;
 	}
 
 	// TODO: render nrc images with same camera
-
 	mcHpmRenderer->Render(queue);
 	ASSERT_VULKAN(vkQueueWaitIdle(queue));
-	mcHpmRenderer->ExportImageToFile(queue, outputDirPath + "mc_1.exr");
-	nrcHpmRenderer->ExportImageToFile(queue, outputDirPath + "nrc_1.exr");
+	nrcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "nrc_1.exr");
 
 	// Destroy resources
 	for (size_t i = 0; i < cameras.size(); i++) { cameras[i].Destroy(); }
@@ -266,11 +269,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		height,
 		appConfig.trainSampleRatio,
 		appConfig.trainSpp,
-		camera,
+		&camera,
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, 32, camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 1, 32, &camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
 	switch (rendererId)

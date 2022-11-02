@@ -12,6 +12,7 @@ namespace en
 	{
 		glm::mat4 projView;
 		glm::mat4 invProjView;
+		glm::mat4 prevProjView;
 	};
 
 	class Camera

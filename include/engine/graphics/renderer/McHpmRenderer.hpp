@@ -13,17 +13,19 @@ namespace en
 		static void Init(VkDevice device);
 		static void Shutdown(VkDevice device);
 
-		McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, uint32_t pathLength, const Camera& camera, const HpmScene& scene);
+		McHpmRenderer(uint32_t width, uint32_t height, uint32_t spp, uint32_t pathLength, const Camera* camera, const HpmScene& scene);
 
 		void Render(VkQueue queue);
 		void Destroy();
 
-		void ExportImageToFile(VkQueue queue, const std::string& filePath) const;
+		void ExportOutputImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
 		void RenderImGui();
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
+
+		void SetCamera(const Camera* camera);
 
 	private:
 		struct SpecializationData
@@ -56,7 +58,7 @@ namespace en
 		bool m_ShouldBlend = true;
 		uint32_t m_BlendIndex = 1;
 
-		const Camera& m_Camera;
+		const Camera* m_Camera;
 		const HpmScene& m_HpmScene;
 
 		VkPipelineLayout m_PipelineLayout;

@@ -2,6 +2,7 @@ layout(set = 0, binding = 0) uniform camMat_t
 {
 	mat4 projView;
 	mat4 invProjView;
+	mat4 prevProjView;
 } camMat;
 
 layout(set = 0, binding = 1) uniform camera_t
