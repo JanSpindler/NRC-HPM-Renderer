@@ -251,6 +251,9 @@ namespace en
 
 	void NrcHpmRenderer::Render(VkQueue queue)
 	{
+		// Check if camera moved
+		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
+
 		// Calc blending factor
 		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
 
@@ -260,10 +263,9 @@ namespace en
 		// Update uniform buffer
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 
-		// Update blending
+		// Update blending index
 		if (m_ShouldBlend) { m_BlendIndex++; }
-		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
-
+		
 		// Pre cuda
 		VkSubmitInfo submitInfo;
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

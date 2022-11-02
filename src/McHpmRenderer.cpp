@@ -118,6 +118,9 @@ namespace en
 
 	void McHpmRenderer::Render(VkQueue queue)
 	{
+		// Check if camera moved
+		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
+
 		// Calc blendFactor
 		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
 
@@ -127,8 +130,7 @@ namespace en
 		// Update uniform buffer
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 
-		// Update blending
-		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
+		// Update blending index
 		if (m_ShouldBlend) { m_BlendIndex++; }
 
 		// Render
