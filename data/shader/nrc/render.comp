@@ -11,10 +11,13 @@ vec3 LoadNrcInferOutput(const ivec2 imageCoord)
 	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
 
 	vec3 color;
-	color.x = max(0.0, nrcInferOutput[linearPixelIndex].r);
-	color.y = max(0.0, nrcInferOutput[linearPixelIndex].g);
-	color.z = max(0.0, nrcInferOutput[linearPixelIndex].b);
-	return color;
+	color.x = nrcInferOutput[linearPixelIndex].r;
+	color.y = nrcInferOutput[linearPixelIndex].g;
+	color.z = nrcInferOutput[linearPixelIndex].b;
+
+	color = exp(color) - vec3(1.0);
+	 
+	return max(vec3(0.0), color);
 }
 
 void main()
