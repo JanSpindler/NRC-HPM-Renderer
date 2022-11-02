@@ -199,7 +199,7 @@ void Benchmark(
 			en::McHpmRenderer gtRenderer(width, height, 1, 64, cameras[i], scene);
 
 			// Generate reference image
-			for (size_t frame = 0; frame < 100; frame++)
+			for (size_t frame = 0; frame < 1024; frame++)
 			{
 				gtRenderer.Render(queue);
 				ASSERT_VULKAN(vkQueueWaitIdle(queue));
