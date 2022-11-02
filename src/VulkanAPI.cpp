@@ -431,18 +431,11 @@ namespace en
 		std::vector<const char*> extensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
-			VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
-			VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME,
-			VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-			VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
-			VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME,
-			VK_KHR_16BIT_STORAGE_EXTENSION_NAME,
-			VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-			VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-			VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME };
+			VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME
+		};
 
 		float priorities[] = { 1.0f, 1.0f };
 		VkDeviceQueueCreateInfo queueCreateInfo;
@@ -462,63 +455,10 @@ namespace en
 		queryResetFeatures.pNext = nullptr;
 		queryResetFeatures.hostQueryReset = VK_TRUE;
 
-		// Features 1.1
-		VkPhysicalDeviceVulkan11Features features11{};
-		features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-		features11.pNext = &queryResetFeatures;
-		features11.storageBuffer16BitAccess = VK_TRUE;
-
-		// Vulkan memory model features
-		VkPhysicalDeviceVulkanMemoryModelFeatures memoryModelFeatures;
-		memoryModelFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES;
-		memoryModelFeatures.pNext = &features11;
-		memoryModelFeatures.vulkanMemoryModel = VK_TRUE;
-		memoryModelFeatures.vulkanMemoryModelDeviceScope = VK_TRUE;
-		memoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains = VK_FALSE;
-
-		// Nv cooperative matrix features
-		VkPhysicalDeviceCooperativeMatrixFeaturesNV coopMatFeatures;
-		coopMatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
-		coopMatFeatures.pNext = &memoryModelFeatures;
-		coopMatFeatures.cooperativeMatrix = VK_TRUE;
-		coopMatFeatures.cooperativeMatrixRobustBufferAccess = VK_FALSE;
-
-		// Buffer address features
-		VkPhysicalDeviceBufferAddressFeaturesEXT bufferAddressFeatures;
-		bufferAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
-		bufferAddressFeatures.pNext = &coopMatFeatures;
-		bufferAddressFeatures.bufferDeviceAddress = VK_TRUE;
-		bufferAddressFeatures.bufferDeviceAddressCaptureReplay = VK_FALSE;
-		bufferAddressFeatures.bufferDeviceAddressMultiDevice = VK_FALSE;
-
-		// Float 16 features
-		VkPhysicalDeviceFloat16Int8FeaturesKHR float16Features;
-		float16Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
-		float16Features.pNext = &bufferAddressFeatures;
-		float16Features.shaderFloat16 = VK_TRUE;
-		float16Features.shaderInt8 = VK_FALSE;
-
-		// Atomic float features
-		VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures;
-		atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-		atomicFloatFeatures.pNext = &float16Features;
-		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
-		atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
-		atomicFloatFeatures.shaderBufferFloat64Atomics = VK_FALSE;
-		atomicFloatFeatures.shaderBufferFloat64AtomicAdd = VK_FALSE;
-		atomicFloatFeatures.shaderSharedFloat32Atomics = VK_TRUE;
-		atomicFloatFeatures.shaderSharedFloat32AtomicAdd = VK_TRUE;
-		atomicFloatFeatures.shaderSharedFloat64Atomics = VK_FALSE;
-		atomicFloatFeatures.shaderSharedFloat64AtomicAdd = VK_FALSE;
-		atomicFloatFeatures.shaderImageFloat32Atomics = VK_FALSE;
-		atomicFloatFeatures.shaderImageFloat32AtomicAdd = VK_FALSE;
-		atomicFloatFeatures.sparseImageFloat32Atomics = VK_FALSE;
-		atomicFloatFeatures.sparseImageFloat32AtomicAdd = VK_FALSE;
-
 		// Create
 		VkDeviceCreateInfo createInfo;
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pNext = &atomicFloatFeatures;
+		createInfo.pNext = &queryResetFeatures;
 		createInfo.flags = 0;
 		createInfo.queueCreateInfoCount = 1;
 		createInfo.pQueueCreateInfos = &queueCreateInfo;
