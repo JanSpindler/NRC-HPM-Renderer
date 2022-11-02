@@ -247,11 +247,14 @@ namespace en
 	void McHpmRenderer::RenderImGui()
 	{
 		ImGui::Begin("McHpmRenderer");
+		
 		ImGui::Text("Total Time %f ms", m_TimePeriod);
 		ImGui::Text("Theoretical FPS %f", 1000.0f / m_TimePeriod);
+
 		ImGui::Checkbox("Blend", &m_ShouldBlend);
 		ImGui::Text("Blend index %u", m_BlendIndex);
 		if (ImGui::Button("Reset blending")) { m_BlendIndex = 1; }
+		
 		ImGui::End();
 	}
 

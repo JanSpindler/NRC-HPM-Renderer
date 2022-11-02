@@ -251,8 +251,15 @@ namespace en
 
 	void NrcHpmRenderer::Render(VkQueue queue)
 	{
+		// Blending
+		if (m_ShouldBlend) { m_BlendIndex++; }
+		if (m_Camera.HasChanged()) { m_BlendIndex = 1; }
+		m_UniformData.blendFactor = 1.0 / static_cast<float>(m_BlendIndex);
+
 		// Generate random
 		m_UniformData.random = glm::linearRand(glm::vec4(0.0f), glm::vec4(1.0f));
+
+		// Update uniform buffer
 		m_UniformBuffer.SetData(sizeof(UniformData), &m_UniformData, 0, 0);
 
 		// Pre cuda
@@ -449,6 +456,10 @@ namespace en
 		ImGui::Text("Theoretical FPS %f", 1000.0f / m_TimePeriods[c_QueryCount - 1]);
 
 		ImGui::Checkbox("Show NRC", reinterpret_cast<bool*>(&m_UniformData.showNrc));
+
+		ImGui::Checkbox("Blend", &m_ShouldBlend);
+		ImGui::Text("Blend index %u", m_BlendIndex);
+		if (ImGui::Button("Reset blending")) { m_BlendIndex = 1; }
 
 		ImGui::End();
 	}

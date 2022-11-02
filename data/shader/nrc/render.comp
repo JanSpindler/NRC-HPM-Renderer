@@ -33,5 +33,6 @@ void main()
 		outputColor.xyz += neuralRayColor.xyz * primaryRayColor.w;
 	}
 
-	imageStore(outputImage, outputImageCoord, outputColor);
+	vec4 blendedOutputColor = (blendFactor * outputColor) + ((1.0 - blendFactor) * imageLoad(outputImage, outputImageCoord));
+	imageStore(outputImage, outputImageCoord, blendedOutputColor);
 }

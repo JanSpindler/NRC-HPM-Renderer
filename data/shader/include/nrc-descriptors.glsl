@@ -83,4 +83,5 @@ layout(set = 5, binding = 9) uniform Renderer
 {
 	vec4 random;
 	uint showNrc;
+	float blendFactor;
 };

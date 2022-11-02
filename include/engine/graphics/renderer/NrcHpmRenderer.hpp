@@ -54,6 +54,7 @@ namespace en
 		{
 			glm::vec4 random;
 			uint32_t showNrc;
+			float blendFactor;
 		};
 
 		static VkDescriptorSetLayout m_DescSetLayout;
@@ -61,11 +62,12 @@ namespace en
 
 		uint32_t m_RenderWidth;
 		uint32_t m_RenderHeight;
-
 		uint32_t m_TrainWidth;
 		uint32_t m_TrainHeight;
-
 		uint32_t m_TrainSpp;
+
+		bool m_ShouldBlend = false;
+		uint32_t m_BlendIndex = 1;
 
 		const Camera& m_Camera;
 		const HpmScene& m_HpmScene;
