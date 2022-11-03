@@ -45,89 +45,107 @@ namespace en
 	void NrcHpmRenderer::Init(VkDevice device)
 	{
 		// Create desc set layout
+		uint32_t bindingIndex = 0;
+
 		VkDescriptorSetLayoutBinding outputImageBinding;
-		outputImageBinding.binding = 0;
+		outputImageBinding.binding = bindingIndex++;
 		outputImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		outputImageBinding.descriptorCount = 1;
 		outputImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		outputImageBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding primaryRayColorImageBinding;
-		primaryRayColorImageBinding.binding = 1;
+		primaryRayColorImageBinding.binding = bindingIndex++;
 		primaryRayColorImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		primaryRayColorImageBinding.descriptorCount = 1;
 		primaryRayColorImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		primaryRayColorImageBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding primaryRayInfoImageBinding;
-		primaryRayInfoImageBinding.binding = 2;
+		primaryRayInfoImageBinding.binding = bindingIndex++;
 		primaryRayInfoImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		primaryRayInfoImageBinding.descriptorCount = 1;
 		primaryRayInfoImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		primaryRayInfoImageBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding nrcRayOriginImageBinding;
-		nrcRayOriginImageBinding.binding = 3;
+		nrcRayOriginImageBinding.binding = bindingIndex++;
 		nrcRayOriginImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		nrcRayOriginImageBinding.descriptorCount = 1;
 		nrcRayOriginImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcRayOriginImageBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding nrcRayDirImageBinding;
-		nrcRayDirImageBinding.binding = 4;
+		nrcRayDirImageBinding.binding = bindingIndex++;
 		nrcRayDirImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		nrcRayDirImageBinding.descriptorCount = 1;
 		nrcRayDirImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcRayDirImageBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding nrcTrainRayResPosImageBinding;
+		nrcTrainRayResPosImageBinding.binding = bindingIndex++;
+		nrcTrainRayResPosImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		nrcTrainRayResPosImageBinding.descriptorCount = 1;
+		nrcTrainRayResPosImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcTrainRayResPosImageBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding nrcTrainRayResDirImageBinding;
+		nrcTrainRayResDirImageBinding.binding = bindingIndex++;
+		nrcTrainRayResDirImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		nrcTrainRayResDirImageBinding.descriptorCount = 1;
+		nrcTrainRayResDirImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcTrainRayResDirImageBinding.pImmutableSamplers = nullptr;
+
 		VkDescriptorSetLayoutBinding nrcInferInputBufferBinding;
-		nrcInferInputBufferBinding.binding = 5;
+		nrcInferInputBufferBinding.binding = bindingIndex++;
 		nrcInferInputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		nrcInferInputBufferBinding.descriptorCount = 1;
 		nrcInferInputBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcInferInputBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding nrcInferOutputBufferBinding;
-		nrcInferOutputBufferBinding.binding = 6;
+		nrcInferOutputBufferBinding.binding = bindingIndex++;
 		nrcInferOutputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		nrcInferOutputBufferBinding.descriptorCount = 1;
 		nrcInferOutputBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcInferOutputBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding nrcTrainInputBufferBinding;
-		nrcTrainInputBufferBinding.binding = 7;
+		nrcTrainInputBufferBinding.binding = bindingIndex++;
 		nrcTrainInputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		nrcTrainInputBufferBinding.descriptorCount = 1;
 		nrcTrainInputBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcTrainInputBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding nrcTrainTargetBufferBinding;
-		nrcTrainTargetBufferBinding.binding = 8;
+		nrcTrainTargetBufferBinding.binding = bindingIndex++;
 		nrcTrainTargetBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		nrcTrainTargetBufferBinding.descriptorCount = 1;
 		nrcTrainTargetBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcTrainTargetBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding nrcInferFilterBufferBinding;
-		nrcInferFilterBufferBinding.binding = 9;
+		nrcInferFilterBufferBinding.binding = bindingIndex++;
 		nrcInferFilterBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		nrcInferFilterBufferBinding.descriptorCount = 1;
 		nrcInferFilterBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcInferFilterBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding uniformBufferBinding;
-		uniformBufferBinding.binding = 10;
+		uniformBufferBinding.binding = bindingIndex++;
 		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uniformBufferBinding.descriptorCount = 1;
 		uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		uniformBufferBinding.pImmutableSamplers = nullptr;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings = { 
+		std::vector<VkDescriptorSetLayoutBinding> bindings = {
 			outputImageBinding,
 			primaryRayColorImageBinding,
 			primaryRayInfoImageBinding,
 			nrcRayOriginImageBinding,
 			nrcRayDirImageBinding,
+			nrcTrainRayResPosImageBinding,
+			nrcTrainRayResDirImageBinding,
 			nrcInferInputBufferBinding,
 			nrcInferOutputBufferBinding,
 			nrcTrainInputBufferBinding,
@@ -149,7 +167,7 @@ namespace en
 		// Create desc pool
 		VkDescriptorPoolSize storageImagePS;
 		storageImagePS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageImagePS.descriptorCount = 5;
+		storageImagePS.descriptorCount = 7;
 
 		VkDescriptorPoolSize storageBufferPS;
 		storageBufferPS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -256,6 +274,8 @@ namespace en
 		CreatePrimaryRayInfoImage(device);
 		CreateNrcRayOriginImage(device);
 		CreateNrcRayDirImage(device);
+		CreateNrcTrainRayResPosImage(device);
+		CreateNrcTrainRayResDirImage(device);
 
 		AllocateAndUpdateDescriptorSet(device);
 
@@ -328,6 +348,14 @@ namespace en
 		m_UniformBuffer.Destroy();
 
 		vkDestroyQueryPool(device, m_QueryPool, nullptr);
+
+		vkDestroyImageView(device, m_NrcTrainRayResDirImageView, nullptr);
+		vkFreeMemory(device, m_NrcTrainRayResDirImageMemory, nullptr);
+		vkDestroyImage(device, m_NrcTrainRayResDirImage, nullptr);
+
+		vkDestroyImageView(device, m_NrcTrainRayResPosImageView, nullptr);
+		vkFreeMemory(device, m_NrcTrainRayResPosImageMemory, nullptr);
+		vkDestroyImage(device, m_NrcTrainRayResPosImage, nullptr);
 
 		vkDestroyImageView(device, m_NrcRayDirImageView, nullptr);
 		vkFreeMemory(device, m_NrcRayDirImageMemory, nullptr);
@@ -1350,6 +1378,216 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
+	void NrcHpmRenderer::CreateNrcTrainRayResPosImage(VkDevice device)
+	{
+		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+		// Create Image
+		VkImageCreateInfo imageCI;
+		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCI.pNext = nullptr;
+		imageCI.flags = 0;
+		imageCI.imageType = VK_IMAGE_TYPE_2D;
+		imageCI.format = format;
+		imageCI.extent = { m_TrainWidth, m_TrainHeight, 1 };
+		imageCI.mipLevels = 1;
+		imageCI.arrayLayers = 1;
+		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCI.queueFamilyIndexCount = 0;
+		imageCI.pQueueFamilyIndices = nullptr;
+		imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+
+		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_NrcTrainRayResPosImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_NrcTrainRayResPosImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_NrcTrainRayResPosImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_NrcTrainRayResPosImage, m_NrcTrainRayResPosImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create image view
+		VkImageViewCreateInfo imageViewCI;
+		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCI.pNext = nullptr;
+		imageViewCI.flags = 0;
+		imageViewCI.image = m_NrcTrainRayResPosImage;
+		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCI.format = format;
+		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCI.subresourceRange.baseMipLevel = 0;
+		imageViewCI.subresourceRange.levelCount = 1;
+		imageViewCI.subresourceRange.baseArrayLayer = 0;
+		imageViewCI.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_NrcTrainRayResPosImageView);
+		ASSERT_VULKAN(result);
+
+		// Change image layout
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			m_RandomTasksCmdBuf,
+			m_NrcTrainRayResPosImage,
+			VK_IMAGE_LAYOUT_PREINITIALIZED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_ACCESS_NONE,
+			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
+		ASSERT_VULKAN(result);
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		VkQueue queue = VulkanAPI::GetGraphicsQueue();
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+	}
+
+	void NrcHpmRenderer::CreateNrcTrainRayResDirImage(VkDevice device)
+	{
+		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+		// Create Image
+		VkImageCreateInfo imageCI;
+		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCI.pNext = nullptr;
+		imageCI.flags = 0;
+		imageCI.imageType = VK_IMAGE_TYPE_2D;
+		imageCI.format = format;
+		imageCI.extent = { m_TrainWidth, m_TrainHeight, 1 };
+		imageCI.mipLevels = 1;
+		imageCI.arrayLayers = 1;
+		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCI.queueFamilyIndexCount = 0;
+		imageCI.pQueueFamilyIndices = nullptr;
+		imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+
+		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_NrcTrainRayResDirImage);
+		ASSERT_VULKAN(result);
+
+		// Image Memory
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device, m_NrcTrainRayResDirImage, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo;
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
+			memoryRequirements.memoryTypeBits,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_NrcTrainRayResDirImageMemory);
+		ASSERT_VULKAN(result);
+
+		result = vkBindImageMemory(device, m_NrcTrainRayResDirImage, m_NrcTrainRayResDirImageMemory, 0);
+		ASSERT_VULKAN(result);
+
+		// Create image view
+		VkImageViewCreateInfo imageViewCI;
+		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCI.pNext = nullptr;
+		imageViewCI.flags = 0;
+		imageViewCI.image = m_NrcTrainRayResDirImage;
+		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCI.format = format;
+		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCI.subresourceRange.baseMipLevel = 0;
+		imageViewCI.subresourceRange.levelCount = 1;
+		imageViewCI.subresourceRange.baseArrayLayer = 0;
+		imageViewCI.subresourceRange.layerCount = 1;
+
+		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_NrcTrainRayResDirImageView);
+		ASSERT_VULKAN(result);
+
+		// Change image layout
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			m_RandomTasksCmdBuf,
+			m_NrcTrainRayResDirImage,
+			VK_IMAGE_LAYOUT_PREINITIALIZED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_ACCESS_NONE,
+			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
+		ASSERT_VULKAN(result);
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		VkQueue queue = VulkanAPI::GetGraphicsQueue();
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+		result = vkQueueWaitIdle(queue);
+		ASSERT_VULKAN(result);
+	}
+
 	void NrcHpmRenderer::AllocateAndUpdateDescriptorSet(VkDevice device)
 	{
 		// Allocate
@@ -1365,6 +1603,8 @@ namespace en
 
 		// Write
 		// Storage image writes
+		uint32_t bindingIndex = 0;
+
 		VkDescriptorImageInfo outputImageInfo;
 		outputImageInfo.sampler = VK_NULL_HANDLE;
 		outputImageInfo.imageView = m_OutputImageView;
@@ -1374,7 +1614,7 @@ namespace en
 		outputImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		outputImageWrite.pNext = nullptr;
 		outputImageWrite.dstSet = m_DescSet;
-		outputImageWrite.dstBinding = 0;
+		outputImageWrite.dstBinding = bindingIndex++;
 		outputImageWrite.dstArrayElement = 0;
 		outputImageWrite.descriptorCount = 1;
 		outputImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -1391,7 +1631,7 @@ namespace en
 		primaryRayColorImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		primaryRayColorImageWrite.pNext = nullptr;
 		primaryRayColorImageWrite.dstSet = m_DescSet;
-		primaryRayColorImageWrite.dstBinding = 1;
+		primaryRayColorImageWrite.dstBinding = bindingIndex++;
 		primaryRayColorImageWrite.dstArrayElement = 0;
 		primaryRayColorImageWrite.descriptorCount = 1;
 		primaryRayColorImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -1408,7 +1648,7 @@ namespace en
 		primaryRayInfoImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		primaryRayInfoImageWrite.pNext = nullptr;
 		primaryRayInfoImageWrite.dstSet = m_DescSet;
-		primaryRayInfoImageWrite.dstBinding = 2;
+		primaryRayInfoImageWrite.dstBinding = bindingIndex++;
 		primaryRayInfoImageWrite.dstArrayElement = 0;
 		primaryRayInfoImageWrite.descriptorCount = 1;
 		primaryRayInfoImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -1425,7 +1665,7 @@ namespace en
 		nrcRayOriginImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcRayOriginImageWrite.pNext = nullptr;
 		nrcRayOriginImageWrite.dstSet = m_DescSet;
-		nrcRayOriginImageWrite.dstBinding = 3;
+		nrcRayOriginImageWrite.dstBinding = bindingIndex++;
 		nrcRayOriginImageWrite.dstArrayElement = 0;
 		nrcRayOriginImageWrite.descriptorCount = 1;
 		nrcRayOriginImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -1442,13 +1682,47 @@ namespace en
 		nrcRayDirImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcRayDirImageWrite.pNext = nullptr;
 		nrcRayDirImageWrite.dstSet = m_DescSet;
-		nrcRayDirImageWrite.dstBinding = 4;
+		nrcRayDirImageWrite.dstBinding = bindingIndex++;
 		nrcRayDirImageWrite.dstArrayElement = 0;
 		nrcRayDirImageWrite.descriptorCount = 1;
 		nrcRayDirImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		nrcRayDirImageWrite.pImageInfo = &nrcRayDirImageInfo;
 		nrcRayDirImageWrite.pBufferInfo = nullptr;
 		nrcRayDirImageWrite.pTexelBufferView = nullptr;
+
+		VkDescriptorImageInfo nrcTrainRayResPosImageInfo;
+		nrcTrainRayResPosImageInfo.sampler = VK_NULL_HANDLE;
+		nrcTrainRayResPosImageInfo.imageView = m_NrcTrainRayResPosImageView;
+		nrcTrainRayResPosImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet nrcTrainRayResPosImageWrite;
+		nrcTrainRayResPosImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcTrainRayResPosImageWrite.pNext = nullptr;
+		nrcTrainRayResPosImageWrite.dstSet = m_DescSet;
+		nrcTrainRayResPosImageWrite.dstBinding = bindingIndex++;
+		nrcTrainRayResPosImageWrite.dstArrayElement = 0;
+		nrcTrainRayResPosImageWrite.descriptorCount = 1;
+		nrcTrainRayResPosImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		nrcTrainRayResPosImageWrite.pImageInfo = &nrcTrainRayResPosImageInfo;
+		nrcTrainRayResPosImageWrite.pBufferInfo = nullptr;
+		nrcTrainRayResPosImageWrite.pTexelBufferView = nullptr;
+
+		VkDescriptorImageInfo nrcTrainRayResDirImageInfo;
+		nrcTrainRayResDirImageInfo.sampler = VK_NULL_HANDLE;
+		nrcTrainRayResDirImageInfo.imageView = m_NrcTrainRayResDirImageView;
+		nrcTrainRayResDirImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		VkWriteDescriptorSet nrcTrainRayResDirImageWrite;
+		nrcTrainRayResDirImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcTrainRayResDirImageWrite.pNext = nullptr;
+		nrcTrainRayResDirImageWrite.dstSet = m_DescSet;
+		nrcTrainRayResDirImageWrite.dstBinding = bindingIndex++;
+		nrcTrainRayResDirImageWrite.dstArrayElement = 0;
+		nrcTrainRayResDirImageWrite.descriptorCount = 1;
+		nrcTrainRayResDirImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		nrcTrainRayResDirImageWrite.pImageInfo = &nrcTrainRayResDirImageInfo;
+		nrcTrainRayResDirImageWrite.pBufferInfo = nullptr;
+		nrcTrainRayResDirImageWrite.pTexelBufferView = nullptr;
 
 		// Storage buffer writes
 		VkDescriptorBufferInfo nrcInferInputBufferInfo;
@@ -1460,7 +1734,7 @@ namespace en
 		nrcInferInputBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcInferInputBufferWrite.pNext = nullptr;
 		nrcInferInputBufferWrite.dstSet = m_DescSet;
-		nrcInferInputBufferWrite.dstBinding = 5;
+		nrcInferInputBufferWrite.dstBinding = bindingIndex++;
 		nrcInferInputBufferWrite.dstArrayElement = 0;
 		nrcInferInputBufferWrite.descriptorCount = 1;
 		nrcInferInputBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1477,7 +1751,7 @@ namespace en
 		nrcInferOutputBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcInferOutputBufferWrite.pNext = nullptr;
 		nrcInferOutputBufferWrite.dstSet = m_DescSet;
-		nrcInferOutputBufferWrite.dstBinding = 6;
+		nrcInferOutputBufferWrite.dstBinding = bindingIndex++;
 		nrcInferOutputBufferWrite.dstArrayElement = 0;
 		nrcInferOutputBufferWrite.descriptorCount = 1;
 		nrcInferOutputBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1494,7 +1768,7 @@ namespace en
 		nrcTrainInputBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcTrainInputBufferWrite.pNext = nullptr;
 		nrcTrainInputBufferWrite.dstSet = m_DescSet;
-		nrcTrainInputBufferWrite.dstBinding = 7;
+		nrcTrainInputBufferWrite.dstBinding = bindingIndex++;
 		nrcTrainInputBufferWrite.dstArrayElement = 0;
 		nrcTrainInputBufferWrite.descriptorCount = 1;
 		nrcTrainInputBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1511,7 +1785,7 @@ namespace en
 		nrcTrainTargetBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcTrainTargetBufferWrite.pNext = nullptr;
 		nrcTrainTargetBufferWrite.dstSet = m_DescSet;
-		nrcTrainTargetBufferWrite.dstBinding = 8;
+		nrcTrainTargetBufferWrite.dstBinding = bindingIndex++;
 		nrcTrainTargetBufferWrite.dstArrayElement = 0;
 		nrcTrainTargetBufferWrite.descriptorCount = 1;
 		nrcTrainTargetBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1528,7 +1802,7 @@ namespace en
 		nrcInferFilterBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		nrcInferFilterBufferWrite.pNext = nullptr;
 		nrcInferFilterBufferWrite.dstSet = m_DescSet;
-		nrcInferFilterBufferWrite.dstBinding = 9;
+		nrcInferFilterBufferWrite.dstBinding = bindingIndex++;
 		nrcInferFilterBufferWrite.dstArrayElement = 0;
 		nrcInferFilterBufferWrite.descriptorCount = 1;
 		nrcInferFilterBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1546,7 +1820,7 @@ namespace en
 		uniformBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		uniformBufferWrite.pNext = nullptr;
 		uniformBufferWrite.dstSet = m_DescSet;
-		uniformBufferWrite.dstBinding = 10;
+		uniformBufferWrite.dstBinding = bindingIndex++;
 		uniformBufferWrite.dstArrayElement = 0;
 		uniformBufferWrite.descriptorCount = 1;
 		uniformBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1561,6 +1835,8 @@ namespace en
 			primaryRayInfoImageWrite,
 			nrcRayOriginImageWrite,
 			nrcRayDirImageWrite,
+			nrcTrainRayResPosImageWrite,
+			nrcTrainRayResDirImageWrite,
 			nrcInferInputBufferWrite,
 			nrcInferOutputBufferWrite,
 			nrcTrainInputBufferWrite,
