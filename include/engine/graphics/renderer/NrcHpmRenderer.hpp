@@ -107,6 +107,9 @@ namespace en
 		void* m_NrcInferFilterData = nullptr;
 		vk::Buffer* m_NrcInferFilterBuffer = nullptr;
 
+		VkDeviceSize m_NrcTrainRayResBufferSize = 0;
+		vk::Buffer* m_NrcTrainRayResBuffer;
+
 		VkPipelineLayout m_PipelineLayout;
 
 		SpecializationData m_SpecData;
@@ -148,14 +151,6 @@ namespace en
 		VkDeviceMemory m_NrcRayDirImageMemory;
 		VkImageView m_NrcRayDirImageView;
 
-		VkImage m_NrcTrainRayResPosImage;
-		VkDeviceMemory m_NrcTrainRayResPosImageMemory;
-		VkImageView m_NrcTrainRayResPosImageView;
-
-		VkImage m_NrcTrainRayResDirImage;
-		VkDeviceMemory m_NrcTrainRayResDirImageMemory;
-		VkImageView m_NrcTrainRayResDirImageView;
-
 		VkDescriptorSet m_DescSet;
 
 		const float c_TimestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
@@ -187,8 +182,6 @@ namespace en
 		void CreatePrimaryRayInfoImage(VkDevice device);
 		void CreateNrcRayOriginImage(VkDevice device);
 		void CreateNrcRayDirImage(VkDevice device);
-		void CreateNrcTrainRayResPosImage(VkDevice device);
-		void CreateNrcTrainRayResDirImage(VkDevice device);
 
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 

@@ -34,6 +34,9 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainTarget[linearPixelIndex].r = target.x;
 	nrcTrainTarget[linearPixelIndex].g = target.y;
 	nrcTrainTarget[linearPixelIndex].b = target.z;
+
+	// Store randomly in reservoir
+	const ivec2 resImageCoord = ivec2(RandFloat(float(TRAIN_WIDTH)), RandFloat(float(TRAIN_HEIGHT)));
 }
 
 #define PATH_SAMPLE_COUNT 32

@@ -82,20 +82,6 @@ namespace en
 		nrcRayDirImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcRayDirImageBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding nrcTrainRayResPosImageBinding;
-		nrcTrainRayResPosImageBinding.binding = bindingIndex++;
-		nrcTrainRayResPosImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		nrcTrainRayResPosImageBinding.descriptorCount = 1;
-		nrcTrainRayResPosImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		nrcTrainRayResPosImageBinding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding nrcTrainRayResDirImageBinding;
-		nrcTrainRayResDirImageBinding.binding = bindingIndex++;
-		nrcTrainRayResDirImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		nrcTrainRayResDirImageBinding.descriptorCount = 1;
-		nrcTrainRayResDirImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		nrcTrainRayResDirImageBinding.pImmutableSamplers = nullptr;
-
 		VkDescriptorSetLayoutBinding nrcInferInputBufferBinding;
 		nrcInferInputBufferBinding.binding = bindingIndex++;
 		nrcInferInputBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -131,6 +117,13 @@ namespace en
 		nrcInferFilterBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcInferFilterBufferBinding.pImmutableSamplers = nullptr;
 
+		VkDescriptorSetLayoutBinding nrcTrainRayResBufferBinding;
+		nrcTrainRayResBufferBinding.binding = bindingIndex++;
+		nrcTrainRayResBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainRayResBufferBinding.descriptorCount = 1;
+		nrcTrainRayResBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcTrainRayResBufferBinding.pImmutableSamplers = nullptr;
+
 		VkDescriptorSetLayoutBinding uniformBufferBinding;
 		uniformBufferBinding.binding = bindingIndex++;
 		uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -144,13 +137,12 @@ namespace en
 			primaryRayInfoImageBinding,
 			nrcRayOriginImageBinding,
 			nrcRayDirImageBinding,
-			nrcTrainRayResPosImageBinding,
-			nrcTrainRayResDirImageBinding,
 			nrcInferInputBufferBinding,
 			nrcInferOutputBufferBinding,
 			nrcTrainInputBufferBinding,
 			nrcTrainTargetBufferBinding,
 			nrcInferFilterBufferBinding,
+			nrcTrainRayResBufferBinding,
 			uniformBufferBinding
 		};
 
@@ -167,11 +159,11 @@ namespace en
 		// Create desc pool
 		VkDescriptorPoolSize storageImagePS;
 		storageImagePS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageImagePS.descriptorCount = 7;
+		storageImagePS.descriptorCount = 5;
 
 		VkDescriptorPoolSize storageBufferPS;
 		storageBufferPS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageBufferPS.descriptorCount = 5;
+		storageBufferPS.descriptorCount = 6;
 
 		VkDescriptorPoolSize uniformBufferPS;
 		uniformBufferPS.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -255,6 +247,13 @@ namespace en
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
+		m_NrcTrainRayResBufferSize = 6 * sizeof(uint32_t) * m_TrainWidth * m_TrainHeight;
+		m_NrcTrainRayResBuffer = new vk::Buffer(
+			m_NrcTrainRayResBufferSize,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			{});
+
 		m_CommandPool.AllocateBuffers(3, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_PreCudaCommandBuffer = m_CommandPool.GetBuffer(0);
 		m_PostCudaCommandBuffer = m_CommandPool.GetBuffer(1);
@@ -274,8 +273,6 @@ namespace en
 		CreatePrimaryRayInfoImage(device);
 		CreateNrcRayOriginImage(device);
 		CreateNrcRayDirImage(device);
-		CreateNrcTrainRayResPosImage(device);
-		CreateNrcTrainRayResDirImage(device);
 
 		AllocateAndUpdateDescriptorSet(device);
 
@@ -349,14 +346,6 @@ namespace en
 
 		vkDestroyQueryPool(device, m_QueryPool, nullptr);
 
-		vkDestroyImageView(device, m_NrcTrainRayResDirImageView, nullptr);
-		vkFreeMemory(device, m_NrcTrainRayResDirImageMemory, nullptr);
-		vkDestroyImage(device, m_NrcTrainRayResDirImage, nullptr);
-
-		vkDestroyImageView(device, m_NrcTrainRayResPosImageView, nullptr);
-		vkFreeMemory(device, m_NrcTrainRayResPosImageMemory, nullptr);
-		vkDestroyImage(device, m_NrcTrainRayResPosImage, nullptr);
-
 		vkDestroyImageView(device, m_NrcRayDirImageView, nullptr);
 		vkFreeMemory(device, m_NrcRayDirImageMemory, nullptr);
 		vkDestroyImage(device, m_NrcRayDirImage, nullptr);
@@ -391,6 +380,9 @@ namespace en
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 	
+		m_NrcTrainRayResBuffer->Destroy();
+		delete m_NrcTrainRayResBuffer;
+
 		m_NrcInferFilterBuffer->Destroy();
 		delete m_NrcInferFilterBuffer;
 		delete m_NrcInferFilterData;
@@ -1378,216 +1370,6 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void NrcHpmRenderer::CreateNrcTrainRayResPosImage(VkDevice device)
-	{
-		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-
-		// Create Image
-		VkImageCreateInfo imageCI;
-		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCI.pNext = nullptr;
-		imageCI.flags = 0;
-		imageCI.imageType = VK_IMAGE_TYPE_2D;
-		imageCI.format = format;
-		imageCI.extent = { m_TrainWidth, m_TrainHeight, 1 };
-		imageCI.mipLevels = 1;
-		imageCI.arrayLayers = 1;
-		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT;
-		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCI.queueFamilyIndexCount = 0;
-		imageCI.pQueueFamilyIndices = nullptr;
-		imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-
-		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_NrcTrainRayResPosImage);
-		ASSERT_VULKAN(result);
-
-		// Image Memory
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device, m_NrcTrainRayResPosImage, &memoryRequirements);
-
-		VkMemoryAllocateInfo allocateInfo;
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.pNext = nullptr;
-		allocateInfo.allocationSize = memoryRequirements.size;
-		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
-			memoryRequirements.memoryTypeBits,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_NrcTrainRayResPosImageMemory);
-		ASSERT_VULKAN(result);
-
-		result = vkBindImageMemory(device, m_NrcTrainRayResPosImage, m_NrcTrainRayResPosImageMemory, 0);
-		ASSERT_VULKAN(result);
-
-		// Create image view
-		VkImageViewCreateInfo imageViewCI;
-		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCI.pNext = nullptr;
-		imageViewCI.flags = 0;
-		imageViewCI.image = m_NrcTrainRayResPosImage;
-		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCI.format = format;
-		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCI.subresourceRange.baseMipLevel = 0;
-		imageViewCI.subresourceRange.levelCount = 1;
-		imageViewCI.subresourceRange.baseArrayLayer = 0;
-		imageViewCI.subresourceRange.layerCount = 1;
-
-		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_NrcTrainRayResPosImageView);
-		ASSERT_VULKAN(result);
-
-		// Change image layout
-		VkCommandBufferBeginInfo beginInfo;
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pNext = nullptr;
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
-		ASSERT_VULKAN(result);
-
-		vk::CommandRecorder::ImageLayoutTransfer(
-			m_RandomTasksCmdBuf,
-			m_NrcTrainRayResPosImage,
-			VK_IMAGE_LAYOUT_PREINITIALIZED,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_ACCESS_NONE,
-			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
-		ASSERT_VULKAN(result);
-
-		VkSubmitInfo submitInfo;
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = nullptr;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		VkQueue queue = VulkanAPI::GetGraphicsQueue();
-		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-		ASSERT_VULKAN(result);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-	}
-
-	void NrcHpmRenderer::CreateNrcTrainRayResDirImage(VkDevice device)
-	{
-		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-
-		// Create Image
-		VkImageCreateInfo imageCI;
-		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCI.pNext = nullptr;
-		imageCI.flags = 0;
-		imageCI.imageType = VK_IMAGE_TYPE_2D;
-		imageCI.format = format;
-		imageCI.extent = { m_TrainWidth, m_TrainHeight, 1 };
-		imageCI.mipLevels = 1;
-		imageCI.arrayLayers = 1;
-		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_STORAGE_BIT;
-		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCI.queueFamilyIndexCount = 0;
-		imageCI.pQueueFamilyIndices = nullptr;
-		imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-
-		VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_NrcTrainRayResDirImage);
-		ASSERT_VULKAN(result);
-
-		// Image Memory
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device, m_NrcTrainRayResDirImage, &memoryRequirements);
-
-		VkMemoryAllocateInfo allocateInfo;
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.pNext = nullptr;
-		allocateInfo.allocationSize = memoryRequirements.size;
-		allocateInfo.memoryTypeIndex = VulkanAPI::FindMemoryType(
-			memoryRequirements.memoryTypeBits,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_NrcTrainRayResDirImageMemory);
-		ASSERT_VULKAN(result);
-
-		result = vkBindImageMemory(device, m_NrcTrainRayResDirImage, m_NrcTrainRayResDirImageMemory, 0);
-		ASSERT_VULKAN(result);
-
-		// Create image view
-		VkImageViewCreateInfo imageViewCI;
-		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCI.pNext = nullptr;
-		imageViewCI.flags = 0;
-		imageViewCI.image = m_NrcTrainRayResDirImage;
-		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCI.format = format;
-		imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCI.subresourceRange.baseMipLevel = 0;
-		imageViewCI.subresourceRange.levelCount = 1;
-		imageViewCI.subresourceRange.baseArrayLayer = 0;
-		imageViewCI.subresourceRange.layerCount = 1;
-
-		result = vkCreateImageView(device, &imageViewCI, nullptr, &m_NrcTrainRayResDirImageView);
-		ASSERT_VULKAN(result);
-
-		// Change image layout
-		VkCommandBufferBeginInfo beginInfo;
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pNext = nullptr;
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		result = vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo);
-		ASSERT_VULKAN(result);
-
-		vk::CommandRecorder::ImageLayoutTransfer(
-			m_RandomTasksCmdBuf,
-			m_NrcTrainRayResDirImage,
-			VK_IMAGE_LAYOUT_PREINITIALIZED,
-			VK_IMAGE_LAYOUT_GENERAL,
-			VK_ACCESS_NONE,
-			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-		result = vkEndCommandBuffer(m_RandomTasksCmdBuf);
-		ASSERT_VULKAN(result);
-
-		VkSubmitInfo submitInfo;
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = nullptr;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		VkQueue queue = VulkanAPI::GetGraphicsQueue();
-		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-		ASSERT_VULKAN(result);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-	}
-
 	void NrcHpmRenderer::AllocateAndUpdateDescriptorSet(VkDevice device)
 	{
 		// Allocate
@@ -1690,40 +1472,6 @@ namespace en
 		nrcRayDirImageWrite.pBufferInfo = nullptr;
 		nrcRayDirImageWrite.pTexelBufferView = nullptr;
 
-		VkDescriptorImageInfo nrcTrainRayResPosImageInfo;
-		nrcTrainRayResPosImageInfo.sampler = VK_NULL_HANDLE;
-		nrcTrainRayResPosImageInfo.imageView = m_NrcTrainRayResPosImageView;
-		nrcTrainRayResPosImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		VkWriteDescriptorSet nrcTrainRayResPosImageWrite;
-		nrcTrainRayResPosImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		nrcTrainRayResPosImageWrite.pNext = nullptr;
-		nrcTrainRayResPosImageWrite.dstSet = m_DescSet;
-		nrcTrainRayResPosImageWrite.dstBinding = bindingIndex++;
-		nrcTrainRayResPosImageWrite.dstArrayElement = 0;
-		nrcTrainRayResPosImageWrite.descriptorCount = 1;
-		nrcTrainRayResPosImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		nrcTrainRayResPosImageWrite.pImageInfo = &nrcTrainRayResPosImageInfo;
-		nrcTrainRayResPosImageWrite.pBufferInfo = nullptr;
-		nrcTrainRayResPosImageWrite.pTexelBufferView = nullptr;
-
-		VkDescriptorImageInfo nrcTrainRayResDirImageInfo;
-		nrcTrainRayResDirImageInfo.sampler = VK_NULL_HANDLE;
-		nrcTrainRayResDirImageInfo.imageView = m_NrcTrainRayResDirImageView;
-		nrcTrainRayResDirImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		VkWriteDescriptorSet nrcTrainRayResDirImageWrite;
-		nrcTrainRayResDirImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		nrcTrainRayResDirImageWrite.pNext = nullptr;
-		nrcTrainRayResDirImageWrite.dstSet = m_DescSet;
-		nrcTrainRayResDirImageWrite.dstBinding = bindingIndex++;
-		nrcTrainRayResDirImageWrite.dstArrayElement = 0;
-		nrcTrainRayResDirImageWrite.descriptorCount = 1;
-		nrcTrainRayResDirImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		nrcTrainRayResDirImageWrite.pImageInfo = &nrcTrainRayResDirImageInfo;
-		nrcTrainRayResDirImageWrite.pBufferInfo = nullptr;
-		nrcTrainRayResDirImageWrite.pTexelBufferView = nullptr;
-
 		// Storage buffer writes
 		VkDescriptorBufferInfo nrcInferInputBufferInfo;
 		nrcInferInputBufferInfo.buffer = m_NrcInferInputBuffer->GetVulkanHandle();
@@ -1810,6 +1558,23 @@ namespace en
 		nrcInferFilterBufferWrite.pBufferInfo = &nrcInferFilterBufferInfo;
 		nrcInferFilterBufferWrite.pTexelBufferView = nullptr;
 
+		VkDescriptorBufferInfo nrcTrainRayResBufferInfo;
+		nrcTrainRayResBufferInfo.buffer = m_NrcTrainRayResBuffer->GetVulkanHandle();
+		nrcTrainRayResBufferInfo.offset = 0;
+		nrcTrainRayResBufferInfo.range = m_NrcTrainRayResBufferSize;
+
+		VkWriteDescriptorSet nrcTrainRayResBufferWrite;
+		nrcTrainRayResBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcTrainRayResBufferWrite.pNext = nullptr;
+		nrcTrainRayResBufferWrite.dstSet = m_DescSet;
+		nrcTrainRayResBufferWrite.dstBinding = bindingIndex++;
+		nrcTrainRayResBufferWrite.dstArrayElement = 0;
+		nrcTrainRayResBufferWrite.descriptorCount = 1;
+		nrcTrainRayResBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainRayResBufferWrite.pImageInfo = nullptr;
+		nrcTrainRayResBufferWrite.pBufferInfo = &nrcTrainRayResBufferInfo;
+		nrcTrainRayResBufferWrite.pTexelBufferView = nullptr;
+
 		// Uniform buffer write
 		VkDescriptorBufferInfo uniformBufferInfo;
 		uniformBufferInfo.buffer = m_UniformBuffer.GetVulkanHandle();
@@ -1835,13 +1600,12 @@ namespace en
 			primaryRayInfoImageWrite,
 			nrcRayOriginImageWrite,
 			nrcRayDirImageWrite,
-			nrcTrainRayResPosImageWrite,
-			nrcTrainRayResDirImageWrite,
 			nrcInferInputBufferWrite,
 			nrcInferOutputBufferWrite,
 			nrcTrainInputBufferWrite,
 			nrcTrainTargetBufferWrite,
 			nrcInferFilterBufferWrite,
+			nrcTrainRayResBufferWrite,
 			uniformBufferWrite
 		};
 
