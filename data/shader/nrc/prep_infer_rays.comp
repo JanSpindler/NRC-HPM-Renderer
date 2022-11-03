@@ -33,10 +33,7 @@ void main()
 	// Check if volume was hit
 	const vec4 primaryRayInfo = imageLoad(primaryRayInfoImage, imageCoord);
 	const bool didScatter = primaryRayInfo.x == 1.0;
-	if (!didScatter)
-	{
-		return;
-	}
+	if (!didScatter) { return; }
 
 	// Store neural ray info
 	const vec3 rayOrigin = imageLoad(nrcRayOriginImage, imageCoord).xyz;

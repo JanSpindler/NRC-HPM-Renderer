@@ -434,7 +434,7 @@ namespace en
 			VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-			VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME
+			VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
 		};
 
 		float priorities[] = { 1.0f, 1.0f };
@@ -449,10 +449,27 @@ namespace en
 		// Features 1.0
 		VkPhysicalDeviceFeatures features10{};
 
+		// Atomic float
+		VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures;
+		atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+		atomicFloatFeatures.pNext = nullptr;
+		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
+		atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
+		atomicFloatFeatures.shaderBufferFloat64Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderBufferFloat64AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat32AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat64Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderSharedFloat64AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.shaderImageFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.shaderImageFloat32AtomicAdd = VK_FALSE;
+		atomicFloatFeatures.sparseImageFloat32Atomics = VK_FALSE;
+		atomicFloatFeatures.sparseImageFloat32AtomicAdd = VK_FALSE;
+
 		// Time query reset
 		VkPhysicalDeviceHostQueryResetFeatures queryResetFeatures;
 		queryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
-		queryResetFeatures.pNext = nullptr;
+		queryResetFeatures.pNext = &atomicFloatFeatures;
 		queryResetFeatures.hostQueryReset = VK_TRUE;
 
 		// Create
