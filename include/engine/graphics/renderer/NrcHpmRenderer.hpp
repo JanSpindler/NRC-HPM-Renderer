@@ -46,6 +46,8 @@ namespace en
 			uint32_t trainHeight;
 			uint32_t trainSpp;
 
+			uint32_t batchSize;
+
 			float volumeDensityFactor;
 			float volumeG;
 
@@ -102,6 +104,7 @@ namespace en
 		void* m_NrcTrainTargetDCuBuffer;
 
 		VkDeviceSize m_NrcInferFilterBufferSize = 0;
+		void* m_NrcInferFilterData = nullptr;
 		vk::Buffer* m_NrcInferFilterBuffer = nullptr;
 
 		VkPipelineLayout m_PipelineLayout;
@@ -116,8 +119,8 @@ namespace en
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
-		vk::Shader m_PrepRayInfoShader;
-		VkPipeline m_PrepRayInfoPipeline;
+		vk::Shader m_PrepInferRaysShader;
+		VkPipeline m_PrepInferRaysPipeline;
 
 		vk::Shader m_PrepTrainRaysShader;
 		VkPipeline m_PrepTrainRaysPipeline;
@@ -167,7 +170,7 @@ namespace en
 		void InitSpecializationConstants();
 
 		void CreateGenRaysPipeline(VkDevice device);
-		void CreatePrepRayInfoPipeline(VkDevice device);
+		void CreatePrepInferRaysPipeline(VkDevice device);
 		void CreatePrepTrainRaysPipeline(VkDevice device);
 		void CreateRenderPipeline(VkDevice device);
 

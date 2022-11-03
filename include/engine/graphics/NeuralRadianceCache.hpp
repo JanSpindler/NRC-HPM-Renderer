@@ -22,13 +22,14 @@ namespace en
 			cudaExternalSemaphore_t cudaStartSemaphore,
 			cudaExternalSemaphore_t cudaFinishedSemaphore);
 
-		void InferAndTrain();
+		void InferAndTrain(const uint32_t* inferFilter);
 
 		void Destroy();
 
 		float GetLoss() const;
 		size_t GetInferBatchCount() const;
 		size_t GetTrainBatchCount() const;
+		uint32_t GetBatchSize() const;
 
 	private:
 		static const uint32_t sc_InputCount;
@@ -48,7 +49,7 @@ namespace en
 		float m_Loss = 0.0f;
 		size_t m_TrainCounter = 0;
 
-		void Inference();
+		void Inference(const uint32_t* inferFilter);
 		void Train();
 		void AwaitCudaStartSemaphore();
 		void SignalCudaFinishedSemaphore();

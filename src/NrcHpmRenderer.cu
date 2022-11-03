@@ -192,7 +192,7 @@ namespace en
 		m_RenderHeight(height),
 		m_TrainSpp(trainSpp),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
-		m_PrepRayInfoShader("nrc/prep_ray_info.comp", false),
+		m_PrepInferRaysShader("nrc/prep_infer_rays.comp", false),
 		m_PrepTrainRaysShader("nrc/prep_train_rays.comp", false),
 		m_RenderShader("nrc/render.comp", false),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
@@ -230,10 +230,11 @@ namespace en
 			m_CuExtCudaFinishedSemaphore);
 
 		m_NrcInferFilterBufferSize = sizeof(uint32_t) * m_Nrc.GetInferBatchCount();
+		m_NrcInferFilterData = malloc(m_NrcInferFilterBufferSize);
 		m_NrcInferFilterBuffer = new vk::Buffer(
 			m_NrcInferFilterBufferSize,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
 
 		m_CommandPool.AllocateBuffers(3, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -246,7 +247,7 @@ namespace en
 		InitSpecializationConstants();
 
 		CreateGenRaysPipeline(device);
-		CreatePrepRayInfoPipeline(device);
+		CreatePrepInferRaysPipeline(device);
 		CreatePrepTrainRaysPipeline(device);
 		CreateRenderPipeline(device);
 
@@ -296,8 +297,11 @@ namespace en
 		VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 		ASSERT_VULKAN(result);
 
+		// Sync infer filter
+		m_NrcInferFilterBuffer->GetData(m_NrcInferFilterBufferSize, m_NrcInferFilterData, 0, 0);
+
 		// Cuda
-		m_Nrc.InferAndTrain();
+		m_Nrc.InferAndTrain(reinterpret_cast<uint32_t*>(m_NrcInferFilterData));
 		
 		// Post cuda
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -351,8 +355,8 @@ namespace en
 		vkDestroyPipeline(device, m_PrepTrainRaysPipeline, nullptr);
 		m_PrepTrainRaysShader.Destroy();
 
-		vkDestroyPipeline(device, m_PrepRayInfoPipeline, nullptr);
-		m_PrepRayInfoShader.Destroy();
+		vkDestroyPipeline(device, m_PrepInferRaysPipeline, nullptr);
+		m_PrepInferRaysShader.Destroy();
 
 		vkDestroyPipeline(device, m_GenRaysPipeline, nullptr);
 		m_GenRaysShader.Destroy();
@@ -361,6 +365,7 @@ namespace en
 	
 		m_NrcInferFilterBuffer->Destroy();
 		delete m_NrcInferFilterBuffer;
+		delete m_NrcInferFilterData;
 
 		m_NrcTrainTargetBuffer->Destroy();
 		delete m_NrcTrainTargetBuffer;
@@ -470,7 +475,7 @@ namespace en
 		
 		size_t periodIndex = 0;
 		ImGui::Text("GenRays Time %f ms", m_TimePeriods[periodIndex++]);
-		ImGui::Text("PrepRayInfo Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("PrepInferRays Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("PrepTrainRays Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Cuda Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Render Time %f ms", m_TimePeriods[periodIndex++]);
@@ -548,28 +553,28 @@ namespace en
 		m_NrcInferInputBuffer = new vk::Buffer(
 			m_NrcInferInputBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
 		m_NrcInferOutputBuffer = new vk::Buffer(
 			m_NrcInferOutputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 		
 		m_NrcTrainInputBuffer = new vk::Buffer(
 			m_NrcTrainInputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 		
 		m_NrcTrainTargetBuffer = new vk::Buffer(
 			m_NrcTrainTargetBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{},
 			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
@@ -647,11 +652,11 @@ namespace en
 		// Fill struct
 		m_SpecData.renderWidth = m_RenderWidth;
 		m_SpecData.renderHeight = m_RenderHeight;
-		
 		m_SpecData.trainWidth = m_TrainWidth;
 		m_SpecData.trainHeight = m_TrainHeight;
-
 		m_SpecData.trainSpp = m_TrainSpp;
+
+		m_SpecData.batchSize = m_Nrc.GetBatchSize();
 
 		m_SpecData.volumeDensityFactor = m_HpmScene.GetVolumeData()->GetDensityFactor();
 		m_SpecData.volumeG = m_HpmScene.GetVolumeData()->GetG();
@@ -659,43 +664,50 @@ namespace en
 		m_SpecData.hdrEnvMapStrength = m_HpmScene.GetHdrEnvMap()->GetStrength();
 
 		// Init map entries
+		uint32_t constantID = 0;
+
 		VkSpecializationMapEntry renderWidthEntry;
-		renderWidthEntry.constantID = 0;
+		renderWidthEntry.constantID = constantID++;
 		renderWidthEntry.offset = offsetof(SpecializationData, SpecializationData::renderWidth);
 		renderWidthEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry renderHeightEntry;
-		renderHeightEntry.constantID = 1;
+		renderHeightEntry.constantID = constantID++;
 		renderHeightEntry.offset = offsetof(SpecializationData, SpecializationData::renderHeight);
 		renderHeightEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry trainWidthEntry;
-		trainWidthEntry.constantID = 2;
+		trainWidthEntry.constantID = constantID++;
 		trainWidthEntry.offset = offsetof(SpecializationData, SpecializationData::trainWidth);
 		trainWidthEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry trainHeightEntry;
-		trainHeightEntry.constantID = 3;
+		trainHeightEntry.constantID = constantID++;
 		trainHeightEntry.offset = offsetof(SpecializationData, SpecializationData::trainHeight);
 		trainHeightEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry trainSppEntry;
-		trainSppEntry.constantID = 4;
+		trainSppEntry.constantID = constantID++;
 		trainSppEntry.offset = offsetof(SpecializationData, SpecializationData::trainSpp);
 		trainSppEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry batchSizeEntry;
+		batchSizeEntry.constantID = constantID++;
+		batchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::batchSize);
+		batchSizeEntry.size = sizeof(uint32_t);
+
 		VkSpecializationMapEntry volumeDensityFactorEntry;
-		volumeDensityFactorEntry.constantID = 5;
+		volumeDensityFactorEntry.constantID = constantID++;
 		volumeDensityFactorEntry.offset = offsetof(SpecializationData, SpecializationData::volumeDensityFactor);
 		volumeDensityFactorEntry.size = sizeof(float);
 
 		VkSpecializationMapEntry volumeGEntry;
-		volumeGEntry.constantID = 6;
+		volumeGEntry.constantID = constantID++;
 		volumeGEntry.offset = offsetof(SpecializationData, SpecializationData::volumeG);
 		volumeGEntry.size = sizeof(float);
 
 		VkSpecializationMapEntry hdrEnvMapStrengthEntry;
-		hdrEnvMapStrengthEntry.constantID = 7;
+		hdrEnvMapStrengthEntry.constantID = constantID++;
 		hdrEnvMapStrengthEntry.offset = offsetof(SpecializationData, SpecializationData::hdrEnvMapStrength);
 		hdrEnvMapStrengthEntry.size = sizeof(float);
 
@@ -705,6 +717,7 @@ namespace en
 			trainWidthEntry,
 			trainHeightEntry,
 			trainSppEntry,
+			batchSizeEntry,
 			volumeDensityFactorEntry,
 			volumeGEntry,
 			hdrEnvMapStrengthEntry
@@ -740,14 +753,14 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void NrcHpmRenderer::CreatePrepRayInfoPipeline(VkDevice device)
+	void NrcHpmRenderer::CreatePrepInferRaysPipeline(VkDevice device)
 	{
 		VkPipelineShaderStageCreateInfo shaderStage;
 		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStage.pNext = nullptr;
 		shaderStage.flags = 0;
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStage.module = m_PrepRayInfoShader.GetVulkanModule();
+		shaderStage.module = m_PrepInferRaysShader.GetVulkanModule();
 		shaderStage.pName = "main";
 		shaderStage.pSpecializationInfo = &m_SpecInfo;
 
@@ -760,7 +773,7 @@ namespace en
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineCI.basePipelineIndex = 0;
 
-		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_PrepRayInfoPipeline);
+		VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_PrepInferRaysPipeline);
 		ASSERT_VULKAN(result);
 	}
 
@@ -1589,6 +1602,13 @@ namespace en
 		// Reset query pool
 		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, c_QueryCount);
 
+		// Clear buffers
+		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferInputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
+		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferOutputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
+		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcTrainInputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
+		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcTrainTargetBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
+		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferFilterBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
+		
 		// Collect descriptor sets
 		std::vector<VkDescriptorSet> descSets = { m_Camera->GetDescriptorSet() };
 		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
@@ -1627,8 +1647,8 @@ namespace en
 		// Timestamp
 		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
-		// Prep ray info
-		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepRayInfoPipeline);
+		// Prep infer rays
+		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepInferRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
 
 		vkCmdPipelineBarrier(

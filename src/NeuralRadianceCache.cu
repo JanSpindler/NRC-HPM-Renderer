@@ -118,10 +118,10 @@ namespace en
 		}
 	}
 
-	void NeuralRadianceCache::InferAndTrain()
+	void NeuralRadianceCache::InferAndTrain(const uint32_t* inferFilter)
 	{
 		AwaitCudaStartSemaphore();
-		Inference();
+		Inference(inferFilter);
 		Train();
 		SignalCudaFinishedSemaphore();
 	}
@@ -145,13 +145,21 @@ namespace en
 		return m_TrainInputBatches.size();
 	}
 
-	void NeuralRadianceCache::Inference()
+	uint32_t NeuralRadianceCache::GetBatchSize() const
+	{
+		return m_BatchSize;
+	}
+
+	void NeuralRadianceCache::Inference(const uint32_t* inferFilter)
 	{
 		for (size_t i = 0; i < m_InferInputBatches.size(); i++)
 		{
-			const tcnn::GPUMatrix<float>& inputBatch = m_InferInputBatches[i];
-			tcnn::GPUMatrix<float>& outputBatch = m_InferOutputBatches[i];
-			m_Model.network->inference(inputBatch, outputBatch);
+			if (inferFilter[i] > 0)
+			{
+				const tcnn::GPUMatrix<float>& inputBatch = m_InferInputBatches[i];
+				tcnn::GPUMatrix<float>& outputBatch = m_InferOutputBatches[i];
+				m_Model.network->inference(inputBatch, outputBatch);
+			}
 		}
 	}
 

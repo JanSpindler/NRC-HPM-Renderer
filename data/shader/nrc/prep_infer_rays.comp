@@ -4,13 +4,8 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-void StoreNrcInferInput(const vec3 pos, const vec3 dir)
+void StoreNrcInferInput(const uint linearPixelIndex, const vec3 pos, const vec3 dir)
 {
-	// Calc index
-	const uint x = gl_GlobalInvocationID.x;
-	const uint y = gl_GlobalInvocationID.y;
-	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
-
 	// Norm pos
 	const vec3 normPos = (pos / skySize) + (skySize / 2.0);
 
@@ -33,9 +28,22 @@ void main()
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 	const ivec2 imageCoord = ivec2(x, y);
+	const uint linearPixelIndex = (y * RENDER_WIDTH) + x;
 
+	// Check if volume was hit
+	const vec4 primaryRayInfo = imageLoad(primaryRayInfoImage, imageCoord);
+	const bool didScatter = primaryRayInfo.x == 1.0;
+	if (!didScatter)
+	{
+		return;
+	}
+
+	// Store neural ray info
 	const vec3 rayOrigin = imageLoad(nrcRayOriginImage, imageCoord).xyz;
 	const vec3 rayDir = imageLoad(nrcRayDirImage, imageCoord).xyz;
+	StoreNrcInferInput(linearPixelIndex, rayOrigin, rayDir);
 
-	StoreNrcInferInput(rayOrigin, rayDir);
+	// Increment batch valid sample counter
+	const uint linearBatchIndex = linearPixelIndex / BATCH_SIZE;
+	atomicAdd(nrcInferFilter[linearBatchIndex], 1u);
 }
