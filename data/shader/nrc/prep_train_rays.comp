@@ -4,7 +4,7 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 dir, vec3 target)
+void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 dir, vec3 target, const bool didScatter)
 {
 	// Calc index
 	const uint x = trainImageCoord.x;
@@ -35,18 +35,21 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainTarget[linearPixelIndex].g = target.y;
 	nrcTrainTarget[linearPixelIndex].b = target.z;
 
-	// Store randomly in reservoir
-	const uint resRayX = uint(RandFloat(float(TRAIN_WIDTH)));
-	const uint resRayY = uint(RandFloat(float(TRAIN_HEIGHT)));
-	const uint linearResIndex = (resRayY * TRAIN_WIDTH) + resRayX;
-
-	atomicExchange(nrcTrainRayRes[linearResIndex].posX, pos.x);
-	atomicExchange(nrcTrainRayRes[linearResIndex].posY, pos.y);
-	atomicExchange(nrcTrainRayRes[linearResIndex].posZ, pos.z);
-
-	atomicExchange(nrcTrainRayRes[linearResIndex].dirX, dir.x);
-	atomicExchange(nrcTrainRayRes[linearResIndex].dirY, dir.y);
-	atomicExchange(nrcTrainRayRes[linearResIndex].dirZ, dir.z);
+	// If didScatter -> store randomly in reservoir
+	if (didScatter)
+	{
+		const uint resRayX = uint(RandFloat(float(TRAIN_WIDTH)));
+		const uint resRayY = uint(RandFloat(float(TRAIN_HEIGHT)));
+		const uint linearResIndex = (resRayY * TRAIN_WIDTH) + resRayX;
+		
+		atomicExchange(nrcTrainRayRes[linearResIndex].posX, pos.x);
+		atomicExchange(nrcTrainRayRes[linearResIndex].posY, pos.y);
+		atomicExchange(nrcTrainRayRes[linearResIndex].posZ, pos.z);
+		
+		atomicExchange(nrcTrainRayRes[linearResIndex].dirX, dir.x);
+		atomicExchange(nrcTrainRayRes[linearResIndex].dirY, dir.y);
+		atomicExchange(nrcTrainRayRes[linearResIndex].dirZ, dir.z);
+	}
 }
 
 #define PATH_SAMPLE_COUNT 32
@@ -100,6 +103,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 void main()
 {
+	// Get image coord
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 	const ivec2 trainImageCoord = ivec2(x, y);
@@ -109,15 +113,38 @@ void main()
 	// Setup random
 	InitRandom(fragUV);
 
-	const vec3 rayOrigin = imageLoad(nrcRayOriginImage, renderImageCoord).xyz;
-	const vec3 rayDir = imageLoad(nrcRayDirImage, renderImageCoord).xyz;
-
-	vec3 target = vec3(0.0);
-	for (uint i = 0; i < TRAIN_SPP; i++)
+	// Get rayOrigin and rayDir for train ray
+	vec3 rayOrigin;
+	vec3 rayDir;
+	
+	const bool didScatter = imageLoad(primaryRayInfoImage, renderImageCoord).x == 1.0;
+	if (didScatter) // Load from pixel
 	{
-		target += TracePath(rayOrigin, rayDir).xyz;
+		rayOrigin = imageLoad(nrcRayOriginImage, renderImageCoord).xyz;
+		rayDir = imageLoad(nrcRayDirImage, renderImageCoord).xyz;
 	}
+	else // Load randomly from reservoir
+	{
+		const uint resRayX = uint(RandFloat(float(TRAIN_WIDTH)));
+		const uint resRayY = uint(RandFloat(float(TRAIN_HEIGHT)));
+		const uint linearResIndex = (resRayY * TRAIN_WIDTH) + resRayX;
+
+		rayOrigin.x = nrcTrainRayRes[linearResIndex].posX;
+		rayOrigin.y = nrcTrainRayRes[linearResIndex].posY;
+		rayOrigin.z = nrcTrainRayRes[linearResIndex].posZ;
+
+		rayDir.x = nrcTrainRayRes[linearResIndex].dirX;
+		rayDir.y = nrcTrainRayRes[linearResIndex].dirY;
+		rayDir.z = nrcTrainRayRes[linearResIndex].dirZ;
+
+		if (rayDir == vec3(0.0)) { rayDir = vec3(1.0); }
+	}
+	
+	// Calculate target
+	vec3 target = vec3(0.0);
+	for (uint i = 0; i < TRAIN_SPP; i++) { target += TracePath(rayOrigin, rayDir).xyz; }
 	target /= float(TRAIN_SPP);
 
-	StoreNrcTrainData(trainImageCoord, rayOrigin, rayDir, target);
+	// Store train data
+	StoreNrcTrainData(trainImageCoord, rayOrigin, rayDir, target, didScatter);
 }

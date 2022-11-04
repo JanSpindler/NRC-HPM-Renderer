@@ -219,9 +219,13 @@ void Benchmark(
 	}
 
 	// TODO: render nrc images with same camera
-	mcHpmRenderer->Render(queue);
+	nrcHpmRenderer->Render(queue);
 	ASSERT_VULKAN(vkQueueWaitIdle(queue));
 	nrcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "nrc_1.exr");
+
+	mcHpmRenderer->Render(queue);
+	ASSERT_VULKAN(vkQueueWaitIdle(queue));
+	mcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "mc_1.exr");
 
 	// Destroy resources
 	for (size_t i = 0; i < cameras.size(); i++) { cameras[i].Destroy(); }
@@ -273,7 +277,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 64, &camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, &camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
 	switch (rendererId)
@@ -320,10 +324,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 		// Render
 		// Always render nrc for training
-		nrcHpmRenderer->Render(queue);
-		result = vkQueueWaitIdle(queue);
-		ASSERT_VULKAN(result);
-		nrcHpmRenderer->EvaluateTimestampQueries();
+		//nrcHpmRenderer->Render(queue);
+		//result = vkQueueWaitIdle(queue);
+		//ASSERT_VULKAN(result);
+		//nrcHpmRenderer->EvaluateTimestampQueries();
 
 		switch (rendererId)
 		{
@@ -334,6 +338,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			mcHpmRenderer->EvaluateTimestampQueries();
 			break;
 		case 1: // NRC
+			nrcHpmRenderer->Render(queue);
+			result = vkQueueWaitIdle(queue);
+			ASSERT_VULKAN(result);
+			nrcHpmRenderer->EvaluateTimestampQueries();
 			break;
 		default: // Error
 			en::Log::Error("Renderer ID is invalid", true);
