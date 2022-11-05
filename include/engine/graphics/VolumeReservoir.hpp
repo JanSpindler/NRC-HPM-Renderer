@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 
 #include <engine/graphics/vulkan/Buffer.hpp>
 
@@ -46,3 +46,4 @@ namespace en
 		void AllocateAndUpdateDescriptorSet(VkDevice device);
 	};
 }
+*/

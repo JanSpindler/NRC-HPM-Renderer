@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 
 #include <engine/graphics/Camera.hpp>
 #include <engine/objects/VolumeData.hpp>
@@ -119,3 +119,4 @@ namespace en
 		void RecordCommandBuffer();
 	};
 }
+*/
