@@ -14,6 +14,7 @@ namespace en
 	VkDescriptorSetLayout NrcHpmRenderer::m_DescSetLayout;
 	VkDescriptorPool NrcHpmRenderer::m_DescPool;
 
+#ifdef _WIN64
 	PFN_vkGetSemaphoreWin32HandleKHR fpGetSemaphoreWin32HandleKHR = nullptr;
 
 	HANDLE GetSemaphoreHandle(VkDevice device, VkSemaphore vkSemaphore)
@@ -33,6 +34,27 @@ namespace en
 		fpGetSemaphoreWin32HandleKHR(device, &vulkanSemaphoreGetWin32HandleInfoKHR, &handle);
 		return handle;
 	}
+#else
+	PFN_vkGetSemaphoreFdKHR fpGetSemaphoreFdKHR = nullptr;
+
+	int GetSemaphoreHandle(VkDevice device, VkSemaphore semaphore)
+	{
+		if (vkGetSemaphoreFdKHR == nullptr)
+		{
+			fpGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)vkGetDeviceProcAddr(device, "vkGetSemaphoreFdKHR");
+		}
+
+		VkSemaphoreGetFdInfoKHR vulkanSemaphoreGetFdInfoKHR;
+		vulkanSemaphoreGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR;
+		vulkanSemaphoreGetFdInfoKHR.pNext = nullptr;
+		vulkanSemaphoreGetFdInfoKHR.semaphore = semaphore;
+		vulkanSemaphoreGetFdInfoKHR.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+
+		int fd;
+		fpGetSemaphoreFdKHR(device, &vulkanSemaphoreGetFdInfoKHR, &fd);
+		return fd;
+	}
+#endif
 
 	void NrcHpmRenderer::Init(VkDevice device)
 	{
@@ -527,7 +549,11 @@ namespace en
 		VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
 		vulkanExportSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
 		vulkanExportSemaphoreCreateInfo.pNext = nullptr;
+#ifdef _WIN64
 		vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#else
+		vulkanExportSemaphoreCreateInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT
+#endif
 
 		VkSemaphoreCreateInfo semaphoreCI;
 		semaphoreCI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -542,15 +568,25 @@ namespace en
 
 		// Export semaphore to cuda
 		cudaExternalSemaphoreHandleDesc extCudaSemaphoreHD{};
+#ifdef _WIN64
 		extCudaSemaphoreHD.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+#else
+		extCudaSemaphoreHD.type = cudaExternalSemaphoreHandleTypeOpaqueFd;
+#endif
 
+#ifdef _WIN64
 		extCudaSemaphoreHD.handle.win32.handle = GetSemaphoreHandle(device, m_CudaStartSemaphore);
-		cudaError_t error = cudaImportExternalSemaphore(&m_CuExtCudaStartSemaphore, &extCudaSemaphoreHD);
-		ASSERT_CUDA(error);
-
+		ASSERT_CUDA(cudaImportExternalSemaphore(&m_CuExtCudaStartSemaphore, &extCudaSemaphoreHD));
+		
 		extCudaSemaphoreHD.handle.win32.handle = GetSemaphoreHandle(device, m_CudaFinishedSemaphore);
-		error = cudaImportExternalSemaphore(&m_CuExtCudaFinishedSemaphore, &extCudaSemaphoreHD);
-		ASSERT_CUDA(error);
+		ASSERT_CUDA(cudaImportExternalSemaphore(&m_CuExtCudaFinishedSemaphore, &extCudaSemaphoreHD));
+#else
+		extCudaSemaphoreHD.handle.fd = GetSemaphoreHandle(device, m_CudaStartSemaphore);
+		ASSERT_CUDA(cudaImportExternalSemaphore(&m_CuExtCudaStartSemaphore, &extCudaSemaphoreHD));
+		
+		extCudaSemaphoreHD.handle.fd= GetSemaphoreHandle(device, m_CudaFinishedSemaphore);
+		ASSERT_CUDA(cudaImportExternalSemaphore(&m_CuExtCudaFinishedSemaphore, &extCudaSemaphoreHD));
+#endif
 	}
 
 	void NrcHpmRenderer::CreateNrcBuffers()
