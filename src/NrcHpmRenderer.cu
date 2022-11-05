@@ -552,7 +552,7 @@ namespace en
 #ifdef _WIN64
 		vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 #else
-		vulkanExportSemaphoreCreateInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+		vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
 #endif
 
 		VkSemaphoreCreateInfo semaphoreCI;
@@ -660,22 +660,22 @@ namespace en
 		cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
 		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;;
 
-		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferInputBuffer->GetMemoryFd();
+		cuExtMemHandleDesc.handle.fd = m_NrcInferInputBuffer->GetMemoryFd();
 		cuExtMemHandleDesc.size = m_NrcInferInputBufferSize;
 		cudaError_t cudaResult = cudaImportExternalMemory(&m_NrcInferInputCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
-		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferOutputBuffer->GetMemoryFd();
+		cuExtMemHandleDesc.handle.fd = m_NrcInferOutputBuffer->GetMemoryFd();
 		cuExtMemHandleDesc.size = m_NrcInferOutputBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcInferOutputCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
-		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainInputBuffer->GetMemoryFd();
+		cuExtMemHandleDesc.handle.fd = m_NrcTrainInputBuffer->GetMemoryFd();
 		cuExtMemHandleDesc.size = m_NrcTrainInputBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcTrainInputCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
 
-		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainTargetBuffer->GetMemoryFd();
+		cuExtMemHandleDesc.handle.fd = m_NrcTrainTargetBuffer->GetMemoryFd();
 		cuExtMemHandleDesc.size = m_NrcTrainTargetBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcTrainTargetCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
