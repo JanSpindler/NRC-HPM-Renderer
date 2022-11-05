@@ -7,6 +7,8 @@ namespace en::vk
 {
 #ifdef _WIN64
 	PFN_vkGetMemoryWin32HandleKHR fpGetMemoryWin32HandleKHR = nullptr;
+#else
+	PFN_vkGetMemoryFdKHR fpGetMemoryFdKHR = nullptr;
 #endif
 
 	void Buffer::Copy(const Buffer* src, Buffer* dest, VkDeviceSize size)
@@ -168,13 +170,30 @@ namespace en::vk
 
 			VkMemoryGetWin32HandleInfoKHR vkMemoryGetWin32HandleInfoKHR = {};
 			vkMemoryGetWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
-			vkMemoryGetWin32HandleInfoKHR.pNext = NULL;
+			vkMemoryGetWin32HandleInfoKHR.pNext = nullptr;
 			vkMemoryGetWin32HandleInfoKHR.memory = m_DeviceMemory;
 			vkMemoryGetWin32HandleInfoKHR.handleType = extMemType;
 
 			fpGetMemoryWin32HandleKHR(VulkanAPI::GetDevice(), &vkMemoryGetWin32HandleInfoKHR, &m_Win32Handle);
 		}
 #else
+		if (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
+		{
+			if (fpGetMemoryFdKHR == nullptr)
+			{
+				fpGetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)vkGetInstanceProcAddr(
+					VulkanAPI::GetInstance(),
+					"vkGetMemoryFdKHR");
+			}
+
+			VkMemoryGetFdInfoKHR memoryFdInfo;
+			memoryFdInfo.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
+			memoryFdInfo.pNext = nullptr;
+			memoryFdInfo.memory = m_DeviceMemory;
+			memoryFdInfo.handleType = extMemType;
+
+			fpGetMemoryFdKHR(VulkanAPI::GetDevice(), &memoryFdInfo, &m_Fd);
+		}
 #endif
 
 		// Bind Memory
@@ -234,9 +253,14 @@ namespace en::vk
 	}
 
 #ifdef _WIN64
-	HANDLE Buffer::GetMemoryWin32Handle()
+	HANDLE Buffer::GetMemoryWin32Handle() const
 	{
 		return m_Win32Handle;
+	}
+#else
+	int Buffer::GetMemoryFd() const
+	{
+
 	}
 #endif
 

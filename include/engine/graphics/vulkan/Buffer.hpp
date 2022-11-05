@@ -28,7 +28,9 @@ namespace en::vk
 		void GetData(VkDeviceSize size, void* dst, VkDeviceSize offset, VkMemoryMapFlags mapFlags);
 
 #ifdef _WIN64
-		HANDLE GetMemoryWin32Handle();
+		HANDLE GetMemoryWin32Handle() const;
+#else
+		int GetMemoryFd() const;
 #endif
 
 		void SetData(VkDeviceSize size, const void* data, VkDeviceSize offset, VkMemoryMapFlags mapFlags);
@@ -40,6 +42,10 @@ namespace en::vk
 		VkDeviceMemory m_DeviceMemory;
 		VkDeviceSize m_UsedSize;
 
+#ifdef _WIN64
 		HANDLE m_Win32Handle;
+#else
+		int m_Fd;
+#endif
 	};
 }

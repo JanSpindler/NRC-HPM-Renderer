@@ -598,35 +598,42 @@ namespace en
 		m_NrcTrainTargetBufferSize = m_TrainWidth * m_TrainHeight * 3 * sizeof(float);
 
 		// Create buffers
+#ifdef _WIN64
+		VkExternalMemoryHandleTypeFlagBits extMemType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#else
+		VkExternalMemoryHandleTypeFlagBits extMemType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+#endif
+
 		m_NrcInferInputBuffer = new vk::Buffer(
 			m_NrcInferInputBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
 			{},
-			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+			extMemType);
 
 		m_NrcInferOutputBuffer = new vk::Buffer(
 			m_NrcInferOutputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{},
-			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+			extMemType);
 		
 		m_NrcTrainInputBuffer = new vk::Buffer(
 			m_NrcTrainInputBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{},
-			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+			extMemType);
 		
 		m_NrcTrainTargetBuffer = new vk::Buffer(
 			m_NrcTrainTargetBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{},
-			VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+			extMemType);
 
 		// Get cuda external memory
+#ifdef _WIN64
 		cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
 		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
 
@@ -649,6 +656,30 @@ namespace en
 		cuExtMemHandleDesc.size = m_NrcTrainTargetBufferSize;
 		cudaResult = cudaImportExternalMemory(&m_NrcTrainTargetCuExtMem, &cuExtMemHandleDesc);
 		ASSERT_CUDA(cudaResult);
+#else
+		cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
+		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;;
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferInputBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = m_NrcInferInputBufferSize;
+		cudaError_t cudaResult = cudaImportExternalMemory(&m_NrcInferInputCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcInferOutputBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = m_NrcInferOutputBufferSize;
+		cudaResult = cudaImportExternalMemory(&m_NrcInferOutputCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainInputBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = m_NrcTrainInputBufferSize;
+		cudaResult = cudaImportExternalMemory(&m_NrcTrainInputCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+
+		cuExtMemHandleDesc.handle.win32.handle = m_NrcTrainTargetBuffer->GetMemoryWin32Handle();
+		cuExtMemHandleDesc.size = m_NrcTrainTargetBufferSize;
+		cudaResult = cudaImportExternalMemory(&m_NrcTrainTargetCuExtMem, &cuExtMemHandleDesc);
+		ASSERT_CUDA(cudaResult);
+#endif
 
 		// Get cuda buffer
 		cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
