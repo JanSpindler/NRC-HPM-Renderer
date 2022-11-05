@@ -204,14 +204,19 @@ void Benchmark(
 		delete gtRenderer;
 	}
 
-	// TODO: render nrc images with same camera
-	nrcHpmRenderer->Render(queue);
-	ASSERT_VULKAN(vkQueueWaitIdle(queue));
-	nrcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "nrc_1.exr");
-
-	mcHpmRenderer->Render(queue);
-	ASSERT_VULKAN(vkQueueWaitIdle(queue));
-	mcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "mc_1.exr");
+	// Test frame
+	for (size_t i = 0; i < cameras.size(); i++)
+	{
+		nrcHpmRenderer->SetCamera(&cameras[i]);
+		nrcHpmRenderer->Render(queue);
+		ASSERT_VULKAN(vkQueueWaitIdle(queue));
+		nrcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "nrc_" + std::to_string(i) + ".exr");
+	
+		mcHpmRenderer->SetCamera(&cameras[i]);
+		mcHpmRenderer->Render(queue);
+		ASSERT_VULKAN(vkQueueWaitIdle(queue));
+		mcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "mc_" + std::to_string(i) + ".exr");
+	}
 
 	// Destroy resources
 	for (size_t i = 0; i < cameras.size(); i++) { cameras[i].Destroy(); }
