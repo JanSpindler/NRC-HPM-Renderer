@@ -4,7 +4,8 @@
 #include <fstream>
 #include <thread>
 #include <array>
-#include <cmath>;
+#include <cmath>
+#include <cstring>
 
 namespace en
 {
@@ -93,7 +94,7 @@ namespace en
 		const size_t rawSize = floatCount * sizeof(float);
 
 		std::vector<float> hdrData(floatCount);
-		memcpy(hdrData.data(), data, rawSize);
+		std::memcpy(hdrData.data(), data, rawSize);
 
 		float maxVal = 0.0f;
 		size_t maxX = 0;
