@@ -43,9 +43,9 @@ namespace en::vk
 		VkDeviceSize m_UsedSize;
 
 #ifdef _WIN64
-		HANDLE m_Win32Handle;
+		HANDLE m_Win32Handle = NULL;
 #else
-		int m_Fd;
+		int m_Fd = 0;
 #endif
 	};
 }

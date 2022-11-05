@@ -66,8 +66,7 @@ namespace en::vk
 		VkExternalMemoryHandleTypeFlagBits extMemType)
 		:
 		m_Mapped(false),
-		m_UsedSize(size),
-		m_Win32Handle(0)
+		m_UsedSize(size)
 	{
 		// Check ext mem type
 		if (extMemType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM &&
