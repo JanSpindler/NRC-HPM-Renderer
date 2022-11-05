@@ -60,7 +60,7 @@ namespace en
 	}
 
 	PointLight::PointLight(const glm::vec3& pos, const glm::vec3& color, float strength) :
-		m_UniformData({ .pos = pos, .strength = strength, .color = color }),
+		m_UniformData({ pos, strength, color }),
 		m_UniformBuffer(
 			sizeof(UniformData), 
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 
