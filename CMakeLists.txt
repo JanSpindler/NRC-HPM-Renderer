@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 
-# Get VCPKG
-if (DEFINED ENV{VCPKG_CMAKE_INCLUDE})
-	include($ENV{VCPKG_CMAKE_INCLUDE})
+# Some cuda stuff
+set(CMAKE_CUDA_ARCHITECTURES 86)
+if (UNIX)
+	set(CMAKE_CUDA_COMPILER /usr/local/cuda-11.8/bin/nvcc)
 endif()
 
 # Project
@@ -23,7 +24,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC "include" ${CUDA_INC_PATH})
 list(APPEND CUDA_NVCC_FLAGS "--extended-lambda")
 list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 
-set(CMAKE_CUDA_ARCHITECTURES 86)
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "86")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_17)
@@ -45,7 +45,11 @@ find_package(glm CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 
 # STB
-find_path(STB_INCLUDE_DIRS "stb.h")
+if (WIN32)
+	find_path(STB_INCLUDE_DIRS "stb.h")
+elseif (UNIX)
+	find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
+endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${STB_INCLUDE_DIRS})
 
 # IMGUI
@@ -63,8 +67,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "dependencies/tiny-cuda-nn/in
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
 
 # TBB
-find_package(TBB CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+#find_package(TBB CONFIG REQUIRED)
+#target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
 
 # OPENVDB
 #target_include_directories(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\include")

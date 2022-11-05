@@ -1,10 +1,4 @@
-#define VK_USE_PLATFORM_WIN32_KHR
-
-#include <aclapi.h>
-#include <dxgi1_2.h>
-#include <windows.h>
-#include <VersionHelpers.h>
-
+#include <engine/cuda_common.hpp>
 #include <engine/graphics/vulkan/Buffer.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <cstring>
@@ -72,8 +66,9 @@ namespace en::vk
 		m_Win32Handle(0)
 	{
 		// Check ext mem type
-		if ((extMemType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM) &&
-			(extMemType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT))
+		if (extMemType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM &&
+			extMemType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT &&
+			extMemType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
 		{
 			Log::Error("vk::Buffer external memory type not supported", true);
 		}

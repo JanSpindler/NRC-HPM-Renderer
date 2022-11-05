@@ -1,12 +1,4 @@
-//#include <cuda_main.hpp>
-
-#define VK_USE_PLATFORM_WIN32_KHR
-
-#include <aclapi.h>
-#include <dxgi1_2.h>
-#include <windows.h>
-#include <VersionHelpers.h>
-
+#include <engine/cuda_common.hpp>
 #include <engine/util/Log.hpp>
 #include <engine/graphics/Window.hpp>
 #include <engine/graphics/VulkanAPI.hpp>
@@ -24,12 +16,6 @@
 #include <engine/AppConfig.hpp>
 #include <filesystem>
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
-
-#include <cuda_runtime.h>
-#include <tiny-cuda-nn/config.h>
-#include <vulkan/vulkan.h>
-
-#define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;

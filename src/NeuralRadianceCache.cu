@@ -1,10 +1,7 @@
-#include <cuda_runtime.h>
-#include <tiny-cuda-nn/config.h>
+#include <engine/cuda_common.hpp>
 #include <engine/graphics/NeuralRadianceCache.hpp>
 #include <random>
 #include <engine/util/Log.hpp>
-
-#define ASSERT_CUDA(error) if (error != cudaSuccess) { en::Log::Error("Cuda assert triggered: " + std::string(cudaGetErrorName(error)), true); }
 
 namespace en
 {

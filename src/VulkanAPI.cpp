@@ -1,4 +1,7 @@
+#ifdef _WIN64
 #define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
 #include <engine/graphics/VulkanAPI.hpp>
 #include <vector>
 #include <engine/util/Log.hpp>
@@ -433,8 +436,13 @@ namespace en
 			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+#ifdef _WIN64
 			VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
+#else
+			VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+			VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
+#endif
 		};
 
 		float priorities[] = { 1.0f, 1.0f };

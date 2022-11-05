@@ -26,7 +26,10 @@ namespace en::vk
 		VkBuffer GetVulkanHandle() const;
 		VkDeviceSize GetUsedSize() const;
 		void GetData(VkDeviceSize size, void* dst, VkDeviceSize offset, VkMemoryMapFlags mapFlags);
+
+#ifdef _WIN64
 		HANDLE GetMemoryWin32Handle();
+#endif
 
 		void SetData(VkDeviceSize size, const void* data, VkDeviceSize offset, VkMemoryMapFlags mapFlags);
 
