@@ -5,7 +5,9 @@
 
 namespace en::vk
 {
+#ifdef _WIN64
 	PFN_vkGetMemoryWin32HandleKHR fpGetMemoryWin32HandleKHR = nullptr;
+#endif
 
 	void Buffer::Copy(const Buffer* src, Buffer* dest, VkDeviceSize size)
 	{
@@ -83,7 +85,10 @@ namespace en::vk
 
 		VkBufferCreateInfo createInfo;
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.pNext = (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT) ? &extMemBufCI : nullptr;
+		createInfo.pNext =
+			(extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
+			extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT) ? 
+			&extMemBufCI : nullptr;
 		createInfo.flags = 0;
 		createInfo.size = size;
 		createInfo.usage = usage;
@@ -110,7 +115,9 @@ namespace en::vk
 
 		// Allocate Memory
 		void* allocateInfoPnext = nullptr;
+		VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
 
+#ifdef _WIN64
 		if (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT)
 		{
 			SECURITY_ATTRIBUTES winSecurityAttributes{};
@@ -122,13 +129,22 @@ namespace en::vk
 			vulkanExportMemoryWin32HandleInfoKHR.dwAccess = DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
 			vulkanExportMemoryWin32HandleInfoKHR.name = (LPCWSTR)NULL;
 
-			VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
 			vulkanExportMemoryAllocateInfoKHR.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
 			vulkanExportMemoryAllocateInfoKHR.pNext = &vulkanExportMemoryWin32HandleInfoKHR;
 			vulkanExportMemoryAllocateInfoKHR.handleTypes = extMemType;
 
 			allocateInfoPnext = &vulkanExportMemoryAllocateInfoKHR;
 		}
+#else
+		if (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
+		{
+			vulkanExportMemoryAllocateInfoKHR.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR;
+			vulkanExportMemoryAllocateInfoKHR.pNext = nullptr;
+			vulkanExportMemoryAllocateInfoKHR.handleTypes = extMemType;
+
+			allocateInfoPnext = &vulkanExportMemoryAllocateInfoKHR;
+		}
+#endif
 
 		VkMemoryAllocateInfo allocateInfo;
 		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -140,6 +156,7 @@ namespace en::vk
 		ASSERT_VULKAN(result);
 
 		// Retreive memory handle
+#ifdef _WIN64
 		if (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT)
 		{
 			if (fpGetMemoryWin32HandleKHR == nullptr)
@@ -157,6 +174,8 @@ namespace en::vk
 
 			fpGetMemoryWin32HandleKHR(VulkanAPI::GetDevice(), &vkMemoryGetWin32HandleInfoKHR, &m_Win32Handle);
 		}
+#else
+#endif
 
 		// Bind Memory
 		result = vkBindBufferMemory(device, m_VulkanHandle, m_DeviceMemory, 0);
@@ -214,10 +233,12 @@ namespace en::vk
 		UnmapMemory();
 	}
 
+#ifdef _WIN64
 	HANDLE Buffer::GetMemoryWin32Handle()
 	{
 		return m_Win32Handle;
 	}
+#endif
 
 	void Buffer::SetData(VkDeviceSize size, const void* data, VkDeviceSize offset, VkMemoryMapFlags mapFlags)
 	{
