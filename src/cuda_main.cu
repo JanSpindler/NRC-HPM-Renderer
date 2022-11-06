@@ -121,7 +121,7 @@ void Benchmark(
 
 	// Create reference folder if not exists
 	std::string referenceDirPath = "output/" + std::to_string(sceneID) + "/";
-#if __cplusplic >= 201703L
+#if __cplusplus >= 201703L
 	en::Log::Warn("C++ version lower then 17. Cant create reference data");
 #else
 	if (!std::filesystem::is_directory(referenceDirPath) || !std::filesystem::exists(referenceDirPath))
@@ -517,7 +517,6 @@ int main(int argc, char** argv)
 	}
 
 	en::AppConfig appConfig(myargv);
-
 	bool restartRunConfig;
 	do {
 		restartRunConfig = RunAppConfigInstance(appConfig);
