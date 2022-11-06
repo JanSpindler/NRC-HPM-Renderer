@@ -626,6 +626,8 @@ namespace en
 
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
 	{
+		Log::Info("NrcHpmRenderer: Creating sync objects");
+
 		// Create vk semaphore
 		VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
 		vulkanExportSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
@@ -672,6 +674,8 @@ namespace en
 
 	void NrcHpmRenderer::CreateNrcBuffers()
 	{
+		Log::Info("NrcHpmRenderer: Creating nrc buffers");
+
 		// Calculate sizes
 		m_NrcInferInputBufferSize = m_RenderWidth * m_RenderHeight * 5 * sizeof(float);
 		m_NrcInferOutputBufferSize = m_RenderWidth * m_RenderHeight * 3 * sizeof(float);
@@ -786,6 +790,8 @@ namespace en
 
 	void NrcHpmRenderer::CreatePipelineLayout(VkDevice device)
 	{
+		Log::Info("NrcHpmRenderer: Creating pipeline layout");
+
 		std::vector<VkDescriptorSetLayout> layouts = {
 			Camera::GetDescriptorSetLayout(),
 			VolumeData::GetDescriptorSetLayout(),
