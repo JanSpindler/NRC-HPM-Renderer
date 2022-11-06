@@ -21,6 +21,7 @@ namespace en
 		void ExportOutputImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
 		void RenderImGui();
+		float CompareReferenceMSE(VkQueue queue, const float* referenceData) const;
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;

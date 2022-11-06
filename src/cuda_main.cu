@@ -16,9 +16,12 @@
 #include <engine/AppConfig.hpp>
 #include <filesystem>
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
+#include <tinyexr.h>
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
+en::McHpmRenderer* gtRenderer = nullptr;
+std::array<en::Camera*, 6> testCameras = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -104,63 +107,10 @@ void Benchmark(
 	uint32_t height, 
 	uint32_t sceneID, 
 	const en::AppConfig& appConfig, 
-	const en::HpmScene& scene, 
+	const en::HpmScene& scene,
+	const en::Camera* oldCamera,
 	VkQueue queue)
 {
-	// Create benchmark camera
-	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-
-	std::array<en::Camera, 6> cameras = {
-		en::Camera(
-			glm::vec3(64.0f, 0.0f, 0.0f),
-			glm::vec3(-1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			aspectRatio,
-			glm::radians(60.0f),
-			0.1f,
-			100.0f),
-		en::Camera(
-			glm::vec3(-64.0f, 0.0f, 0.0f),
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			aspectRatio,
-			glm::radians(60.0f),
-			0.1f,
-			100.0f),
-		en::Camera(
-			glm::vec3(0.0f, 64.0f, 0.0f),
-			glm::vec3(0.0f, -1.0f, 0.0f),
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			aspectRatio,
-			glm::radians(60.0f),
-			0.1f,
-			100.0f),
-		en::Camera(
-			glm::vec3(0.0f, -64.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			aspectRatio,
-			glm::radians(60.0f),
-			0.1f,
-			100.0f),
-		en::Camera(
-			glm::vec3(0.0f, 0.0f, 64.0f),
-			glm::vec3(0.0f, 0.0f, -1.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			aspectRatio,
-			glm::radians(60.0f),
-			0.1f,
-			100.0f),
-		en::Camera(
-			glm::vec3(0.0f, 0.0f, -64.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			aspectRatio,
-			glm::radians(60.0f),
-			0.1f,
-			100.0f),
-	};
-
 	// Create output path if not exists
 	std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
 	if (!std::filesystem::is_directory(outputDirPath) || !std::filesystem::exists(outputDirPath))
@@ -180,16 +130,13 @@ void Benchmark(
 		// Create folder
 		std::filesystem::create_directory(referenceDirPath);
 
-		// Create ground truth renderer
-		en::McHpmRenderer* gtRenderer = nullptr;
-
-		for (size_t i = 0; i < cameras.size(); i++)
+		// Generate reference data
+		for (size_t i = 0; i < testCameras.size(); i++)
 		{
 			en::Log::Info("Generating reference image " + std::to_string(i));
 
 			// Set new camera
-			if (gtRenderer == nullptr) { gtRenderer = new en::McHpmRenderer(width, height, 64, &cameras[i], scene); }
-			else { gtRenderer->SetCamera(&cameras[i]); }
+			gtRenderer->SetCamera(testCameras[i]);
 
 			// Generate reference image
 			for (size_t frame = 0; frame < 1024; frame++)
@@ -201,29 +148,65 @@ void Benchmark(
 			// Export reference image
 			gtRenderer->ExportOutputImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
 		}
-
-		// Destroy resources
-		gtRenderer->Destroy();
-		delete gtRenderer;
 	}
 #endif
 
-	// Test frame
-	for (size_t i = 0; i < cameras.size(); i++)
+	// Load reference images from folder
+	std::array<float*, testCameras.size()> gtImages;
+	for (size_t i = 0; i < testCameras.size(); i++)
 	{
-		nrcHpmRenderer->SetCamera(&cameras[i]);
+		int exrWidth;
+		int exrHeight;
+
+		const std::string exrFilePath = referenceDirPath + std::to_string(i) + ".exr";
+		if (TINYEXR_SUCCESS != LoadEXR(&gtImages[i], &exrWidth, &exrHeight, exrFilePath.c_str(), nullptr))
+		{
+			en::Log::Error("Tinyexr failed to load " + exrFilePath, true);
+		}
+
+		if (exrWidth != width || exrHeight != height)
+		{
+			en::Log::Error("Extent of loaded reference image does not match renderer extent", true);
+		}
+	}
+	
+	// Test frame
+	std::array<float, testCameras.size()> nrcMseLosses;
+	std::array<float, testCameras.size()> mcMseLosses;
+	for (size_t i = 0; i < testCameras.size(); i++)
+	{
+		nrcHpmRenderer->SetCamera(testCameras[i]);
 		nrcHpmRenderer->Render(queue);
 		ASSERT_VULKAN(vkQueueWaitIdle(queue));
-		nrcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "nrc_" + std::to_string(i) + ".exr");
-	
-		mcHpmRenderer->SetCamera(&cameras[i]);
+		nrcMseLosses[i] = nrcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
+		
+		mcHpmRenderer->SetCamera(testCameras[i]);
 		mcHpmRenderer->Render(queue);
 		ASSERT_VULKAN(vkQueueWaitIdle(queue));
-		mcHpmRenderer->ExportOutputImageToFile(queue, outputDirPath + "mc_" + std::to_string(i) + ".exr");
+		mcMseLosses[i] = mcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
 	}
 
+	// Calculate total loss
+	float nrcMSE = 0.0f;
+	float mcMSE = 0.0f;
+	for (size_t i = 0; i < testCameras.size(); i++)
+	{
+		nrcMSE += nrcMseLosses[i];
+		mcMSE += mcMseLosses[i];
+	}
+	const float frameCountF = static_cast<float>(testCameras.size());
+	en::Log::Info("NRC MSE: " + std::to_string(nrcMSE / frameCountF));
+	en::Log::Info("MC MSE: " + std::to_string(mcMSE / frameCountF));
+
 	// Destroy resources
-	for (size_t i = 0; i < cameras.size(); i++) { cameras[i].Destroy(); }
+	for (size_t i = 0; i < testCameras.size(); i++)
+	{ 
+		free(gtImages[i]);
+	}
+
+	// Reset camera
+	nrcHpmRenderer->SetCamera(oldCamera);
+	mcHpmRenderer->SetCamera(oldCamera);
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -251,14 +234,66 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	en::HpmScene hpmScene(appConfig);
 
 	// Setup rendering
+	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 	en::Camera camera(
 		glm::vec3(64.0f, 0.0f, 0.0f),
 		glm::vec3(-1.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f),
-		static_cast<float>(width) / static_cast<float>(height),
+		aspectRatio,
 		glm::radians(60.0f),
 		0.1f,
 		100.0f);
+
+	testCameras = {
+			new en::Camera(
+				glm::vec3(64.0f, 0.0f, 0.0f),
+				glm::vec3(-1.0f, 0.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				aspectRatio,
+				glm::radians(60.0f),
+				0.1f,
+				100.0f),
+			new	en::Camera(
+				glm::vec3(-64.0f, 0.0f, 0.0f),
+				glm::vec3(1.0f, 0.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				aspectRatio,
+				glm::radians(60.0f),
+				0.1f,
+				100.0f),
+			new en::Camera(
+				glm::vec3(0.0f, 64.0f, 0.0f),
+				glm::vec3(0.0f, -1.0f, 0.0f),
+				glm::vec3(1.0f, 0.0f, 0.0f),
+				aspectRatio,
+				glm::radians(60.0f),
+				0.1f,
+				100.0f),
+			new en::Camera(
+				glm::vec3(0.0f, -64.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				glm::vec3(1.0f, 0.0f, 0.0f),
+				aspectRatio,
+				glm::radians(60.0f),
+				0.1f,
+				100.0f),
+			new en::Camera(
+				glm::vec3(0.0f, 0.0f, 64.0f),
+				glm::vec3(0.0f, 0.0f, -1.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				aspectRatio,
+				glm::radians(60.0f),
+				0.1f,
+				100.0f),
+			new en::Camera(
+				glm::vec3(0.0f, 0.0f, -64.0f),
+				glm::vec3(0.0f, 0.0f, 1.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				aspectRatio,
+				glm::radians(60.0f),
+				0.1f,
+				100.0f)
+	};
 
 	// Init rendering pipeline
 	en::vk::Swapchain swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
@@ -273,6 +308,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		nrc);
 
 	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, &camera, hpmScene);
+	gtRenderer = new en::McHpmRenderer(width, height, 64, &camera, hpmScene);
 
 	en::ImGuiRenderer::Init(width, height);
 	switch (rendererId)
@@ -402,17 +438,26 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 		// Display
 		swapchain.DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE);
+
+		// Check loss
+		if (frameCount % 1000 == 0)
+		{
+			en::Log::Info("Frame: " + std::to_string(frameCount));
+			Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, &camera, queue);
+		}
+
+		//
 		frameCount++;
 	}
-
-	// Evaluate at end
-	Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, queue);
 
 	// Stop gpu work
 	result = vkDeviceWaitIdle(device);
 	ASSERT_VULKAN(result);
 
 	// End
+	gtRenderer->Destroy();
+	delete gtRenderer;
+	
 	mcHpmRenderer->Destroy();
 	delete mcHpmRenderer;
 	
@@ -420,6 +465,12 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	delete nrcHpmRenderer;
 	en::ImGuiRenderer::Shutdown();
 	swapchain.Destroy(true);
+
+	for (size_t i = 0; i < testCameras.size(); i++)
+	{
+		testCameras[i]->Destroy();
+		delete testCameras[i];
+	}
 
 	hpmScene.Destroy();
 	camera.Destroy();

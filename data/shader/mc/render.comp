@@ -96,7 +96,8 @@ void main()
 		outputColor = TracePath(imageCoord, ro, rd, didScatter, firstVolumeHit);
 		if (!didScatter) { outputColor = vec4(SampleHdrEnvMap(rd), 1.0); }
 	}
-	
+	outputColor.w = didScatter ? 1.0 : 0.0;
+
 	// Store output
 	vec4 blendedVolumeColor = (blendFactor * outputColor) + ((1.0 - blendFactor) * imageLoad(outputImage, imageCoord));
 	imageStore(outputImage, imageCoord, blendedVolumeColor);
