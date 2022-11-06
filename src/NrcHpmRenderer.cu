@@ -44,7 +44,7 @@ namespace en
 		if (vkGetSemaphoreFdKHR == nullptr)
 		{
 			fpGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)vkGetDeviceProcAddr(device, "vkGetSemaphoreFdKHR");
-			Log::Info(std::to_string(reinterpret_cast<void*>(fpGetSemaphoreFdKHR)));
+			Log::Info(std::to_string(reinterpret_cast<size_t>(fpGetSemaphoreFdKHR)));
 		}
 
 		VkSemaphoreGetFdInfoKHR vulkanSemaphoreGetFdInfoKHR;
