@@ -16,6 +16,7 @@ namespace en
 		static void WaitForUsableSize();
 		static void EnableCursor(bool cursorEnabled);
 
+		static bool IsSupported();
 		static GLFWwindow* GetGLFWHandle();
 		static uint32_t GetWidth();
 		static uint32_t GetHeight();
@@ -26,6 +27,8 @@ namespace en
 		static void SetTitle(const std::string& title);
 
 	private:
+		static bool m_Supported;
+
 		static GLFWwindow* m_GLFWHandle;
 
 		static uint32_t m_Width;

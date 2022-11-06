@@ -211,7 +211,8 @@ namespace en
 			Log::Info("\t-" + std::string(extension.extensionName));
 
 		// Select wanted extensions
-		std::vector<const char*> extensions = Window::GetVulkanExtensions();
+		std::vector<const char*> extensions;
+		if (Window::IsSupported()) { extensions = Window::GetVulkanExtensions(); }
 		extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
 		extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
@@ -310,66 +311,57 @@ namespace en
 			for (size_t i = 0; i < queueFamilies.size(); i++)
 			{
 				// find queue with compute, graphics and present capabilities.
-				vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_Surface, &presentSupport);
-				if (
-					queueFamilies[i].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT) &&
-					presentSupport == VK_TRUE)
+				if (Window::IsSupported())
+				{
+					vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_Surface, &presentSupport);
+				}
+
+				if (queueFamilies[i].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
 				{
 					graphicsQFI = i;
-					break;
+					if (!Window::IsSupported()) { break; }
+					else if (presentSupport == VK_TRUE) { break; }
 				}
 			}
 
 			// Surface support
+			bool formatAvailable = true;
 			VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_Surface, &surfaceCapabilities);
-
-			uint32_t formatCount;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_Surface, &formatCount, nullptr);
-			std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_Surface, &formatCount, surfaceFormats.data());
-
-			uint32_t presentModeCount;
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_Surface, &presentModeCount, nullptr);
-			std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_Surface, &presentModeCount, presentModes.data());
-			
-			bool formatAvailable = false;
-			VkSurfaceFormatKHR bestFormat;
-			for (const VkSurfaceFormatKHR& surfaceFormat : surfaceFormats)
-			{
-				if (surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR && surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM)
-				{
-					formatAvailable = true;
-					bestFormat = surfaceFormat;
-					break;
-				}
-			}
-
+			VkSurfaceFormatKHR bestFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 			VkPresentModeKHR bestPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-			for (const VkPresentModeKHR& presentMode : presentModes)
+			if (Window::IsSupported())
 			{
-				if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-				{
-					bestPresentMode = presentMode;
-					break;
-				}
-			}
+				vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_Surface, &surfaceCapabilities);
 
-			// Cooperative matrix types
-			PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV myvkGetPhysicalDeviceCooperativeMatrixPropertiesNV =
-				(PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV) vkGetInstanceProcAddr(m_Instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
-			
-			uint32_t coopMatPropertyCount;
-			myvkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, nullptr);
-			std::vector<VkCooperativeMatrixPropertiesNV> coopMatProperties(coopMatPropertyCount);
-			for (uint32_t i = 0; i < coopMatPropertyCount; i++)
-			{
-				coopMatProperties[i].sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV;
-			}
-			myvkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatPropertyCount, coopMatProperties.data());
-			for (const VkCooperativeMatrixPropertiesNV& coopMatProperty : coopMatProperties)
-			{
+				uint32_t formatCount;
+				vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_Surface, &formatCount, nullptr);
+				std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+				vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_Surface, &formatCount, surfaceFormats.data());
+
+				uint32_t presentModeCount;
+				vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_Surface, &presentModeCount, nullptr);
+				std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+				vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_Surface, &presentModeCount, presentModes.data());
+
+				formatAvailable = false;
+				for (const VkSurfaceFormatKHR& surfaceFormat : surfaceFormats)
+				{
+					if (surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR && surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM)
+					{
+						formatAvailable = true;
+						bestFormat = surfaceFormat;
+						break;
+					}
+				}
+
+				for (const VkPresentModeKHR& presentMode : presentModes)
+				{
+					if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+					{
+						bestPresentMode = presentMode;
+						break;
+					}
+				}
 			}
 
 			// Final check
@@ -432,7 +424,6 @@ namespace en
 
 		// Select wanted extensions
 		std::vector<const char*> extensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
@@ -444,6 +435,8 @@ namespace en
 			VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
 #endif
 		};
+
+		if (Window::IsSupported()) { extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME); }
 
 		float priorities[] = { 1.0f, 1.0f };
 		VkDeviceQueueCreateInfo queueCreateInfo;

@@ -1773,13 +1773,13 @@ namespace en
 		beginInfo.pNext = nullptr;
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
-
+		
 		VkResult result = vkBeginCommandBuffer(m_PreCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
-
+		
 		// Reset query pool
 		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, c_QueryCount);
-
+		
 		// Clear buffers
 		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferInputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
 		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferOutputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
@@ -1792,13 +1792,6 @@ namespace en
 		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
 		descSets.insert(descSets.end(), hpmSceneDescSets.begin(), hpmSceneDescSets.end());
 		descSets.push_back(m_DescSet);
-
-		// Create memory barrier
-		VkMemoryBarrier memoryBarrier;
-		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-		memoryBarrier.pNext = nullptr;
-		memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-		memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(
@@ -1813,30 +1806,12 @@ namespace en
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
 
-		vkCmdPipelineBarrier(
-			m_PreCudaCommandBuffer,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_DEPENDENCY_DEVICE_GROUP_BIT,
-			1, &memoryBarrier,
-			0, nullptr,
-			0, nullptr);
-
 		// Timestamp
 		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
 		// Prep infer rays
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepInferRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
-
-		vkCmdPipelineBarrier(
-			m_PreCudaCommandBuffer,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_DEPENDENCY_DEVICE_GROUP_BIT,
-			1, &memoryBarrier,
-			0, nullptr,
-			0, nullptr);
 
 		// Timestamp
 		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
@@ -1847,7 +1822,7 @@ namespace en
 
 		// Timestamp
 		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
-
+		
 		// End
 		result = vkEndCommandBuffer(m_PreCudaCommandBuffer);
 		ASSERT_VULKAN(result);
@@ -1864,7 +1839,7 @@ namespace en
 
 		VkResult result = vkBeginCommandBuffer(m_PostCudaCommandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
-
+		
 		// Collect descriptor sets
 		std::vector<VkDescriptorSet> descSets = { m_Camera->GetDescriptorSet() };
 		const std::vector<VkDescriptorSet>& hpmSceneDescSets = m_HpmScene.GetDescriptorSets();
@@ -1886,7 +1861,7 @@ namespace en
 
 		// Timestamp
 		vkCmdWriteTimestamp(m_PostCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
-
+		
 		// End command buffer
 		result = vkEndCommandBuffer(m_PostCudaCommandBuffer);
 		ASSERT_VULKAN(result);
