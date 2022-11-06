@@ -50,7 +50,7 @@ namespace en
 		uint32_t trainSpp;
 
 		AppConfig();
-		AppConfig(int argc, char** argv);
+		AppConfig(const std::vector<char*>& argv);
 
 		std::string GetName() const;
 

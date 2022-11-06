@@ -508,7 +508,15 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 int main(int argc, char** argv)
 {
-	en::AppConfig appConfig(argc, argv);
+	std::vector<char*> myargv(argc);
+	std::memcpy(myargv.data(), argv, sizeof(char*) * argc);
+	if (argc == 1)
+	{
+		en::Log::Info("No arguments found. Loading defaults");
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "64", "6", "14", "0", "1920", "1080", "0.02", "1"};
+	}
+
+	en::AppConfig appConfig(myargv);
 
 	bool restartRunConfig;
 	do {

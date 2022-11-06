@@ -69,13 +69,11 @@ namespace en
 		}
 	}
 
-	AppConfig::AppConfig()
-	{
-	}
+	AppConfig::AppConfig() {}
 
-	AppConfig::AppConfig(int argc, char** argv)
+	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argc != 13) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 13) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
