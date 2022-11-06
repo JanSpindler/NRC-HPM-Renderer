@@ -693,6 +693,7 @@ namespace en
 		VkExternalMemoryHandleTypeFlagBits extMemType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
 #endif
 
+		Log::Info("Creating VkBuffers");
 		m_NrcInferInputBuffer = new vk::Buffer(
 			m_NrcInferInputBufferSize, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
@@ -722,6 +723,7 @@ namespace en
 			extMemType);
 
 		// Get cuda external memory
+		Log::Info("Retreiving cuda external memory");
 #ifdef _WIN64
 		cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
 		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueWin32;
@@ -771,6 +773,7 @@ namespace en
 #endif
 
 		// Get cuda buffer
+		Log::Info("Mapping cuda external memory");
 		cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
 		cudaExtBufferDesc.offset = 0;
 		cudaExtBufferDesc.flags = 0;
