@@ -231,6 +231,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	uint32_t rendererId = 1;
 
 	// Init resources
+	en::Log::Info("Initializing rendering resources");
+
 	en::NeuralRadianceCache nrc(appConfig);
 
 	en::HpmScene hpmScene(appConfig);
@@ -298,6 +300,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	};
 
 	// Init rendering pipeline
+	en::Log::Info("Initializing renderers");
+
 	en::vk::Swapchain* swapchain = nullptr;
 	if (en::Window::IsSupported())
 	{
@@ -337,6 +341,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	if (en::Window::IsSupported()) { swapchain->Resize(width, height); }
 
 	// Main loop
+	en::Log::Info("Starting main loop");
 	VkResult result;
 	size_t frameCount = 0;
 	bool shutdown = false;
