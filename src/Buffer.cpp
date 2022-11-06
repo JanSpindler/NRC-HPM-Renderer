@@ -259,7 +259,7 @@ namespace en::vk
 #else
 	int Buffer::GetMemoryFd() const
 	{
-
+		return m_Fd;
 	}
 #endif
 

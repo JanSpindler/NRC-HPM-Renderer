@@ -749,7 +749,7 @@ namespace en
 		ASSERT_CUDA(cudaResult);
 #else
 		cudaExternalMemoryHandleDesc cuExtMemHandleDesc{};
-		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;;
+		cuExtMemHandleDesc.type = cudaExternalMemoryHandleTypeOpaqueFd;
 
 		cuExtMemHandleDesc.handle.fd = m_NrcInferInputBuffer->GetMemoryFd();
 		cuExtMemHandleDesc.size = m_NrcInferInputBufferSize;
