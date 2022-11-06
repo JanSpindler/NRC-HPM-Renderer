@@ -92,6 +92,8 @@ namespace en
 		m_RenderShader("mc/render.comp", false),
 		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI())
 	{
+		Log::Info("Create McHpmRenderer");
+
 		// Init components
 		VkDevice device = VulkanAPI::GetDevice();
 

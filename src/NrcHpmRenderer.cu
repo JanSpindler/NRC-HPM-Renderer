@@ -229,6 +229,8 @@ namespace en
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			{})
 	{
+		Log::Info("Creating NrcHpmRenderer");
+
 		// Calc train sample extent
 		float sqrtTrainSampleRatio = std::sqrt(trainSampleRatio);
 		m_TrainWidth = sqrtTrainSampleRatio * m_RenderWidth;
