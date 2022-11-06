@@ -39,6 +39,8 @@ namespace en
 
 	int GetSemaphoreHandle(VkDevice device, VkSemaphore semaphore)
 	{
+		Log::Info("Retreiving semaphore fd");
+
 		if (vkGetSemaphoreFdKHR == nullptr)
 		{
 			fpGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)vkGetDeviceProcAddr(device, "vkGetSemaphoreFdKHR");
