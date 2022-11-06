@@ -170,6 +170,9 @@ void Benchmark(
 
 	// Create reference folder if not exists
 	std::string referenceDirPath = "output/" + std::to_string(sceneID) + "/";
+#if __cplusplic >= 201703L
+	en::Log::Warn("C++ version lower then 17. Cant create reference data");
+#else
 	if (!std::filesystem::is_directory(referenceDirPath) || !std::filesystem::exists(referenceDirPath))
 	{
 		en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
@@ -203,6 +206,7 @@ void Benchmark(
 		gtRenderer->Destroy();
 		delete gtRenderer;
 	}
+#endif
 
 	// Test frame
 	for (size_t i = 0; i < cameras.size(); i++)

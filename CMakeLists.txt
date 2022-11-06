@@ -24,7 +24,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC "include" ${CUDA_INC_PATH})
 list(APPEND CUDA_NVCC_FLAGS "--extended-lambda")
 list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 
-set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "86")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_17)
 target_compile_options(${PROJECT_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)
@@ -62,7 +61,6 @@ find_package(tinyexr CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::tinyexr::tinyexr)
 
 # TCNN
-add_compile_definitions(TCNN_MIN_GPU_ARCH=86)
 add_subdirectory("dependencies/tiny-cuda-nn")
 target_include_directories(${PROJECT_NAME} PRIVATE "dependencies/tiny-cuda-nn/include" "dependencies/tiny-cuda-nn/dependencies")
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
