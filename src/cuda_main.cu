@@ -120,7 +120,7 @@ void Benchmark(
 	}
 
 	// Create reference folder if not exists
-	std::string referenceDirPath = "output/" + std::to_string(sceneID) + "/";
+	std::string referenceDirPath = "reference/" + std::to_string(sceneID) + "/";
 #if __cplusplus >= 201703L
 	en::Log::Warn("C++ version lower then 17. Cant create reference data");
 #else
