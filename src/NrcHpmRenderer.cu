@@ -54,6 +54,8 @@ namespace en
 
 		int fd;
 		fpGetSemaphoreFdKHR(device, &vulkanSemaphoreGetFdInfoKHR, &fd);
+		
+		Log::Info("Semaphore fd has been retreived");
 		return fd;
 	}
 #endif
