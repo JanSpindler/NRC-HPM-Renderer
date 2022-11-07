@@ -21,6 +21,7 @@ namespace en
 			uint32_t height,
 			float trainSampleRatio,
 			uint32_t trainSpp,
+			bool blend,
 			const Camera* camera,
 			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
@@ -36,7 +37,7 @@ namespace en
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 
-		void SetCamera(const Camera* camera);
+		void SetCamera(VkQueue queue, const Camera* camera);
 
 	private:
 		struct SpecializationData

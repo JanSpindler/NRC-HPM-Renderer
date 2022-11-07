@@ -13,7 +13,7 @@ namespace en
 		static void Init(VkDevice device);
 		static void Shutdown(VkDevice device);
 
-		McHpmRenderer(uint32_t width, uint32_t height, uint32_t pathLength, const Camera* camera, const HpmScene& scene);
+		McHpmRenderer(uint32_t width, uint32_t height, uint32_t pathLength, bool blend, const Camera* camera, const HpmScene& scene);
 
 		void Render(VkQueue queue);
 		void Destroy();
@@ -26,7 +26,7 @@ namespace en
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 
-		void SetCamera(const Camera* camera);
+		void SetCamera(VkQueue queue, const Camera* camera);
 
 	private:
 		struct SpecializationData
@@ -54,7 +54,7 @@ namespace en
 		uint32_t m_RenderHeight;
 		uint32_t m_PathLength;
 
-		bool m_ShouldBlend = true;
+		bool m_ShouldBlend = false;
 		uint32_t m_BlendIndex = 1;
 
 		const Camera* m_Camera;

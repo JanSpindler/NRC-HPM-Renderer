@@ -137,7 +137,7 @@ void Benchmark(
 			en::Log::Info("Generating reference image " + std::to_string(i));
 
 			// Set new camera
-			gtRenderer->SetCamera(testCameras[i]);
+			gtRenderer->SetCamera(queue, testCameras[i]);
 
 			// Generate reference image
 			for (size_t frame = 0; frame < 1024; frame++)
@@ -176,12 +176,12 @@ void Benchmark(
 	std::array<float, testCameras.size()> mcMseLosses;
 	for (size_t i = 0; i < testCameras.size(); i++)
 	{
-		nrcHpmRenderer->SetCamera(testCameras[i]);
+		nrcHpmRenderer->SetCamera(queue, testCameras[i]);
 		nrcHpmRenderer->Render(queue);
 		ASSERT_VULKAN(vkQueueWaitIdle(queue));
 		nrcMseLosses[i] = nrcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
 		
-		mcHpmRenderer->SetCamera(testCameras[i]);
+		mcHpmRenderer->SetCamera(queue, testCameras[i]);
 		mcHpmRenderer->Render(queue);
 		ASSERT_VULKAN(vkQueueWaitIdle(queue));
 		mcMseLosses[i] = mcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
@@ -206,8 +206,8 @@ void Benchmark(
 	}
 
 	// Reset camera
-	nrcHpmRenderer->SetCamera(oldCamera);
-	mcHpmRenderer->SetCamera(oldCamera);
+	nrcHpmRenderer->SetCamera(queue, oldCamera);
+	mcHpmRenderer->SetCamera(queue, oldCamera);
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -313,12 +313,13 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		height,
 		appConfig.trainSampleRatio,
 		appConfig.trainSpp,
+		false,
 		&camera,
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, &camera, hpmScene);
-	gtRenderer = new en::McHpmRenderer(width, height, 64, &camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, false, &camera, hpmScene);
+	gtRenderer = new en::McHpmRenderer(width, height, 64, true, &camera, hpmScene);
 
 	if (en::Window::IsSupported())
 	{

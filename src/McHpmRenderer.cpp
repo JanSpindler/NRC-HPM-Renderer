@@ -78,10 +78,11 @@ namespace en
 		vkDestroyDescriptorSetLayout(device, s_DescSetLayout, nullptr);
 	}
 
-	McHpmRenderer::McHpmRenderer(uint32_t width, uint32_t height, uint32_t pathLength, const Camera* camera, const HpmScene& scene) :
+	McHpmRenderer::McHpmRenderer(uint32_t width, uint32_t height, uint32_t pathLength, bool blend, const Camera* camera, const HpmScene& scene) :
 		m_RenderWidth(width),
 		m_RenderHeight(height),
 		m_PathLength(pathLength),
+		m_ShouldBlend(blend),
 		m_Camera(camera),
 		m_HpmScene(scene),
 		m_UniformBuffer(
@@ -351,10 +352,46 @@ namespace en
 		return m_OutputImageView;
 	}
 
-	void McHpmRenderer::SetCamera(const Camera* camera)
+	void McHpmRenderer::SetCamera(VkQueue queue, const Camera* camera)
 	{
+		// Set members
 		m_BlendIndex = 1;
 		m_Camera = camera;
+
+		// Clear images
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+		ASSERT_VULKAN(vkBeginCommandBuffer(m_RandomTasksCmdBuf, &beginInfo));
+
+		VkClearColorValue clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+		VkImageSubresourceRange subresourceRange;
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+		vkCmdClearColorImage(m_RandomTasksCmdBuf, m_OutputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
+		vkCmdClearColorImage(m_RandomTasksCmdBuf, m_InfoImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
+
+		ASSERT_VULKAN(vkEndCommandBuffer(m_RandomTasksCmdBuf));
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_RandomTasksCmdBuf;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+		ASSERT_VULKAN(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+		ASSERT_VULKAN(vkQueueWaitIdle(queue));
+
+		// Rerecord cmd buf
 		RecordRenderCommandBuffer();
 	}
 
@@ -481,7 +518,7 @@ namespace en
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;
@@ -586,7 +623,7 @@ namespace en
 		imageCI.arrayLayers = 1;
 		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		imageCI.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCI.queueFamilyIndexCount = 0;
 		imageCI.pQueueFamilyIndices = nullptr;
