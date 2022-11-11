@@ -45,11 +45,7 @@ find_package(glm CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 
 # STB
-if (WIN32)
-	find_path(STB_INCLUDE_DIRS "stb.h")
-elseif (UNIX)
-	find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
-endif()
+find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
 target_include_directories(${PROJECT_NAME} PRIVATE ${STB_INCLUDE_DIRS})
 
 # IMGUI
