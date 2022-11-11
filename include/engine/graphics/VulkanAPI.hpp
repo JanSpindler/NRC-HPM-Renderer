@@ -2,6 +2,7 @@
 
 #include <engine/graphics/common.hpp>
 #include <vector>
+#include <engine/graphics/vulkan/Instance.hpp>
 
 namespace en
 {
@@ -48,7 +49,7 @@ namespace en
 		static float GetTimestampPeriod();
 
 	private:
-		static VkInstance m_Instance;
+		static vk::Instance m_Instance;
 
 		static VkSurfaceKHR m_Surface;
 		static VkSurfaceCapabilitiesKHR m_SurfaceCapabilities;
@@ -65,7 +66,6 @@ namespace en
 		static VkQueue m_ComputeQueue;
 		static VkQueue m_PresentQueue;
 
-		static void CreateInstance(const std::string& appName);
 		static void PickPhysicalDevice();
 		static void CreateDevice();
 	};

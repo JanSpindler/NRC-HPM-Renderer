@@ -18,7 +18,7 @@
 
 namespace en
 {
-	VkInstance VulkanAPI::m_Instance;
+	vk::Instance VulkanAPI::m_Instance;
 
 	VkSurfaceKHR VulkanAPI::m_Surface;
 	VkSurfaceCapabilitiesKHR VulkanAPI::m_SurfaceCapabilities;
@@ -39,8 +39,8 @@ namespace en
 	{
 		Log::Info("Initializing VulkanAPI");
 
-		CreateInstance(appName);
-		m_Surface = Window::CreateVulkanSurface(m_Instance);
+		m_Instance = vk::Instance(appName, VK_API_VERSION_1_3);
+		m_Surface = Window::CreateVulkanSurface(m_Instance.GetVkHandle());
 		PickPhysicalDevice();
 		CreateDevice();
 
@@ -72,8 +72,8 @@ namespace en
 		Camera::Shutdown();
 
 		vkDestroyDevice(m_Device, nullptr);
-		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
-		vkDestroyInstance(m_Instance, nullptr);
+		vkDestroySurfaceKHR(m_Instance.GetVkHandle(), m_Surface, nullptr);
+		m_Instance.Destroy();
 	}
 
 	uint32_t VulkanAPI::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -113,7 +113,7 @@ namespace en
 
 	VkInstance VulkanAPI::GetInstance()
 	{
-		return m_Instance;
+		return m_Instance.GetVkHandle();
 	}
 
 	VkSurfaceKHR VulkanAPI::GetSurface()
@@ -181,73 +181,13 @@ namespace en
 		return m_PhysicalDeviceInfo.properties.limits.timestampPeriod;
 	}
 
-	void VulkanAPI::CreateInstance(const std::string& appName)
-	{
-		// List supported layers
-		uint32_t supportedLayerCount;
-		vkEnumerateInstanceLayerProperties(&supportedLayerCount, nullptr);
-		std::vector<VkLayerProperties> supportedLayers(supportedLayerCount);
-		vkEnumerateInstanceLayerProperties(&supportedLayerCount, supportedLayers.data());
-
-		Log::Info("Supported Instance Layers:");
-		for (const VkLayerProperties& layer : supportedLayers)
-			Log::Info("\t-" + std::string(layer.layerName) + " | " + std::string(layer.description));
-
-		// Select wanted layers
-		std::vector<const char*> layers = {
-#ifdef _DEBUG
-			"VK_LAYER_KHRONOS_validation"
-#endif
-		};
-
-		// List supported extensions
-		uint32_t supportedExtensionCount;
-		vkEnumerateInstanceExtensionProperties(nullptr, &supportedExtensionCount, nullptr);
-		std::vector<VkExtensionProperties> supportedExtensions(supportedExtensionCount);
-		vkEnumerateInstanceExtensionProperties(nullptr, &supportedExtensionCount, supportedExtensions.data());
-
-		Log::Info("Supported Instance Extensions:");
-		for (const VkExtensionProperties& extension : supportedExtensions)
-			Log::Info("\t-" + std::string(extension.extensionName));
-
-		// Select wanted extensions
-		std::vector<const char*> extensions;
-		if (Window::IsSupported()) { extensions = Window::GetVulkanExtensions(); }
-		extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-		extensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
-		extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
-
-		// Create
-		VkApplicationInfo appInfo;
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pNext = nullptr;
-		appInfo.pApplicationName = appName.c_str();
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_3;
-
-		VkInstanceCreateInfo createInfo;
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-		createInfo.pApplicationInfo = &appInfo;
-		createInfo.enabledLayerCount = layers.size();
-		createInfo.ppEnabledLayerNames = layers.data();
-		createInfo.enabledExtensionCount = extensions.size();
-		createInfo.ppEnabledExtensionNames = extensions.data();
-
-		VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance);
-		ASSERT_VULKAN(result);
-	}
-
 	void VulkanAPI::PickPhysicalDevice()
 	{
 		// Enumerate physical devices
 		uint32_t physicalDeviceCount;
-		vkEnumeratePhysicalDevices(m_Instance, &physicalDeviceCount, nullptr);
+		vkEnumeratePhysicalDevices(m_Instance.GetVkHandle(), &physicalDeviceCount, nullptr);
 		std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-		vkEnumeratePhysicalDevices(m_Instance, &physicalDeviceCount, physicalDevices.data());
+		vkEnumeratePhysicalDevices(m_Instance.GetVkHandle(), &physicalDeviceCount, physicalDevices.data());
 
 		// Retreive physical device infos
 		std::vector<PhysicalDeviceInfo> physicalDeviceInfos(physicalDeviceCount);
@@ -324,6 +264,14 @@ namespace en
 				}
 			}
 
+			// Tensor cores
+			PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV fpVkGetPhysicalDeviceCooperativeMatrixPropertiesNV =
+				(PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV)
+				vkGetInstanceProcAddr(m_Instance.GetVkHandle(), "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
+			uint32_t coopMatCount;
+			fpVkGetPhysicalDeviceCooperativeMatrixPropertiesNV(physicalDevice, &coopMatCount, nullptr);
+			bool coopMatSupported = coopMatCount > 0;
+
 			// Surface support
 			bool formatAvailable = true;
 			VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
@@ -368,7 +316,8 @@ namespace en
 			if (isDiscreteGPU &&
 				hasGeometryShader &&
 				graphicsQFI != UINT32_MAX &&
-				formatAvailable)
+				formatAvailable &&
+				coopMatSupported)
 			{
 				Log::Info(
 					"Picking " + std::string(properties.deviceName) +
