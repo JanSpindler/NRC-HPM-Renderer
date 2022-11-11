@@ -352,6 +352,11 @@ namespace en
 		return m_OutputImageView;
 	}
 
+	bool McHpmRenderer::IsBlending() const
+	{
+		return m_ShouldBlend;
+	}
+
 	void McHpmRenderer::SetCamera(VkQueue queue, const Camera* camera)
 	{
 		// Set members
@@ -393,6 +398,12 @@ namespace en
 
 		// Rerecord cmd buf
 		RecordRenderCommandBuffer();
+	}
+
+	void McHpmRenderer::SetBlend(bool blend)
+	{
+		m_ShouldBlend = blend;
+		m_BlendIndex = 1;
 	}
 
 	void McHpmRenderer::CreatePipelineLayout(VkDevice device)

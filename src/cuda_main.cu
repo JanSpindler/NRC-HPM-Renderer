@@ -172,20 +172,31 @@ void Benchmark(
 	}
 	
 	// Test frame
+	const bool prevNrcBlend = nrcHpmRenderer->IsBlending();
+	const bool prevMcBlend = mcHpmRenderer->IsBlending();
+	nrcHpmRenderer->SetBlend(true);
+	mcHpmRenderer->SetBlend(true);
+
 	std::array<float, testCameras.size()> nrcMseLosses;
 	std::array<float, testCameras.size()> mcMseLosses;
 	for (size_t i = 0; i < testCameras.size(); i++)
 	{
 		nrcHpmRenderer->SetCamera(queue, testCameras[i]);
-		nrcHpmRenderer->Render(queue);
-		ASSERT_VULKAN(vkQueueWaitIdle(queue));
-		nrcMseLosses[i] = nrcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
-		
 		mcHpmRenderer->SetCamera(queue, testCameras[i]);
-		mcHpmRenderer->Render(queue);
-		ASSERT_VULKAN(vkQueueWaitIdle(queue));
+		for (size_t frame = 0; frame < 1; frame++)
+		{
+			nrcHpmRenderer->Render(queue);
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+			
+			mcHpmRenderer->Render(queue);
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+		}
+		nrcMseLosses[i] = nrcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
 		mcMseLosses[i] = mcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
 	}
+
+	nrcHpmRenderer->SetBlend(prevNrcBlend);
+	mcHpmRenderer->SetBlend(prevMcBlend);
 
 	// Calculate total loss
 	float nrcMSE = 0.0f;
@@ -468,7 +479,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
 		// Check loss
-		if (frameCount % 1000 == 0)
+		if (frameCount % 100 == 0)
 		{
 			en::Log::Info("Frame: " + std::to_string(frameCount));
 			Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, &camera, queue);
@@ -519,7 +530,7 @@ int main(int argc, char** argv)
 	if (argc == 1)
 	{
 		en::Log::Info("No arguments found. Loading defaults");
-		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "64", "6", "14", "0", "1920", "1080", "0.02", "1"};
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.0001", "0", "64", "6", "14", "1", "1920", "1080", "0.02", "1"};
 	}
 
 	en::AppConfig appConfig(myargv);

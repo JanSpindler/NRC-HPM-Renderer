@@ -36,8 +36,10 @@ namespace en
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
+		bool IsBlending() const;
 
 		void SetCamera(VkQueue queue, const Camera* camera);
+		void SetBlend(bool blend);
 
 	private:
 		struct SpecializationData

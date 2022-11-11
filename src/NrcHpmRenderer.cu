@@ -622,6 +622,11 @@ namespace en
 		return m_OutputImageView;
 	}
 
+	bool NrcHpmRenderer::IsBlending() const
+	{
+		return m_ShouldBlend;
+	}
+
 	void NrcHpmRenderer::SetCamera(VkQueue queue, const Camera* camera)
 	{
 		// Set members
@@ -665,6 +670,12 @@ namespace en
 		// Rerecord cmd buf
 		RecordPreCudaCommandBuffer();
 		RecordPostCudaCommandBuffer();
+	}
+
+	void NrcHpmRenderer::SetBlend(bool blend)
+	{
+		m_ShouldBlend = blend;
+		m_BlendIndex = 1;
 	}
 
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
