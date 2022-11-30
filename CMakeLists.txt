@@ -49,8 +49,9 @@ find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
 target_include_directories(${PROJECT_NAME} PRIVATE ${STB_INCLUDE_DIRS})
 
 # IMGUI
-find_package(imgui CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+#find_package(imgui CONFIG REQUIRED)
+#target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Users/jspin/CodeProjects/vcpkg/packages/imgui_x64-windows/debug/lib")
 
 # TINYEXR
 find_package(tinyexr CONFIG REQUIRED)

@@ -28,7 +28,7 @@ namespace en
 		m_PointLight = new PointLight(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), appConfig.scene.pointLightStrength);
 
 		int hdrWidth, hdrHeight;
-		std::vector<float> hdr4fData = en::ReadFileHdr4f(appConfig.scene.hdrEnvMapPath, hdrWidth, hdrHeight, 1.0f);
+		std::vector<float> hdr4fData = en::ReadFileHdr4f(appConfig.scene.hdrEnvMapPath, hdrWidth, hdrHeight, 10000.0f);
 		std::array<std::vector<float>, 2> hdrCdf = en::Hdr4fToCdf(hdr4fData, hdrWidth, hdrHeight);
 		m_HdrEnvMap = new HdrEnvMap(
 			appConfig.scene.hdrEnvMapStrength,

@@ -23,6 +23,7 @@ en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
 en::McHpmRenderer* gtRenderer = nullptr;
 std::array<en::Camera*, 6> testCameras = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+std::array<float*, 6> gtImages = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -140,7 +141,7 @@ void Benchmark(
 			gtRenderer->SetCamera(queue, testCameras[i]);
 
 			// Generate reference image
-			for (size_t frame = 0; frame < 1024; frame++)
+			for (size_t frame = 0; frame < 8192; frame++)
 			{
 				gtRenderer->Render(queue);
 				ASSERT_VULKAN(vkQueueWaitIdle(queue));
@@ -153,9 +154,10 @@ void Benchmark(
 #endif
 
 	// Load reference images from folder
-	std::array<float*, testCameras.size()> gtImages;
 	for (size_t i = 0; i < testCameras.size(); i++)
 	{
+		if (gtImages[i] != nullptr) { continue; }
+
 		int exrWidth;
 		int exrHeight;
 
@@ -209,12 +211,6 @@ void Benchmark(
 	const float frameCountF = static_cast<float>(testCameras.size());
 	en::Log::Info("NRC MSE: " + std::to_string(nrcMSE / frameCountF));
 	en::Log::Info("MC MSE: " + std::to_string(mcMSE / frameCountF));
-
-	// Destroy resources
-	for (size_t i = 0; i < testCameras.size(); i++)
-	{ 
-		free(gtImages[i]);
-	}
 
 	// Reset camera
 	nrcHpmRenderer->SetCamera(queue, oldCamera);
@@ -358,6 +354,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	size_t frameCount = 0;
 	bool shutdown = false;
 	bool restartAfterClose = false;
+	bool benchmark = true;
 	bool continueLoop = en::Window::IsSupported() ? !en::Window::IsClosed() : true;
 	while (continueLoop && !shutdown)
 	{
@@ -430,6 +427,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			ImGui::Begin("Controls");
 			shutdown = ImGui::Button("Shutdown");
 			ImGui::Checkbox("Restart after shutdown", &restartAfterClose);
+			ImGui::Checkbox("Benchmark", &benchmark);
 
 			if (ImGui::BeginCombo("##combo", currentRendererMenuItem))
 			{
@@ -479,7 +477,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
 		// Check loss
-		if (frameCount % 100 == 0)
+		if (benchmark && frameCount % 100 == 0)
 		{
 			en::Log::Info("Frame: " + std::to_string(frameCount));
 			Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, &camera, queue);
@@ -495,6 +493,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	ASSERT_VULKAN(result);
 
 	// End
+	for (size_t i = 0; i < testCameras.size(); i++)
+	{
+		free(gtImages[i]);
+	}
+	
 	gtRenderer->Destroy();
 	delete gtRenderer;
 	
@@ -530,7 +533,7 @@ int main(int argc, char** argv)
 	if (argc == 1)
 	{
 		en::Log::Info("No arguments found. Loading defaults");
-		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.0001", "0", "64", "6", "14", "1", "1920", "1080", "0.02", "1"};
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "128", "6", "14", "0", "1920", "1080", "0.02", "1"};
 	}
 
 	en::AppConfig appConfig(myargv);
