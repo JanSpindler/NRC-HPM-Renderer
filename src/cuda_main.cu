@@ -221,8 +221,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 {
 	// Start engine
 	const std::string appName("NRC-HPM-Renderer");
-	uint32_t width = appConfig.renderWidth;
-	uint32_t height = appConfig.renderHeight;
+	uint32_t width = 1920;
+	uint32_t height = 1080;
 	en::Log::Info("Starting " + appName);
 
 	en::Window::Init(width, height, false, appName);
@@ -477,11 +477,11 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
 		// Check loss
-		if (benchmark && frameCount % 100 == 0)
-		{
-			en::Log::Info("Frame: " + std::to_string(frameCount));
-			Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, &camera, queue);
-		}
+		//if (benchmark && frameCount % 100 == 0)
+		//{
+		//	en::Log::Info("Frame: " + std::to_string(frameCount));
+		//	Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, &camera, queue);
+		//}
 
 		//
 		frameCount++;
@@ -533,7 +533,7 @@ int main(int argc, char** argv)
 	if (argc == 1)
 	{
 		en::Log::Info("No arguments found. Loading defaults");
-		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "128", "6", "14", "0", "1920", "1080", "0.02", "1"};
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "128", "6", "14", "0", "0.02", "1"};
 	}
 
 	en::AppConfig appConfig(myargv);

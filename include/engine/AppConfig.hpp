@@ -11,11 +11,13 @@ namespace en
 		struct NNEncodingConfig
 		{
 			// TODO
-			uint32_t id;
+			uint32_t posID;
+			uint32_t dirID;
+
 			nlohmann::json jsonConfig;
 
 			NNEncodingConfig();
-			NNEncodingConfig(uint32_t id);
+			NNEncodingConfig(uint32_t posID, uint32_t dirID);
 		};
 
 		struct HpmSceneConfig
@@ -44,8 +46,6 @@ namespace en
 		HpmSceneConfig scene;
 
 		// renderer
-		uint32_t renderWidth;
-		uint32_t renderHeight;
 		float trainSampleRatio;
 		uint32_t trainSpp;
 
