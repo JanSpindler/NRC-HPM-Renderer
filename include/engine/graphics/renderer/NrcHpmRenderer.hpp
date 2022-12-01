@@ -112,8 +112,8 @@ namespace en
 		vk::Buffer* m_NrcInferFilterStagingBuffer = nullptr;
 		vk::Buffer* m_NrcInferFilterBuffer = nullptr;
 
-		VkDeviceSize m_NrcTrainRayResBufferSize = 0;
-		vk::Buffer* m_NrcTrainRayResBuffer;
+		VkDeviceSize m_NrcTrainRingBufferSize = 0;
+		vk::Buffer* m_NrcTrainRingBuffer;
 
 		VkPipelineLayout m_PipelineLayout;
 
@@ -173,6 +173,7 @@ namespace en
 
 		void CreateNrcBuffers();
 		void CreateNrcInferFilterBuffer();
+		void CreateNrcTrainRingBuffer();
 
 		void CreatePipelineLayout(VkDevice device);
 

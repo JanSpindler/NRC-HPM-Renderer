@@ -135,12 +135,12 @@ namespace en
 		nrcInferFilterBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		nrcInferFilterBufferBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding nrcTrainRayResBufferBinding;
-		nrcTrainRayResBufferBinding.binding = bindingIndex++;
-		nrcTrainRayResBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		nrcTrainRayResBufferBinding.descriptorCount = 1;
-		nrcTrainRayResBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		nrcTrainRayResBufferBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding nrcTrainRingBufferBinding;
+		nrcTrainRingBufferBinding.binding = bindingIndex++;
+		nrcTrainRingBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainRingBufferBinding.descriptorCount = 1;
+		nrcTrainRingBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		nrcTrainRingBufferBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutBinding uniformBufferBinding;
 		uniformBufferBinding.binding = bindingIndex++;
@@ -160,7 +160,7 @@ namespace en
 			nrcTrainInputBufferBinding,
 			nrcTrainTargetBufferBinding,
 			nrcInferFilterBufferBinding,
-			nrcTrainRayResBufferBinding,
+			nrcTrainRingBufferBinding,
 			uniformBufferBinding
 		};
 
@@ -250,7 +250,6 @@ namespace en
 		CreateSyncObjects(device);
 
 		CreateNrcBuffers();
-
 		m_Nrc.Init(
 			m_RenderWidth * m_RenderHeight, 
 			m_TrainWidth * m_TrainHeight,
@@ -260,15 +259,8 @@ namespace en
 			reinterpret_cast<float*>(m_NrcTrainTargetDCuBuffer),
 			m_CuExtCudaStartSemaphore, 
 			m_CuExtCudaFinishedSemaphore);
-
 		CreateNrcInferFilterBuffer();
-
-		m_NrcTrainRayResBufferSize = 6 * sizeof(uint32_t) * m_TrainWidth * m_TrainHeight;
-		m_NrcTrainRayResBuffer = new vk::Buffer(
-			m_NrcTrainRayResBufferSize,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			{});
+		CreateNrcTrainRingBuffer();
 
 		m_CommandPool.AllocateBuffers(3, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_PreCudaCommandBuffer = m_CommandPool.GetBuffer(0);
@@ -396,8 +388,8 @@ namespace en
 
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 	
-		m_NrcTrainRayResBuffer->Destroy();
-		delete m_NrcTrainRayResBuffer;
+		m_NrcTrainRingBuffer->Destroy();
+		delete m_NrcTrainRingBuffer;
 
 		m_NrcInferFilterBuffer->Destroy();
 		delete m_NrcInferFilterBuffer;
@@ -856,6 +848,16 @@ namespace en
 			m_NrcInferFilterBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+	}
+
+	void NrcHpmRenderer::CreateNrcTrainRingBuffer()
+	{
+		m_NrcTrainRingBufferSize = (sizeof(uint32_t)) + (6 * sizeof(float) * m_TrainWidth * m_TrainHeight);
+		m_NrcTrainRingBuffer = new vk::Buffer(
+			m_NrcTrainRingBufferSize,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{});
 	}
 
@@ -1775,22 +1777,22 @@ namespace en
 		nrcInferFilterBufferWrite.pBufferInfo = &nrcInferFilterBufferInfo;
 		nrcInferFilterBufferWrite.pTexelBufferView = nullptr;
 
-		VkDescriptorBufferInfo nrcTrainRayResBufferInfo;
-		nrcTrainRayResBufferInfo.buffer = m_NrcTrainRayResBuffer->GetVulkanHandle();
-		nrcTrainRayResBufferInfo.offset = 0;
-		nrcTrainRayResBufferInfo.range = m_NrcTrainRayResBufferSize;
+		VkDescriptorBufferInfo nrcTrainRingBufferInfo;
+		nrcTrainRingBufferInfo.buffer = m_NrcTrainRingBuffer->GetVulkanHandle();
+		nrcTrainRingBufferInfo.offset = 0;
+		nrcTrainRingBufferInfo.range = m_NrcTrainRingBufferSize;
 
-		VkWriteDescriptorSet nrcTrainRayResBufferWrite;
-		nrcTrainRayResBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		nrcTrainRayResBufferWrite.pNext = nullptr;
-		nrcTrainRayResBufferWrite.dstSet = m_DescSet;
-		nrcTrainRayResBufferWrite.dstBinding = bindingIndex++;
-		nrcTrainRayResBufferWrite.dstArrayElement = 0;
-		nrcTrainRayResBufferWrite.descriptorCount = 1;
-		nrcTrainRayResBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		nrcTrainRayResBufferWrite.pImageInfo = nullptr;
-		nrcTrainRayResBufferWrite.pBufferInfo = &nrcTrainRayResBufferInfo;
-		nrcTrainRayResBufferWrite.pTexelBufferView = nullptr;
+		VkWriteDescriptorSet nrcTrainRingBufferWrite;
+		nrcTrainRingBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		nrcTrainRingBufferWrite.pNext = nullptr;
+		nrcTrainRingBufferWrite.dstSet = m_DescSet;
+		nrcTrainRingBufferWrite.dstBinding = bindingIndex++;
+		nrcTrainRingBufferWrite.dstArrayElement = 0;
+		nrcTrainRingBufferWrite.descriptorCount = 1;
+		nrcTrainRingBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		nrcTrainRingBufferWrite.pImageInfo = nullptr;
+		nrcTrainRingBufferWrite.pBufferInfo = &nrcTrainRingBufferInfo;
+		nrcTrainRingBufferWrite.pTexelBufferView = nullptr;
 
 		// Uniform buffer write
 		VkDescriptorBufferInfo uniformBufferInfo;
@@ -1822,7 +1824,7 @@ namespace en
 			nrcTrainInputBufferWrite,
 			nrcTrainTargetBufferWrite,
 			nrcInferFilterBufferWrite,
-			nrcTrainRayResBufferWrite,
+			nrcTrainRingBufferWrite,
 			uniformBufferWrite
 		};
 
