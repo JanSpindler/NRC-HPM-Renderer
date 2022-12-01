@@ -96,9 +96,11 @@ struct RayInfo
 	float dirZ;
 };
 
-layout(std430, set = 5, binding = 10) buffer NrcTrainRayRes
+layout(std430, set = 5, binding = 10) buffer NrcTrainRing
 {
-	RayInfo nrcTrainRayRes[];
+	uint nrcTrainRingHead;
+	uint nrcTrainRingTail;
+	RayInfo nrcTrainRingBuffer[];
 };
 
 layout(set = 5, binding = 11) uniform Renderer

@@ -853,12 +853,44 @@ namespace en
 
 	void NrcHpmRenderer::CreateNrcTrainRingBuffer()
 	{
-		m_NrcTrainRingBufferSize = (sizeof(uint32_t)) + (6 * sizeof(float) * m_TrainWidth * m_TrainHeight);
+		const VkDeviceSize headAndTailSize = 2 * sizeof(uint32_t);
+		const VkDeviceSize rayInfoSize = 6 * sizeof(float) * m_TrainWidth * m_TrainHeight;
+		m_NrcTrainRingBufferSize = headAndTailSize + rayInfoSize;
+
 		m_NrcTrainRingBuffer = new vk::Buffer(
 			m_NrcTrainRingBufferSize,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			{});
+
+		vk::Buffer stagingBuffer(
+			m_NrcTrainRingBufferSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		void* nrcTrainRingData = malloc(m_NrcTrainRingBufferSize);
+		
+		uint32_t* indexData = reinterpret_cast<uint32_t*>(nrcTrainRingData);
+		indexData[0] = 0;
+		indexData[1] = 0;
+
+		float* rayData = reinterpret_cast<float*>(indexData + 2);
+		for (size_t ray = 0; ray < m_TrainWidth * m_TrainHeight; ray++)
+		{
+			rayData[(6 * ray) + 0] = 0.0f;
+			rayData[(6 * ray) + 1] = 0.0f;
+			rayData[(6 * ray) + 2] = 0.0f;
+			
+			rayData[(6 * ray) + 3] = 0.0f;
+			rayData[(6 * ray) + 4] = 0.0f;
+			rayData[(6 * ray) + 5] = 1.0f;
+		}
+
+		stagingBuffer.SetData(m_NrcTrainRingBufferSize, nrcTrainRingData, 0, 0);
+		vk::Buffer::Copy(&stagingBuffer, m_NrcTrainRingBuffer, m_NrcTrainRingBufferSize);
+
+		stagingBuffer.Destroy();
 	}
 
 	void NrcHpmRenderer::CreatePipelineLayout(VkDevice device)

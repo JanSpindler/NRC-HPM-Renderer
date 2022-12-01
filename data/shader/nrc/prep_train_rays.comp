@@ -4,6 +4,32 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
+void StoreInRingBuffer(const vec3 pos, const vec3 dir)
+{	
+	const uint prevHead = atomicAdd(nrcTrainRingHead, 1) % TRAIN_SAMPLE_COUNT;
+	
+	nrcTrainRingBuffer[prevHead].posX = pos.x;
+	nrcTrainRingBuffer[prevHead].posY = pos.y;
+	nrcTrainRingBuffer[prevHead].posZ = pos.z;
+
+	nrcTrainRingBuffer[prevHead].dirX = dir.x;
+	nrcTrainRingBuffer[prevHead].dirY = dir.y;
+	nrcTrainRingBuffer[prevHead].dirZ = dir.z;
+}
+
+void LoadFromRingBuffer(out vec3 pos, out vec3 dir)
+{
+	const uint prevTail = atomicAdd(nrcTrainRingTail, 1);
+
+	pos.x = nrcTrainRingBuffer[prevTail].posX;
+	pos.y = nrcTrainRingBuffer[prevTail].posY;
+	pos.z = nrcTrainRingBuffer[prevTail].posZ;
+
+	dir.x = nrcTrainRingBuffer[prevTail].dirX;
+	dir.y = nrcTrainRingBuffer[prevTail].dirY;
+	dir.z = nrcTrainRingBuffer[prevTail].dirZ;
+}
+
 void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 dir, vec3 target, const bool didScatter)
 {
 	// Calc index
@@ -35,21 +61,8 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 	nrcTrainTarget[linearPixelIndex].g = target.y;
 	nrcTrainTarget[linearPixelIndex].b = target.z;
 
-	// If didScatter -> store randomly in reservoir
-	if (didScatter)
-	{
-		const uint resRayX = uint(RandFloat(float(TRAIN_WIDTH)));
-		const uint resRayY = uint(RandFloat(float(TRAIN_HEIGHT)));
-		const uint linearResIndex = (resRayY * TRAIN_WIDTH) + resRayX;
-		
-		atomicExchange(nrcTrainRayRes[linearResIndex].posX, pos.x);
-		atomicExchange(nrcTrainRayRes[linearResIndex].posY, pos.y);
-		atomicExchange(nrcTrainRayRes[linearResIndex].posZ, pos.z);
-		
-		atomicExchange(nrcTrainRayRes[linearResIndex].dirX, dir.x);
-		atomicExchange(nrcTrainRayRes[linearResIndex].dirY, dir.y);
-		atomicExchange(nrcTrainRayRes[linearResIndex].dirZ, dir.z);
-	}
+	// If didScatter -> store in ring buffer
+	if (didScatter) { StoreInRingBuffer(pos, dir); }
 }
 
 #define PATH_SAMPLE_COUNT 32
@@ -114,8 +127,8 @@ void main()
 	InitRandom(fragUV);
 
 	// Get rayOrigin and rayDir for train ray
-	vec3 rayOrigin;
-	vec3 rayDir;
+	vec3 rayOrigin = vec3(0.0);
+	vec3 rayDir = normalize(vec3(1.0));
 	
 	const bool didScatter = imageLoad(primaryRayInfoImage, renderImageCoord).x == 1.0;
 	if (didScatter) // Load from pixel
@@ -125,19 +138,7 @@ void main()
 	}
 	else // Load randomly from reservoir
 	{
-		const uint resRayX = uint(RandFloat(float(TRAIN_WIDTH)));
-		const uint resRayY = uint(RandFloat(float(TRAIN_HEIGHT)));
-		const uint linearResIndex = (resRayY * TRAIN_WIDTH) + resRayX;
-
-		rayOrigin.x = nrcTrainRayRes[linearResIndex].posX;
-		rayOrigin.y = nrcTrainRayRes[linearResIndex].posY;
-		rayOrigin.z = nrcTrainRayRes[linearResIndex].posZ;
-
-		rayDir.x = nrcTrainRayRes[linearResIndex].dirX;
-		rayDir.y = nrcTrainRayRes[linearResIndex].dirY;
-		rayDir.z = nrcTrainRayRes[linearResIndex].dirZ;
-
-		if (rayDir == vec3(0.0)) { rayDir = vec3(1.0); }
+		LoadFromRingBuffer(rayOrigin, rayDir);
 	}
 	
 	// Calculate target
