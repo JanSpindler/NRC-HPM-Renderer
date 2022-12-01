@@ -85,7 +85,7 @@ namespace en
 
 	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argv.size() != 12) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 13) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
@@ -96,10 +96,12 @@ namespace en
 		nnWidth = std::stoi(argv[index++]);
 		nnDepth = std::stoi(argv[index++]);
 		log2BatchSize = std::stoi(argv[index++]);
+
 		scene = HpmSceneConfig(std::stoi(argv[index++]));
 
 		trainSampleRatio = std::stof(argv[index++]);
 		trainSpp = std::stoi(argv[index++]);
+		primaryRayLength = std::stoi(argv[index++]);
 	}
 
 	std::string AppConfig::GetName() const
@@ -116,6 +118,7 @@ namespace en
 		str += std::to_string(scene.id) + "_";
 		str += std::to_string(trainSampleRatio) + "_";
 		str += std::to_string(trainSpp);
+		str += std::to_string(primaryRayLength);
 		return str;
 	}
 

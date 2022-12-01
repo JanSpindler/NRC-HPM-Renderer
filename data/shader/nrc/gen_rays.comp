@@ -4,7 +4,6 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
-#define PATH_SAMPLE_COUNT 32
 vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, out bool didScatter)
 {
 	vec3 scatteredLight = vec3(0.0);
@@ -18,28 +17,15 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
-	float totalTermProb = 1.0;
-
 	didScatter = false;
 	bool volumeExit = false;
-	for (uint i = 0; i < PATH_SAMPLE_COUNT; i++)
+	for (int i = 0; i < PRIMARY_RAY_LENGTH; i++)
 	{
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
 			didScatter = true;
-
-			if (RandFloat(1.0) > totalTermProb)
-			{
-				// Store nrc ray info
-				imageStore(nrcRayOriginImage, imageCoord, vec4(currentPoint, 0.0));
-				imageStore(nrcRayDirImage, imageCoord, vec4(currentDir, 0.0));
-
-				// Return prematurly terminated ray color
-				return vec4(scatteredLight, transmittance);
-			}
-			totalTermProb *= 0.5;
 
 			// Get scene lighting
 			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
@@ -67,6 +53,11 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 		currentPoint = DeltaTrack(currentPoint, currentDir, volumeExit);
 	}
 
+	// Store nrc ray info
+	imageStore(nrcRayOriginImage, imageCoord, vec4(currentPoint, 0.0));
+	imageStore(nrcRayDirImage, imageCoord, vec4(currentDir, 0.0));
+
+	// Return prematurly terminated ray color
 	return vec4(scatteredLight, transmittance);
 }
 

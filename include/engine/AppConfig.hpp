@@ -48,6 +48,7 @@ namespace en
 		// renderer
 		float trainSampleRatio;
 		uint32_t trainSpp;
+		uint32_t primaryRayLength;
 
 		AppConfig();
 		AppConfig(const std::vector<char*>& argv);

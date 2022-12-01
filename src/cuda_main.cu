@@ -320,6 +320,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		height,
 		appConfig.trainSampleRatio,
 		appConfig.trainSpp,
+		appConfig.primaryRayLength,
 		false,
 		&camera,
 		hpmScene,
@@ -533,7 +534,7 @@ int main(int argc, char** argv)
 	if (argc == 1)
 	{
 		en::Log::Info("No arguments found. Loading defaults");
-		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "128", "6", "14", "0", "0.02", "1"};
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "64", "4", "15", "0", "0.05", "1", "2"};
 	}
 
 	en::AppConfig appConfig(myargv);

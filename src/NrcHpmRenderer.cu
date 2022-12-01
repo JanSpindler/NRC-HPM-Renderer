@@ -212,6 +212,7 @@ namespace en
 		uint32_t height,
 		float trainSampleRatio,
 		uint32_t trainSpp,
+		uint32_t primaryRayLength,
 		bool blend,
 		const Camera* camera,
 		const HpmScene& hpmScene,
@@ -220,6 +221,7 @@ namespace en
 		m_RenderWidth(width),
 		m_RenderHeight(height),
 		m_TrainSpp(trainSpp),
+		m_PrimaryRayLength(primaryRayLength),
 		m_ShouldBlend(blend),
 		m_ClearShader("nrc/clear.comp", false),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
@@ -931,6 +933,7 @@ namespace en
 		m_SpecData.trainWidth = m_TrainWidth;
 		m_SpecData.trainHeight = m_TrainHeight;
 		m_SpecData.trainSpp = m_TrainSpp;
+		m_SpecData.primaryRayLength = m_PrimaryRayLength;
 
 		m_SpecData.batchSize = m_Nrc.GetBatchSize();
 
@@ -967,6 +970,11 @@ namespace en
 		trainSppEntry.offset = offsetof(SpecializationData, SpecializationData::trainSpp);
 		trainSppEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry primaryRayLengthEntry;
+		primaryRayLengthEntry.constantID = constantID++;
+		primaryRayLengthEntry.offset = offsetof(SpecializationData, SpecializationData::primaryRayLength);
+		primaryRayLengthEntry.size = sizeof(uint32_t);
+
 		VkSpecializationMapEntry batchSizeEntry;
 		batchSizeEntry.constantID = constantID++;
 		batchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::batchSize);
@@ -993,6 +1001,7 @@ namespace en
 			trainWidthEntry,
 			trainHeightEntry,
 			trainSppEntry,
+			primaryRayLengthEntry,
 			batchSizeEntry,
 			volumeDensityFactorEntry,
 			volumeGEntry,

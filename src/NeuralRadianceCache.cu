@@ -20,26 +20,6 @@ namespace en
 				{"learning_rate", appConfig.learningRate},
 			}},
 			appConfig.encoding.jsonConfig,
-			//{"encoding", {
-			//	{"otype", "Composite"},
-			//	{"reduction", "Concatenation"},
-			//	{"nested", {
-			//		{
-			//			{"otype", "HashGrid"},
-			//			{"n_dims_to_encode", 3},
-			//			{"n_levels", 16},
-			//			{"n_features_per_level", 2},
-			//			{"log2_hashmap_size", 19},
-			//			{"base_resolution", 16},
-			//			{"per_level_scale", 2.0},
-			//		},
-			//		{
-			//			{"otype", "OneBlob"},
-			//			{"n_dims_to_encode", 2},
-			//			{"n_bins", 4},
-			//		},
-			//	}},
-			//}},
 			{"network", {
 				{"otype", "FullyFusedMLP"},
 				{"activation", "ReLU"},
@@ -169,18 +149,6 @@ namespace en
 			auto forwardContext = m_Model.trainer->training_step(inputBatch, targetBatch);
 			m_Loss = m_Model.trainer->loss(*forwardContext.get());
 		}
-
-		//m_TrainCounter++;
-		//if (m_TrainCounter == 32)
-		//{
-		//	m_Model.trainer.get()->update_hyperparams(
-		//		{"optimizer", {
-		//			{"otype", "Adam"},
-		//			{"learning_rate", 1e-3f},
-		//			{"absolute_decay", 0.0f}
-		//		}});
-		//	en::Log::Info("Hello");
-		//}
 	}
 
 	void NeuralRadianceCache::AwaitCudaStartSemaphore()
