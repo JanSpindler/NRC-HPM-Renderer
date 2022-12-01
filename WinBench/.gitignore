@@ -4,3 +4,4 @@
 *.dll
 /data
 /output
+configs.csv
