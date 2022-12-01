@@ -109,6 +109,7 @@ namespace en
 
 		VkDeviceSize m_NrcInferFilterBufferSize = 0;
 		void* m_NrcInferFilterData = nullptr;
+		vk::Buffer* m_NrcInferFilterStagingBuffer = nullptr;
 		vk::Buffer* m_NrcInferFilterBuffer = nullptr;
 
 		VkDeviceSize m_NrcTrainRayResBufferSize = 0;
@@ -171,6 +172,7 @@ namespace en
 		void CreateSyncObjects(VkDevice device);
 
 		void CreateNrcBuffers();
+		void CreateNrcInferFilterBuffer();
 
 		void CreatePipelineLayout(VkDevice device);
 

@@ -261,13 +261,7 @@ namespace en
 			m_CuExtCudaStartSemaphore, 
 			m_CuExtCudaFinishedSemaphore);
 
-		m_NrcInferFilterBufferSize = sizeof(uint32_t) * m_Nrc.GetInferBatchCount();
-		m_NrcInferFilterData = malloc(m_NrcInferFilterBufferSize);
-		m_NrcInferFilterBuffer = new vk::Buffer(
-			m_NrcInferFilterBufferSize,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			{});
+		CreateNrcInferFilterBuffer();
 
 		m_NrcTrainRayResBufferSize = 6 * sizeof(uint32_t) * m_TrainWidth * m_TrainHeight;
 		m_NrcTrainRayResBuffer = new vk::Buffer(
@@ -337,7 +331,7 @@ namespace en
 		ASSERT_VULKAN(result);
 
 		// Sync infer filter
-		m_NrcInferFilterBuffer->GetData(m_NrcInferFilterBufferSize, m_NrcInferFilterData, 0, 0);
+		m_NrcInferFilterStagingBuffer->GetData(m_NrcInferFilterBufferSize, m_NrcInferFilterData, 0, 0);
 
 		// Cuda
 		m_Nrc.InferAndTrain(reinterpret_cast<uint32_t*>(m_NrcInferFilterData));
@@ -407,6 +401,8 @@ namespace en
 
 		m_NrcInferFilterBuffer->Destroy();
 		delete m_NrcInferFilterBuffer;
+		m_NrcInferFilterStagingBuffer->Destroy();
+		delete m_NrcInferFilterStagingBuffer;
 		delete m_NrcInferFilterData;
 
 		m_NrcTrainTargetBuffer->Destroy();
@@ -843,6 +839,24 @@ namespace en
 		cudaExtBufferDesc.size = m_NrcTrainTargetBufferSize;
 		cudaResult = cudaExternalMemoryGetMappedBuffer(&m_NrcTrainTargetDCuBuffer, m_NrcTrainTargetCuExtMem, &cudaExtBufferDesc);
 		ASSERT_CUDA(cudaResult);
+	}
+
+	void NrcHpmRenderer::CreateNrcInferFilterBuffer()
+	{
+		m_NrcInferFilterBufferSize = sizeof(uint32_t) * m_Nrc.GetInferBatchCount();
+		m_NrcInferFilterData = malloc(m_NrcInferFilterBufferSize);
+		
+		m_NrcInferFilterStagingBuffer = new vk::Buffer(
+			m_NrcInferFilterBufferSize,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{});
+
+		m_NrcInferFilterBuffer = new vk::Buffer(
+			m_NrcInferFilterBufferSize,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
 	}
 
 	void NrcHpmRenderer::CreatePipelineLayout(VkDevice device)
@@ -1877,6 +1891,18 @@ namespace en
 		// Prep infer rays
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepInferRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
+
+		// Copy nrc infer filter buffer to host
+		VkBufferCopy nrcInferFilterCopy;
+		nrcInferFilterCopy.srcOffset = 0;
+		nrcInferFilterCopy.dstOffset = 0;
+		nrcInferFilterCopy.size = m_NrcInferFilterBufferSize;
+		vkCmdCopyBuffer(
+			m_PreCudaCommandBuffer, 
+			m_NrcInferFilterBuffer->GetVulkanHandle(), 
+			m_NrcInferFilterStagingBuffer->GetVulkanHandle(), 
+			1, 
+			&nrcInferFilterCopy);
 
 		// Timestamp
 		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
