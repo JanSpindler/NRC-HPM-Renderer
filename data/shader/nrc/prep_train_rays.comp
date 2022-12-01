@@ -19,7 +19,7 @@ void StoreInRingBuffer(const vec3 pos, const vec3 dir)
 
 void LoadFromRingBuffer(out vec3 pos, out vec3 dir)
 {
-	const uint prevTail = atomicAdd(nrcTrainRingTail, 1);
+	const uint prevTail = atomicAdd(nrcTrainRingTail, 1) % TRAIN_SAMPLE_COUNT;
 
 	pos.x = nrcTrainRingBuffer[prevTail].posX;
 	pos.y = nrcTrainRingBuffer[prevTail].posY;

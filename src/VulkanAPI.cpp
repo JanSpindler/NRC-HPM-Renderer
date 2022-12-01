@@ -201,6 +201,16 @@ namespace en
 			vkGetPhysicalDeviceFeatures(physicalDevice, &physicalDeviceInfo.features);
 			vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceInfo.memoryProperties);
 
+			VkPhysicalDeviceSubgroupProperties subgroupProperties = {};
+			subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+			subgroupProperties.pNext = nullptr;
+
+			VkPhysicalDeviceProperties2 properties2 = {};
+			properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+			properties2.pNext = &subgroupProperties;
+
+			vkGetPhysicalDeviceProperties2(physicalDevice, &properties2);
+
 			uint32_t queueFamilyCount;
 			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 			physicalDeviceInfo.queueFamilies.resize(queueFamilyCount);

@@ -42,5 +42,5 @@ void main()
 
 	// Increment batch valid sample counter
 	const uint linearBatchIndex = linearPixelIndex / BATCH_SIZE;
-	if (nrcInferFilter[linearBatchIndex] == 0) { atomicAdd(nrcInferFilter[linearBatchIndex], 1u); }
+	if (nrcInferFilter[linearBatchIndex] == 0) { atomicAdd(nrcInferFilter[linearBatchIndex], 1); }
 }

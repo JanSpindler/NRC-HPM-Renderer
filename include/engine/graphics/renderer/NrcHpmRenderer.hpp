@@ -124,6 +124,9 @@ namespace en
 		UniformData m_UniformData = { glm::vec4(0.0f), 1 };
 		vk::Buffer m_UniformBuffer;
 
+		vk::Shader m_ClearShader;
+		VkPipeline m_ClearPipeline;
+
 		vk::Shader m_GenRaysShader;
 		VkPipeline m_GenRaysPipeline;
 
@@ -179,6 +182,7 @@ namespace en
 
 		void InitSpecializationConstants();
 
+		void CreateClearPipeline(VkDevice device);
 		void CreateGenRaysPipeline(VkDevice device);
 		void CreatePrepInferRaysPipeline(VkDevice device);
 		void CreatePrepTrainRaysPipeline(VkDevice device);

@@ -1,0 +1,9 @@
+#version 460
+#define NRC
+#include "common.glsl"
+
+void main()
+{
+	nrcTrainRingHead %= TRAIN_SAMPLE_COUNT;
+	nrcTrainRingTail %= TRAIN_SAMPLE_COUNT;
+}

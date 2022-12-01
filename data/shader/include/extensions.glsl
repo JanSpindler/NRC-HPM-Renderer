@@ -1,2 +1,3 @@
 #extension GL_EXT_debug_printf : enable
-#extension GL_EXT_shader_atomic_float : enable
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
