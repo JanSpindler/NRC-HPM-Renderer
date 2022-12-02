@@ -1,0 +1,14 @@
+#version 460
+
+layout(constant_id = 0) const uint WIDTH = 1;
+layout(constant_id = 1) const uint HEIGHT = 1;
+
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, rgba32f) uniform image2D refImage;
+
+layout(set = 0, binding = 1, rgba32f) uniform image2D cmpImage;
+
+void main()
+{
+}

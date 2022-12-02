@@ -104,7 +104,7 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
-void Benchmark(
+/*void Benchmark(
 	uint32_t width, 
 	uint32_t height, 
 	uint32_t sceneID, 
@@ -215,6 +215,11 @@ void Benchmark(
 	// Reset camera
 	nrcHpmRenderer->SetCamera(queue, oldCamera);
 	mcHpmRenderer->SetCamera(queue, oldCamera);
+}*/
+
+void Benchmark(const en::Camera* camera, VkQueue queue)
+{
+
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -477,12 +482,12 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		// Display
 		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
-		// Check loss
-		//if (benchmark && frameCount % 100 == 0)
-		//{
-		//	en::Log::Info("Frame: " + std::to_string(frameCount));
-		//	Benchmark(appConfig.renderWidth, appConfig.renderHeight, appConfig.scene.id, appConfig, hpmScene, &camera, queue);
-		//}
+		// Benchmark
+		if (benchmark && frameCount % 100 == 0)
+		{
+			en::Log::Info("Frame: " + std::to_string(frameCount));
+			Benchmark(&camera, queue);
+		}
 
 		//
 		frameCount++;
@@ -534,7 +539,7 @@ int main(int argc, char** argv)
 	if (argc == 1)
 	{
 		en::Log::Info("No arguments found. Loading defaults");
-		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "64", "4", "15", "0", "0.05", "1", "2"};
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "64", "4", "15", "0", "0.05", "1", "2" };
 	}
 
 	en::AppConfig appConfig(myargv);
