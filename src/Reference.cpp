@@ -93,7 +93,17 @@ namespace en
 			vkDestroyImage(device, m_RefImages[i], nullptr);
 		}
 
+		vkDestroyPipeline(device, m_CmpPipeline, nullptr);
+		m_CmpShader.Destroy();
+		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
+
+		vkDestroyDescriptorPool(device, m_DescPool, nullptr);
+		vkDestroyDescriptorSetLayout(device, m_DescSetLayout, nullptr);
+
 		m_CmdPool.Destroy();
+
+		m_ResultBuffer.Destroy();
+		m_ResultStagingBuffer.Destroy();
 	}
 
 	void Reference::CreateDescriptor()
@@ -471,9 +481,6 @@ namespace en
 	{
 		const uint32_t sceneID = appConfig.scene.id;
 
-		// Create reference renderer
-		McHpmRenderer refRenderer(m_Width, m_Height, 32, true, m_RefCameras[0], scene);
-
 		// Create output path if not exists
 		std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
 		if (!std::filesystem::is_directory(outputDirPath) || !std::filesystem::exists(outputDirPath))
@@ -489,6 +496,9 @@ namespace en
 		if (!std::filesystem::is_directory(referenceDirPath) || !std::filesystem::exists(referenceDirPath))
 		{
 			en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
+
+			// Create reference renderer
+			McHpmRenderer refRenderer(m_Width, m_Height, 32, true, m_RefCameras[0], scene);
 
 			// Create folder
 			std::filesystem::create_directory(referenceDirPath);
@@ -514,6 +524,8 @@ namespace en
 				// Copy to ref image for faster comparison
 				CopyToRefImage(i, refRenderer.GetImage(), queue);
 			}
+
+			refRenderer.Destroy();
 		}
 #endif
 	}

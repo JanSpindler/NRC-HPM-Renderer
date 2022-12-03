@@ -18,6 +18,7 @@
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
 #include <tinyexr.h>
 #include <engine/graphics/vulkan/CommandPool.hpp>
+#include <engine/graphics/Reference.hpp>
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
@@ -143,6 +144,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		glm::radians(60.0f),
 		0.1f,
 		100.0f);
+
+	// Init reference
+	en::Reference reference(width, height, appConfig, hpmScene, queue);
 
 	// Init rendering pipeline
 	en::Log::Info("Initializing renderers");
@@ -329,6 +333,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	delete nrcHpmRenderer;
 	en::ImGuiRenderer::Shutdown();
 	if (en::Window::IsSupported) { swapchain->Destroy(true); }
+
+	reference.Destroy();
 
 	hpmScene.Destroy();
 	camera.Destroy();
