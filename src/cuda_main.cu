@@ -106,7 +106,7 @@ void SwapchainResizeCallback()
 void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount)
 {
 	en::Log::Info("Frame: " + std::to_string(frameCount));
-	//reference->CompareNrc(*nrcHpmRenderer, camera, queue);
+	reference->CompareNrc(*nrcHpmRenderer, camera, queue);
 	//reference->CompareMc(*mcHpmRenderer, camera, queue);
 }
 

@@ -36,5 +36,5 @@ void main()
 	atomicAdd(biasY, diffVec.y);
 	atomicAdd(biasZ, diffVec.z);
 
-	atomicAdd(mse, diffSumSq);
+	atomicAdd(mse, diffSumSq / 3.0);
 }
