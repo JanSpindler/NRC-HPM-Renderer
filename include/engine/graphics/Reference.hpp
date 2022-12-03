@@ -17,7 +17,6 @@ namespace en
 		struct Result
 		{
 			float mse;
-			float snr;
 			float biasX;
 			float biasY;
 			float biasZ;

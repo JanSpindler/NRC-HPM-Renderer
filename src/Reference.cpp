@@ -10,7 +10,6 @@ namespace en
 	{
 		const float normFactor = 1.0f / static_cast<float>(width * height);
 		mse *= normFactor;
-		snr *= normFactor;
 		biasX *= normFactor;
 		biasY *= normFactor;
 		biasZ *= normFactor;

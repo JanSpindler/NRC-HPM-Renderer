@@ -14,7 +14,6 @@ layout(set = 0, binding = 1, rgba32f) uniform image2D cmpImage;
 layout(std430, set = 0, binding = 2) buffer Result
 {
 	float mse;
-	float snr;
 	float biasX;
 	float biasY;
 	float biasZ;
