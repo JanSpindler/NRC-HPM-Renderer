@@ -44,11 +44,14 @@ namespace en
 
 	std::array<Reference::Result, 6> Reference::CompareNrc(NrcHpmRenderer& renderer, const en::Camera* oldCamera, VkQueue queue)
 	{
+		std::array<Result, 6> results = {};
+
 		for (size_t i = 0; i < m_RefCameras.size(); i++)
 		{
 			// Render on noisy renderer
 			renderer.SetCamera(queue, m_RefCameras[i]);
 			renderer.Render(queue, false);
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
 
 			//
 			UpdateDescriptor(m_RefImageViews[i], renderer.GetImageView());
@@ -70,13 +73,15 @@ namespace en
 			// Sync result buffer to host
 			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
 			Result result = {};
-			m_ResultStagingBuffer.GetData(sizeof(Result), &result, 0, 0);
+			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
 
 			// Eval results
 			Log::Info("MSE: " + std::to_string(result.mse));
 		}
 
-		return {};
+		renderer.SetCamera(queue, oldCamera);
+
+		return results;
 	}
 
 	void Reference::Destroy()
@@ -391,7 +396,7 @@ namespace en
 			imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageCI.queueFamilyIndexCount = 0;
 			imageCI.pQueueFamilyIndices = nullptr;
-			imageCI.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+			imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 			VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_RefImages[i]);
 			ASSERT_VULKAN(result);
@@ -448,7 +453,7 @@ namespace en
 			vk::CommandRecorder::ImageLayoutTransfer(
 				m_CmdBuf,
 				m_RefImages[i],
-				VK_IMAGE_LAYOUT_PREINITIALIZED,
+				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				VK_ACCESS_NONE,
 				VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,

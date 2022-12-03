@@ -20,6 +20,7 @@
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/graphics/Reference.hpp>
 
+en::Reference* reference = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
 
@@ -104,7 +105,7 @@ void SwapchainResizeCallback()
 
 void Benchmark(const en::Camera* camera, VkQueue queue)
 {
-
+	reference->CompareNrc(*nrcHpmRenderer, camera, queue);
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -146,7 +147,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		100.0f);
 
 	// Init reference
-	en::Reference reference(width, height, appConfig, hpmScene, queue);
+	reference = new en::Reference(width, height, appConfig, hpmScene, queue);
 
 	// Init rendering pipeline
 	en::Log::Info("Initializing renderers");
@@ -334,7 +335,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	en::ImGuiRenderer::Shutdown();
 	if (en::Window::IsSupported) { swapchain->Destroy(true); }
 
-	reference.Destroy();
+	reference->Destroy();
+	delete reference; 
 
 	hpmScene.Destroy();
 	camera.Destroy();
