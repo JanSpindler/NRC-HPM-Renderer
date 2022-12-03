@@ -52,7 +52,7 @@ namespace en
 		GenRefImages(appConfig, scene, queue);
 	}
 
-	std::array<Reference::Result, 6> Reference::CompareNrc(NrcHpmRenderer& renderer, const en::Camera* oldCamera, VkQueue queue)
+	std::array<Reference::Result, 6> Reference::CompareNrc(NrcHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue)
 	{
 		std::array<Result, 6> results = {};
 
@@ -90,8 +90,56 @@ namespace en
 			Log::Info(
 				"MSE: " + std::to_string(results[i].mse) +
 				" | Bias: (" + std::to_string(results[i].biasX) + 
-				", " + std::to_string(results[i].biasX) + 
-				", " + std::to_string(results[i].biasX) + 
+				", " + std::to_string(results[i].biasY) + 
+				", " + std::to_string(results[i].biasZ) + 
+				")");
+		}
+
+		renderer.SetCamera(queue, oldCamera);
+
+		return results;
+	}
+
+	std::array<Reference::Result, 6> Reference::CompareMc(McHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue)
+	{
+		std::array<Result, 6> results = {};
+
+		for (size_t i = 0; i < m_RefCameras.size(); i++)
+		{
+			// Render on noisy renderer
+			renderer.SetCamera(queue, m_RefCameras[i]);
+			renderer.Render(queue);
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+
+			// Update
+			UpdateDescriptor(m_RefImageViews[i], renderer.GetImageView());
+			RecordCmpCmdBuf();
+
+			// Submit comparision
+			VkSubmitInfo submitInfo = {};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.pNext = nullptr;
+			submitInfo.waitSemaphoreCount = 0;
+			submitInfo.pWaitSemaphores = nullptr;
+			submitInfo.pWaitDstStageMask = nullptr;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &m_CmdBuf;
+			submitInfo.signalSemaphoreCount = 0;
+			submitInfo.pSignalSemaphores = nullptr;
+			ASSERT_VULKAN(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+
+			// Sync result buffer to host
+			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
+			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
+			results[i].Norm(m_Width, m_Height);
+
+			// Eval results
+			Log::Info(
+				"MSE: " + std::to_string(results[i].mse) +
+				" | Bias: (" + std::to_string(results[i].biasX) +
+				", " + std::to_string(results[i].biasY) +
+				", " + std::to_string(results[i].biasZ) +
 				")");
 		}
 

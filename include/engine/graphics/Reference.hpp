@@ -7,6 +7,7 @@
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/graphics/vulkan/Shader.hpp>
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
+#include <engine/graphics/renderer/McHpmRenderer.hpp>
 
 namespace en
 {
@@ -31,7 +32,8 @@ namespace en
 			const HpmScene& scene,
 			VkQueue queue);
 
-		std::array<Result, 6> CompareNrc(NrcHpmRenderer& renderer, const en::Camera* oldCamera, VkQueue queue);
+		std::array<Result, 6> CompareNrc(NrcHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue);
+		std::array<Result, 6> CompareMc(McHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue);
 		void Destroy();
 
 	private:
