@@ -16,8 +16,12 @@ namespace en
 		struct Result
 		{
 			float mse;
-			float bias;
 			float snr;
+			float biasX;
+			float biasY;
+			float biasZ;
+
+			void Norm(uint32_t width, uint32_t height);
 		};
 
 		Reference(

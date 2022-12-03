@@ -6,6 +6,16 @@
 
 namespace en
 {
+	void Reference::Result::Norm(uint32_t width, uint32_t height)
+	{
+		const float normFactor = 1.0f / static_cast<float>(width * height);
+		mse *= normFactor;
+		snr *= normFactor;
+		biasX *= normFactor;
+		biasY *= normFactor;
+		biasZ *= normFactor;
+	}
+
 	Reference::Reference(
 		uint32_t width, 
 		uint32_t height, 
@@ -25,7 +35,7 @@ namespace en
 		m_ResultBuffer(
 			sizeof(Reference::Result),
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			{})
 	{
 		m_CmdPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -53,8 +63,9 @@ namespace en
 			renderer.Render(queue, false);
 			ASSERT_VULKAN(vkQueueWaitIdle(queue));
 
-			//
+			// Update
 			UpdateDescriptor(m_RefImageViews[i], renderer.GetImageView());
+			RecordCmpCmdBuf();
 
 			// Submit comparision
 			VkSubmitInfo submitInfo = {};
@@ -72,11 +83,16 @@ namespace en
 
 			// Sync result buffer to host
 			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
-			Result result = {};
 			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
+			results[i].Norm(m_Width, m_Height);
 
 			// Eval results
-			Log::Info("MSE: " + std::to_string(result.mse));
+			Log::Info(
+				"MSE: " + std::to_string(results[i].mse) +
+				" | Bias: (" + std::to_string(results[i].biasX) + 
+				", " + std::to_string(results[i].biasX) + 
+				", " + std::to_string(results[i].biasX) + 
+				")");
 		}
 
 		renderer.SetCamera(queue, oldCamera);
