@@ -16,7 +16,17 @@ namespace en
 		m_Width(width),
 		m_Height(height),
 		m_CmdPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
-		m_CmpShader("ref/cmp.comp", false)
+		m_CmpShader("ref/cmp.comp", false),
+		m_ResultStagingBuffer(
+			sizeof(Reference::Result), 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			{}),
+		m_ResultBuffer(
+			sizeof(Reference::Result),
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			{})
 	{
 		m_CmdPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		m_CmdBuf = m_CmdPool.GetBuffer(0);
@@ -32,10 +42,18 @@ namespace en
 		GenRefImages(appConfig, scene, queue);
 	}
 
-	std::array<Reference::Result, 6> Reference::Compare(VkImageView imageView, const en::Camera* oldCamera, VkQueue queue)
+	std::array<Reference::Result, 6> Reference::CompareNrc(NrcHpmRenderer& renderer, const en::Camera* oldCamera, VkQueue queue)
 	{
 		for (size_t i = 0; i < m_RefCameras.size(); i++)
 		{
+			// Render on noisy renderer
+			renderer.SetCamera(queue, m_RefCameras[i]);
+			renderer.Render(queue, false);
+
+			//
+			UpdateDescriptor(m_RefImageViews[i], renderer.GetImageView());
+
+			// Submit comparision
 			VkSubmitInfo submitInfo = {};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfo.pNext = nullptr;
@@ -48,6 +66,14 @@ namespace en
 			submitInfo.pSignalSemaphores = nullptr;
 			ASSERT_VULKAN(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+
+			// Sync result buffer to host
+			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
+			Result result = {};
+			m_ResultStagingBuffer.GetData(sizeof(Result), &result, 0, 0);
+
+			// Eval results
+			Log::Info("MSE: " + std::to_string(result.mse));
 		}
 
 		return {};
@@ -91,7 +117,14 @@ namespace en
 		cmdImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		cmdImageBinding.pImmutableSamplers = nullptr;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings = { refImageBinding, cmdImageBinding };
+		VkDescriptorSetLayoutBinding resultBufferBinding = {};
+		resultBufferBinding.binding = binding++;
+		resultBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		resultBufferBinding.descriptorCount = 1;
+		resultBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		resultBufferBinding.pImmutableSamplers = nullptr;
+
+		std::vector<VkDescriptorSetLayoutBinding> bindings = { refImageBinding, cmdImageBinding, resultBufferBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutCI = {};
 		layoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -106,7 +139,11 @@ namespace en
 		storageImagePS.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		storageImagePS.descriptorCount = 2;
 
-		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePS };
+		VkDescriptorPoolSize storageBufferPS = {};
+		storageBufferPS.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		storageBufferPS.descriptorCount = 1;
+
+		std::vector<VkDescriptorPoolSize> poolSizes = { storageImagePS, storageBufferPS };
 
 		VkDescriptorPoolCreateInfo poolCI = {};
 		poolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -165,8 +202,24 @@ namespace en
 		cmpImageWrite.pBufferInfo = nullptr;
 		cmpImageWrite.pTexelBufferView = nullptr;
 
-		std::vector<VkWriteDescriptorSet> writes = { refImageWrite, cmpImageWrite };
+		VkDescriptorBufferInfo resultBufferInfo = {};
+		resultBufferInfo.buffer = m_ResultBuffer.GetVulkanHandle();
+		resultBufferInfo.offset = 0;
+		resultBufferInfo.range = sizeof(Result);
 
+		VkWriteDescriptorSet resultBufferWrite = {};
+		resultBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		resultBufferWrite.pNext = nullptr;
+		resultBufferWrite.dstSet = m_DescSet;
+		resultBufferWrite.dstBinding = binding++;
+		resultBufferWrite.dstArrayElement = 0;
+		resultBufferWrite.descriptorCount = 1;
+		resultBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		resultBufferWrite.pImageInfo = nullptr;
+		resultBufferWrite.pBufferInfo = &resultBufferInfo;
+		resultBufferWrite.pTexelBufferView = nullptr;
+
+		std::vector<VkWriteDescriptorSet> writes = { refImageWrite, cmpImageWrite, resultBufferWrite };
 		vkUpdateDescriptorSets(VulkanAPI::GetDevice(), writes.size(), writes.data(), 0, nullptr);
 	}
 
@@ -238,6 +291,8 @@ namespace en
 		beginInfo.flags = 0;
 		beginInfo.pInheritanceInfo = nullptr;
 		ASSERT_VULKAN(vkBeginCommandBuffer(m_CmdBuf, &beginInfo));
+
+		vkCmdFillBuffer(m_CmdBuf, m_ResultBuffer.GetVulkanHandle(), 0, sizeof(Result), 0);
 
 		vkCmdBindDescriptorSets(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &m_DescSet, 0, nullptr);
 		vkCmdBindPipeline(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_CmpPipeline);

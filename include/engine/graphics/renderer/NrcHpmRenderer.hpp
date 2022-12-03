@@ -27,7 +27,7 @@ namespace en
 			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
 
-		void Render(VkQueue queue);
+		void Render(VkQueue queue, bool train);
 		void Destroy();
 
 		void ExportOutputImageToFile(VkQueue queue, const std::string& filePath) const;

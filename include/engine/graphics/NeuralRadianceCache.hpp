@@ -22,7 +22,7 @@ namespace en
 			cudaExternalSemaphore_t cudaStartSemaphore,
 			cudaExternalSemaphore_t cudaFinishedSemaphore);
 
-		void InferAndTrain(const uint32_t* inferFilter);
+		void InferAndTrain(const uint32_t* inferFilter, bool train);
 
 		void Destroy();
 

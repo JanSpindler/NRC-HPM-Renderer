@@ -294,7 +294,7 @@ namespace en
 		RecordPostCudaCommandBuffer();
 	}
 
-	void NrcHpmRenderer::Render(VkQueue queue)
+	void NrcHpmRenderer::Render(VkQueue queue, bool train)
 	{
 		// Check if camera moved
 		if (m_Camera->HasChanged()) { m_BlendIndex = 1; }
@@ -330,7 +330,7 @@ namespace en
 		m_NrcInferFilterStagingBuffer->GetData(m_NrcInferFilterBufferSize, m_NrcInferFilterData, 0, 0);
 
 		// Cuda
-		m_Nrc.InferAndTrain(reinterpret_cast<uint32_t*>(m_NrcInferFilterData));
+		m_Nrc.InferAndTrain(reinterpret_cast<uint32_t*>(m_NrcInferFilterData), train);
 		
 		// Post cuda
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

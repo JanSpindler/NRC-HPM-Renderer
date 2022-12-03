@@ -95,11 +95,11 @@ namespace en
 		}
 	}
 
-	void NeuralRadianceCache::InferAndTrain(const uint32_t* inferFilter)
+	void NeuralRadianceCache::InferAndTrain(const uint32_t* inferFilter, bool train)
 	{
 		AwaitCudaStartSemaphore();
 		Inference(inferFilter);
-		Train();
+		if (train) { Train(); }
 		SignalCudaFinishedSemaphore();
 	}
 

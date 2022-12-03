@@ -21,9 +21,6 @@
 
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
 en::McHpmRenderer* mcHpmRenderer = nullptr;
-en::McHpmRenderer* gtRenderer = nullptr;
-std::array<en::Camera*, 6> testCameras = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-std::array<float*, 6> gtImages = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 {
@@ -93,7 +90,7 @@ void RecordSwapchainCommandBuffer(VkCommandBuffer commandBuffer, VkImage image)
 void SwapchainResizeCallback()
 {
 	en::Window::WaitForUsableSize();
-	vkDeviceWaitIdle(en::VulkanAPI::GetDevice()); // TODO: causes error with multithreaded rendering
+	vkDeviceWaitIdle(en::VulkanAPI::GetDevice());
 
 	en::Log::Info("Skipping swapchain resize callback");
 
@@ -103,119 +100,6 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::Resize(width, height);
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
-
-/*void Benchmark(
-	uint32_t width, 
-	uint32_t height, 
-	uint32_t sceneID, 
-	const en::AppConfig& appConfig, 
-	const en::HpmScene& scene,
-	const en::Camera* oldCamera,
-	VkQueue queue)
-{
-	// Create output path if not exists
-	std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
-	if (!std::filesystem::is_directory(outputDirPath) || !std::filesystem::exists(outputDirPath))
-	{
-		std::filesystem::create_directory(outputDirPath);
-	}
-
-	// Create reference folder if not exists
-	std::string referenceDirPath = "reference/" + std::to_string(sceneID) + "/";
-#if __cplusplus >= 201703L
-	en::Log::Warn("C++ version lower then 17. Cant create reference data");
-#else
-	if (!std::filesystem::is_directory(referenceDirPath) || !std::filesystem::exists(referenceDirPath))
-	{
-		en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
-
-		// Create folder
-		std::filesystem::create_directory(referenceDirPath);
-
-		// Generate reference data
-		for (size_t i = 0; i < testCameras.size(); i++)
-		{
-			en::Log::Info("Generating reference image " + std::to_string(i));
-
-			// Set new camera
-			gtRenderer->SetCamera(queue, testCameras[i]);
-
-			// Generate reference image
-			for (size_t frame = 0; frame < 8192; frame++)
-			{
-				gtRenderer->Render(queue);
-				ASSERT_VULKAN(vkQueueWaitIdle(queue));
-			}
-
-			// Export reference image
-			gtRenderer->ExportOutputImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
-		}
-	}
-#endif
-
-	// Load reference images from folder
-	for (size_t i = 0; i < testCameras.size(); i++)
-	{
-		if (gtImages[i] != nullptr) { continue; }
-
-		int exrWidth;
-		int exrHeight;
-
-		const std::string exrFilePath = referenceDirPath + std::to_string(i) + ".exr";
-		if (TINYEXR_SUCCESS != LoadEXR(&gtImages[i], &exrWidth, &exrHeight, exrFilePath.c_str(), nullptr))
-		{
-			en::Log::Error("Tinyexr failed to load " + exrFilePath, true);
-		}
-
-		if (exrWidth != width || exrHeight != height)
-		{
-			en::Log::Error("Extent of loaded reference image does not match renderer extent", true);
-		}
-	}
-	
-	// Test frame
-	const bool prevNrcBlend = nrcHpmRenderer->IsBlending();
-	const bool prevMcBlend = mcHpmRenderer->IsBlending();
-	nrcHpmRenderer->SetBlend(true);
-	mcHpmRenderer->SetBlend(true);
-
-	std::array<float, testCameras.size()> nrcMseLosses;
-	std::array<float, testCameras.size()> mcMseLosses;
-	for (size_t i = 0; i < testCameras.size(); i++)
-	{
-		nrcHpmRenderer->SetCamera(queue, testCameras[i]);
-		mcHpmRenderer->SetCamera(queue, testCameras[i]);
-		for (size_t frame = 0; frame < 1; frame++)
-		{
-			nrcHpmRenderer->Render(queue);
-			ASSERT_VULKAN(vkQueueWaitIdle(queue));
-			
-			mcHpmRenderer->Render(queue);
-			ASSERT_VULKAN(vkQueueWaitIdle(queue));
-		}
-		nrcMseLosses[i] = nrcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
-		mcMseLosses[i] = mcHpmRenderer->CompareReferenceMSE(queue, gtImages[i]);
-	}
-
-	nrcHpmRenderer->SetBlend(prevNrcBlend);
-	mcHpmRenderer->SetBlend(prevMcBlend);
-
-	// Calculate total loss
-	float nrcMSE = 0.0f;
-	float mcMSE = 0.0f;
-	for (size_t i = 0; i < testCameras.size(); i++)
-	{
-		nrcMSE += nrcMseLosses[i];
-		mcMSE += mcMseLosses[i];
-	}
-	const float frameCountF = static_cast<float>(testCameras.size());
-	en::Log::Info("NRC MSE: " + std::to_string(nrcMSE / frameCountF));
-	en::Log::Info("MC MSE: " + std::to_string(mcMSE / frameCountF));
-
-	// Reset camera
-	nrcHpmRenderer->SetCamera(queue, oldCamera);
-	mcHpmRenderer->SetCamera(queue, oldCamera);
-}*/
 
 void Benchmark(const en::Camera* camera, VkQueue queue)
 {
@@ -260,57 +144,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		0.1f,
 		100.0f);
 
-	testCameras = {
-			new en::Camera(
-				glm::vec3(64.0f, 0.0f, 0.0f),
-				glm::vec3(-1.0f, 0.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new	en::Camera(
-				glm::vec3(-64.0f, 0.0f, 0.0f),
-				glm::vec3(1.0f, 0.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, 64.0f, 0.0f),
-				glm::vec3(0.0f, -1.0f, 0.0f),
-				glm::vec3(1.0f, 0.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, -64.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				glm::vec3(1.0f, 0.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, 0.0f, 64.0f),
-				glm::vec3(0.0f, 0.0f, -1.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, 0.0f, -64.0f),
-				glm::vec3(0.0f, 0.0f, 1.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f)
-	};
-
 	// Init rendering pipeline
 	en::Log::Info("Initializing renderers");
 
@@ -332,7 +165,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		nrc);
 
 	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, false, &camera, hpmScene);
-	gtRenderer = new en::McHpmRenderer(width, height, 64, true, &camera, hpmScene);
 
 	if (en::Window::IsSupported())
 	{
@@ -364,9 +196,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	bool continueLoop = en::Window::IsSupported() ? !en::Window::IsClosed() : true;
 	while (continueLoop && !shutdown)
 	{
-		// Exit
-		//if (frameCount == 10) { break; }
-
 		// Update
 		if (en::Window::IsSupported())
 		{
@@ -393,12 +222,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		camera.UpdateUniformBuffer();
 
 		// Render
-		// Always render nrc for training
-		//nrcHpmRenderer->Render(queue);
-		//result = vkQueueWaitIdle(queue);
-		//ASSERT_VULKAN(result);
-		//nrcHpmRenderer->EvaluateTimestampQueries();
-
 		switch (rendererId)
 		{
 		case 0: // MC
@@ -408,7 +231,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			mcHpmRenderer->EvaluateTimestampQueries();
 			break;
 		case 1: // NRC
-			nrcHpmRenderer->Render(queue);
+			nrcHpmRenderer->Render(queue, true);
 			result = vkQueueWaitIdle(queue);
 			ASSERT_VULKAN(result);
 			nrcHpmRenderer->EvaluateTimestampQueries();
@@ -499,14 +322,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	ASSERT_VULKAN(result);
 
 	// End
-	for (size_t i = 0; i < testCameras.size(); i++)
-	{
-		free(gtImages[i]);
-	}
-	
-	gtRenderer->Destroy();
-	delete gtRenderer;
-	
 	mcHpmRenderer->Destroy();
 	delete mcHpmRenderer;
 	
@@ -514,12 +329,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	delete nrcHpmRenderer;
 	en::ImGuiRenderer::Shutdown();
 	if (en::Window::IsSupported) { swapchain->Destroy(true); }
-
-	for (size_t i = 0; i < testCameras.size(); i++)
-	{
-		testCameras[i]->Destroy();
-		delete testCameras[i];
-	}
 
 	hpmScene.Destroy();
 	camera.Destroy();
@@ -539,7 +348,7 @@ int main(int argc, char** argv)
 	if (argc == 1)
 	{
 		en::Log::Info("No arguments found. Loading defaults");
-		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "64", "4", "15", "0", "0.05", "1", "2" };
+		myargv = { "NRC-HPM-Renderer", "RelativeL2", "Adam", "0.001", "0", "0", "64", "4", "15", "0", "0.05", "1", "3" };
 	}
 
 	en::AppConfig appConfig(myargv);
