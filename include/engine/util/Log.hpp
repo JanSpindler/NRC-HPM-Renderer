@@ -2,6 +2,8 @@
 
 #include <string>
 #include <vulkan/vulkan_core.h>
+#include <unordered_map>
+#include <fstream>
 
 namespace en
 {
@@ -12,5 +14,11 @@ namespace en
 		static void Warn(const std::string& msg);
 		static void Error(const std::string& msg, bool exit);
 		static void LocationError(const std::string& msg, VkResult res, const std::string& file, const int line, bool exit);
+
+		static void InfoFile(const std::string& msg, const std::string& fileName);
+		static void CloseFile(const std::string& fileName);
+
+	private:
+		static std::unordered_map<std::string, std::ofstream> s_LogFiles;
 	};
 }
