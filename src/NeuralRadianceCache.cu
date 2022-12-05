@@ -16,8 +16,12 @@ namespace en
 				{"otype", appConfig.lossFn}
 			}},
 			{"optimizer", {
-				{"otype", appConfig.optimizer},
-				{"learning_rate", appConfig.learningRate},
+				{"otype", "EMA"},
+				{"decay", 0.99},
+				{"nested", {
+					{"otype", appConfig.optimizer},
+					{"learning_rate", appConfig.learningRate},
+				}},
 			}},
 			appConfig.encoding.jsonConfig,
 			{"network", {
