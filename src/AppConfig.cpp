@@ -85,13 +85,14 @@ namespace en
 
 	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argv.size() != 13) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 14) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
 		lossFn = std::string(argv[index++]);
 		optimizer = std::string(argv[index++]);
 		learningRate = std::stof(argv[index++]);
+		emaDecay = std::stof(argv[index++]);
 		encoding = NNEncodingConfig(std::stoi(argv[index++]), std::stoi(argv[index++]));
 		nnWidth = std::stoi(argv[index++]);
 		nnDepth = std::stoi(argv[index++]);
@@ -128,6 +129,7 @@ namespace en
 		ImGui::Text(lossFn.c_str());
 		ImGui::Text(optimizer.c_str());
 		ImGui::Text("Learning rate %f", learningRate);
+		ImGui::Text("EMA Decay %f", emaDecay);
 		ImGui::Text("Encoding (%d, %d)", encoding.posID, encoding.dirID);
 		ImGui::Text("NN Width %d", nnWidth);
 		ImGui::Text("NN Depth %d", nnDepth);
@@ -135,6 +137,7 @@ namespace en
 		ImGui::Text("Scene %d", scene.id);
 		ImGui::Text("Train sample ratio %f", trainSampleRatio);
 		ImGui::Text("Train spp %d", trainSpp);
+		ImGui::Text("Primary ray length %d", primaryRayLength);
 		ImGui::End();
 	}
 }

@@ -165,7 +165,7 @@ namespace en
 		VkDescriptorSet m_DescSet;
 
 		const float c_TimestampPeriodInMS = VulkanAPI::GetTimestampPeriod() * 1e-6f;
-		const uint32_t c_QueryCount = 6;
+		const uint32_t c_QueryCount = 8;
 		std::vector<float> m_TimePeriods = std::vector<float>(c_QueryCount);
 		uint32_t m_QueryIndex = 0;
 		VkQueryPool m_QueryPool;

@@ -37,6 +37,7 @@ namespace en
 		std::string lossFn;
 		std::string optimizer;
 		float learningRate;
+		float emaDecay;
 		NNEncodingConfig encoding;
 		uint32_t nnWidth;
 		uint32_t nnDepth;

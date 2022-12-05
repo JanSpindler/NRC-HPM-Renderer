@@ -17,7 +17,7 @@ namespace en
 			}},
 			{"optimizer", {
 				{"otype", "EMA"},
-				{"decay", 0.99},
+				{"decay", appConfig.emaDecay},
 				{"nested", {
 					{"otype", appConfig.optimizer},
 					{"learning_rate", appConfig.learningRate},

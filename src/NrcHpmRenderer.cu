@@ -512,8 +512,10 @@ namespace en
 		ImGui::Begin("NrcHpmRenderer");
 		
 		size_t periodIndex = 0;
+		ImGui::Text("Clear Buffers Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("GenRays Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("PrepInferRays Time %f ms", m_TimePeriods[periodIndex++]);
+		ImGui::Text("Copy Infer Filter Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("PrepTrainRays Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Cuda Time %f ms", m_TimePeriods[periodIndex++]);
 		ImGui::Text("Render Time %f ms", m_TimePeriods[periodIndex++]);
@@ -1943,6 +1945,9 @@ namespace en
 		// Reset query pool
 		vkCmdResetQueryPool(m_PreCudaCommandBuffer, m_QueryPool, 0, c_QueryCount);
 		
+		// Timestamp
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_QueryPool, m_QueryIndex++);
+
 		// Clear buffers
 		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferInputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
 		vkCmdFillBuffer(m_PreCudaCommandBuffer, m_NrcInferOutputBuffer->GetVulkanHandle(), 0, VK_WHOLE_SIZE, 0);
@@ -1955,7 +1960,7 @@ namespace en
 		vkCmdDispatch(m_PreCudaCommandBuffer, 1, 1, 1);
 
 		// Timestamp
-		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_QueryPool, m_QueryIndex++);
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
 		// Gen rays pipeline
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GenRaysPipeline);
@@ -1967,6 +1972,9 @@ namespace en
 		// Prep infer rays
 		vkCmdBindPipeline(m_PreCudaCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PrepInferRaysPipeline);
 		vkCmdDispatch(m_PreCudaCommandBuffer, m_RenderWidth / 32, m_RenderHeight, 1);
+
+		// Timestamp
+		vkCmdWriteTimestamp(m_PreCudaCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_QueryPool, m_QueryIndex++);
 
 		// Copy nrc infer filter buffer to host
 		VkBufferCopy nrcInferFilterCopy;
