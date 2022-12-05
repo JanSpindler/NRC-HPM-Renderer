@@ -26,6 +26,19 @@ namespace en
 				{"per_level_scale", 2.0},
 			};
 			break;
+		case 1:
+			posEncoding = {
+				{"otype", "Identity"},
+				{"n_dims_to_encode", 3}
+			};
+			break;
+		case 2:
+			posEncoding = {
+				{"otype", "TriangleWave"},
+				{"n_dims_to_encode", 3},
+				{"n_frequencies", 16}
+			};
+			break;
 		default:
 			Log::Error("NNEncodingConfig posID is invalid", true);
 			break;
@@ -41,6 +54,19 @@ namespace en
 				{"n_bins", 4},
 			};
 			break;
+		case 1:
+			dirEncoding = {
+				{"otype", "Identity"},
+				{"n_dims_to_encode", 2}
+			};
+			break;
+		case 2:
+			dirEncoding = {
+				{"otype", "TriangleWave"},
+				{"n_dims_to_encode", 2},
+				{"n_frequencies", 4}
+			};
+			break;
 		default:
 			Log::Error("NNEncodingConfig dirID is invalid", true);
 			break;
@@ -49,8 +75,7 @@ namespace en
 		jsonConfig = { "encoding", {
 			{"otype", "Composite"},
 			{"reduction", "Concatenation"},
-			{"nested", { posEncoding, dirEncoding }
-			}
+			{"nested", { posEncoding, dirEncoding }}
 		}};
 	}
 
@@ -93,7 +118,11 @@ namespace en
 		optimizer = std::string(argv[index++]);
 		learningRate = std::stof(argv[index++]);
 		emaDecay = std::stof(argv[index++]);
-		encoding = NNEncodingConfig(std::stoi(argv[index++]), std::stoi(argv[index++]));
+		
+		const uint32_t posID = std::stoi(argv[index++]);
+		const uint32_t dirID = std::stoi(argv[index++]);
+		encoding = NNEncodingConfig(posID, dirID);
+		
 		nnWidth = std::stoi(argv[index++]);
 		nnDepth = std::stoi(argv[index++]);
 		log2BatchSize = std::stoi(argv[index++]);

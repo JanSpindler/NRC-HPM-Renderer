@@ -21,7 +21,7 @@ namespace en
 				{"nested", {
 					{"otype", appConfig.optimizer},
 					{"learning_rate", appConfig.learningRate},
-				}},
+				}}
 			}},
 			appConfig.encoding.jsonConfig,
 			{"network", {
