@@ -83,6 +83,8 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 	bool volumeExit = false;
 	for (uint i = 0; i < 32; i++)
 	{
+		if (volumeExit) { break; }
+
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
