@@ -63,7 +63,6 @@ namespace en
 		void CreateColorImageObjects(VkDevice device);
 		void CreateDepthImageObjects(VkDevice device);
 		void CreateFramebuffer(VkDevice device);
-		void CreateCommandBuffer();
 		void RecordCommandBuffer();
 	};
 }

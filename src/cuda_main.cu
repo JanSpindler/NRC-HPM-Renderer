@@ -17,6 +17,8 @@
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/graphics/Reference.hpp>
+#include <engine/objects/Model.hpp>
+#include <engine/graphics/renderer/SimpleModelRenderer.hpp>
 
 en::Reference* reference = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
@@ -124,7 +126,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	const VkQueue queue = en::VulkanAPI::GetGraphicsQueue();
 
 	// Renderer select
-	const std::vector<char*> rendererMenuItems = { "MC", "NRC" }; // TODO: Restir
+	const std::vector<char*> rendererMenuItems = { "MC", "NRC", "Model" };
 	const char* currentRendererMenuItem = rendererMenuItems[1];
 	uint32_t rendererId = 1;
 
@@ -135,7 +137,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 	en::HpmScene hpmScene(appConfig);
 
-	// Setup rendering
 	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 	en::Camera camera(
 		glm::vec3(64.0f, 0.0f, 0.0f),
@@ -145,6 +146,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		glm::radians(60.0f),
 		0.1f,
 		100.0f);
+
+	en::Model dragonModel("dragon.obj", true);
+	en::ModelInstance dragonModelInstance(&dragonModel, glm::mat4(1.0f));
 
 	// Init reference
 	reference = new en::Reference(width, height, appConfig, hpmScene, queue);
@@ -157,6 +161,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	{
 		swapchain = new en::vk::Swapchain(width, height, RecordSwapchainCommandBuffer, SwapchainResizeCallback);
 	}
+
+	en::SimpleModelRenderer modelRenderer(width, height, &camera);
+	modelRenderer.AddModelInstance(&dragonModelInstance);
 
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width,
@@ -181,6 +188,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			break;
 		case 1: // NRC
 			en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+			break;
+		case 2: // Model
+			en::ImGuiRenderer::SetBackgroundImageView(modelRenderer.GetColorImageView());
 			break;
 		default: // Error
 			en::Log::Error("Renderer ID is invalid", true);
@@ -241,6 +251,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			ASSERT_VULKAN(result);
 			nrcHpmRenderer->EvaluateTimestampQueries();
 			break;
+		case 2: // Model
+			modelRenderer.Render(queue);
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+			break;
 		default: // Error
 			en::Log::Error("Renderer ID is invalid", true);
 			break;
@@ -280,6 +294,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 								break;
 							case 1: // NRC
 								en::ImGuiRenderer::SetBackgroundImageView(nrcHpmRenderer->GetImageView());
+								break;
+							case 2: // Model
+								en::ImGuiRenderer::SetBackgroundImageView(modelRenderer.GetColorImageView());
 								break;
 							default: // Error
 								en::Log::Error("Renderer ID is invalid", true);
@@ -331,11 +348,15 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	en::ImGuiRenderer::Shutdown();
 	if (en::Window::IsSupported) { swapchain->Destroy(true); }
 
+	modelRenderer.Destroy();
+
 	reference->Destroy();
 	delete reference; 
 
-	hpmScene.Destroy();
+	dragonModelInstance.Destroy();
+	dragonModel.Destroy();
 	camera.Destroy();
+	hpmScene.Destroy();
 	nrc.Destroy();
 
 	en::VulkanAPI::Shutdown();

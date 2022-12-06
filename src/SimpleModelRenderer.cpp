@@ -1,6 +1,7 @@
 #include <engine/graphics/renderer/SimpleModelRenderer.hpp>
 #include <engine/graphics/VulkanAPI.hpp>
 #include <glm/glm.hpp>
+#include <engine/graphics/vulkan/CommandRecorder.hpp>
 
 namespace en
 {
@@ -10,8 +11,11 @@ namespace en
 		m_Camera(camera),
 		m_VertShader("simple_material/simple_material.vert", false),
 		m_FragShader("simple_material/simple_material.frag", false),
-		m_CommandPool(0, VulkanAPI::GetGraphicsQFI())
+		m_CommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI())
 	{
+		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		m_CommandBuffer = m_CommandPool.GetBuffer(0);
+
 		VkDevice device = VulkanAPI::GetDevice();
 
 		FindFormats();
@@ -22,7 +26,6 @@ namespace en
 		CreateColorImageObjects(device);
 		CreateDepthImageObjects(device);
 		CreateFramebuffer(device);
-		CreateCommandBuffer();
 		RecordCommandBuffer();
 	}
 
@@ -78,7 +81,6 @@ namespace en
 		VkDevice device = VulkanAPI::GetDevice();
 
 		// Destroy
-		m_CommandPool.FreeBuffers();
 		vkDestroyFramebuffer(device, m_Framebuffer, nullptr);
 
 		vkDestroyImageView(device, m_DepthImageView, nullptr);
@@ -93,16 +95,12 @@ namespace en
 		CreateColorImageObjects(device);
 		CreateDepthImageObjects(device);
 		CreateFramebuffer(device);
-		CreateCommandBuffer();
 		RecordCommandBuffer();
 	}
 
 	void SimpleModelRenderer::AddModelInstance(const ModelInstance* meshInstance)
 	{
 		m_ModelInstances.push_back(meshInstance);
-
-		m_CommandPool.FreeBuffers();
-		CreateCommandBuffer();
 		RecordCommandBuffer();
 	}
 
@@ -113,9 +111,6 @@ namespace en
 			if (m_ModelInstances[i] == modelInstance)
 				m_ModelInstances.erase(m_ModelInstances.begin() + i);
 		}
-
-		m_CommandPool.FreeBuffers();
-		CreateCommandBuffer();
 		RecordCommandBuffer();
 	}
 
@@ -175,8 +170,8 @@ namespace en
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // TODO: implement as parameter for constructor
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		VkAttachmentReference colorAttachmentReference;
 		colorAttachmentReference.attachment = 1;
@@ -430,7 +425,7 @@ namespace en
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.queueFamilyIndexCount = 0;
 		imageCreateInfo.pQueueFamilyIndices = nullptr;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
 
 		VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &m_ColorImage);
 		ASSERT_VULKAN(result);
@@ -472,6 +467,46 @@ namespace en
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 
 		result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &m_ColorImageView);
+		ASSERT_VULKAN(result);
+
+		// Change image layout
+		VkCommandBufferBeginInfo beginInfo;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		ASSERT_VULKAN(result);
+
+		vk::CommandRecorder::ImageLayoutTransfer(
+			m_CommandBuffer,
+			m_ColorImage,
+			VK_IMAGE_LAYOUT_PREINITIALIZED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_ACCESS_NONE,
+			VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		result = vkEndCommandBuffer(m_CommandBuffer);
+		ASSERT_VULKAN(result);
+
+		VkSubmitInfo submitInfo;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		VkQueue queue = VulkanAPI::GetGraphicsQueue();
+		result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ASSERT_VULKAN(result);
+		result = vkQueueWaitIdle(queue);
 		ASSERT_VULKAN(result);
 	}
 
@@ -557,12 +592,6 @@ namespace en
 		ASSERT_VULKAN(result);
 	}
 
-	void SimpleModelRenderer::CreateCommandBuffer()
-	{
-		m_CommandPool.AllocateBuffers(1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		m_CommandBuffer = m_CommandPool.GetBuffer(0);
-	}
-
 	void SimpleModelRenderer::RecordCommandBuffer()
 	{
 		// Begin command buffer
@@ -598,9 +627,9 @@ namespace en
 		// Viewport
 		VkViewport viewport;
 		viewport.x = 0.0f;
-		viewport.y = static_cast<float>(m_FrameHeight);
+		viewport.y = 0.0f;
 		viewport.width = static_cast<float>(m_FrameWidth);
-		viewport.height = -static_cast<float>(m_FrameHeight);
+		viewport.height = static_cast<float>(m_FrameHeight);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 

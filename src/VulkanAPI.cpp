@@ -13,8 +13,10 @@
 #include <engine/graphics/renderer/NrcHpmRenderer.hpp>
 #include <engine/graphics/PointLight.hpp>
 #include <engine/graphics/HdrEnvMap.hpp>
-#include <engine/graphics/renderer/RestirHpmRenderer.hpp>
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
+#include <engine/objects/Material.hpp>
+#include <engine/objects/Mesh.hpp>
+#include <engine/objects/Model.hpp>
 
 namespace en
 {
@@ -51,18 +53,20 @@ namespace en
 		PointLight::Init(m_Device);
 		HdrEnvMap::Init(m_Device);
 		NrcHpmRenderer::Init(m_Device);
-		//RestirHpmRenderer::Init(m_Device);
-		//VolumeReservoir::Init(m_Device);
 		McHpmRenderer::Init(m_Device);
+		Material::Init();
+		MeshInstance::Init();
+		ModelInstance::Init();
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		Log::Info("Shutting down VulkanAPI");
 
+		ModelInstance::Shutdown();
+		MeshInstance::Shutdown();
+		Material::Shutdown();
 		McHpmRenderer::Shutdown(m_Device);
-		//VolumeReservoir::Shutdown(m_Device);
-		//RestirHpmRenderer::Shutdown(m_Device);
 		NrcHpmRenderer::Shutdown(m_Device);
 		HdrEnvMap::Shutdown(m_Device);
 		PointLight::Shutdown(m_Device);
