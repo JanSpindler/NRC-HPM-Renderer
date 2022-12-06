@@ -360,7 +360,8 @@ int main(int argc, char** argv)
 			"2", "0", 
 			"64", "6", "15", 
 			"0", 
-			"0.05", "1", "2" };
+			"0.05", "1", "2"
+		};
 	}
 
 	en::AppConfig appConfig(myargv);

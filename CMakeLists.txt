@@ -56,6 +56,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
 find_package(tinyexr CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::tinyexr::tinyexr)
 
+# ASSIMP
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+
 # TCNN
 add_subdirectory("dependencies/tiny-cuda-nn")
 target_include_directories(${PROJECT_NAME} PRIVATE "dependencies/tiny-cuda-nn/include" "dependencies/tiny-cuda-nn/dependencies")
