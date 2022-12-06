@@ -70,7 +70,5 @@ find_package(TBB CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
 
 # OPENVDB
-target_include_directories(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\include")
-target_link_libraries(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\lib")
-#find_package(OpenVDB CONFIG REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE OpenVDB::openvdb)
+target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
+target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")

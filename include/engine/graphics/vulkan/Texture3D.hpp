@@ -9,6 +9,8 @@ namespace en::vk
 	class Texture3D
 	{
 	public:
+		static Texture3D FromVDB(const std::string& fileName);
+
 		Texture3D(
 			const std::vector<std::vector<std::vector<float>>>& data, 
 			VkFilter filter, 

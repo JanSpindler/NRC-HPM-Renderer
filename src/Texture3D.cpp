@@ -7,6 +7,15 @@
 
 namespace en::vk
 {
+	Texture3D Texture3D::FromVDB(const std::string& fileName)
+	{
+		return Texture3D(
+			{ {{0}} }, 
+			VK_FILTER_LINEAR, 
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 
+			VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK);
+	}
+
 	Texture3D::Texture3D(
 		const std::vector<std::vector<std::vector<float>>>& data, 
 		VkFilter filter, 

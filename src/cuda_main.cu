@@ -19,6 +19,7 @@
 #include <engine/graphics/Reference.hpp>
 #include <engine/objects/Model.hpp>
 #include <engine/graphics/renderer/SimpleModelRenderer.hpp>
+#include <openvdb/openvdb.h>
 
 en::Reference* reference = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
@@ -368,6 +369,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 int main(int argc, char** argv)
 {
+	openvdb::initialize();
+
 	std::vector<char*> myargv(argc);
 	std::memcpy(myargv.data(), argv, sizeof(char*) * argc);
 	if (argc == 1)
