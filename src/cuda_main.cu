@@ -14,9 +14,7 @@
 #include <engine/util/Time.hpp>
 #include <engine/HpmScene.hpp>
 #include <engine/AppConfig.hpp>
-#include <filesystem>
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
-#include <tinyexr.h>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/graphics/Reference.hpp>
 

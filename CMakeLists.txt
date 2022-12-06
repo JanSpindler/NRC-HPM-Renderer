@@ -66,9 +66,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE "dependencies/tiny-cuda-nn/in
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
 
 # TBB
-#find_package(TBB CONFIG REQUIRED)
-#target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+find_package(TBB CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
 
 # OPENVDB
-#target_include_directories(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\include")
-#target_link_libraries(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\lib")
+target_include_directories(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\include")
+target_link_libraries(${PROJECT_NAME} PRIVATE "C:\\Program Files\\OpenVDB\\lib")
+#find_package(OpenVDB CONFIG REQUIRED)
+#target_link_libraries(${PROJECT_NAME} PRIVATE OpenVDB::openvdb)
