@@ -367,7 +367,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	return restartAfterClose;
 }
 
-#if 1
+#if 0
 int main()
 {
 	openvdb::initialize();

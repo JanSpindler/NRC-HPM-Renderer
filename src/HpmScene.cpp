@@ -39,12 +39,7 @@ namespace en
 			hdrCdf[1]);
 
 		// Load data
-		auto density3D = en::ReadFileDensity3D("data/cloud_sixteenth", 125, 85, 153);
-		m_Density3DTex = new vk::Texture3D(
-			density3D,
-			VK_FILTER_LINEAR,
-			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-			VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+		m_Density3DTex = new vk::Texture3D(vk::Texture3D::FromVDB("data/volume/wdas_cloud_quarter.vdb"));
 		m_VolumeData = new VolumeData(m_Density3DTex, 0.6f, 0.8f);
 
 		// Store desc sets
