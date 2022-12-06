@@ -4,13 +4,68 @@
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/graphics/vulkan/Buffer.hpp>
 #include <array>
+#include <openvdb/openvdb.h>
 
 namespace en::vk
 {
 	Texture3D Texture3D::FromVDB(const std::string& fileName)
 	{
+		// Load grids from file
+		Log::Info("Opening density VDB file");
+		openvdb::io::File file(fileName);
+		file.open();
+		openvdb::GridPtrVecPtr grids = file.getGrids();
+		file.close();
+
+		// Find density grid
+		openvdb::FloatGrid::Ptr densityGrid = nullptr;
+		for (size_t gridIdx = 0; gridIdx < grids->size(); gridIdx++)
+		{
+			openvdb::GridBase::Ptr gridBase = grids->at(0);
+			if (gridBase->isType<openvdb::FloatGrid>())
+			{
+				Log::Info("Found float grid");
+				for (auto metaIt = gridBase->beginMeta(); metaIt != gridBase->endMeta(); metaIt++)
+				{
+					Log::Info("\t" + metaIt->first + ": " + metaIt->second->str());
+				}
+				densityGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(gridBase);
+			}
+		}
+
+		// Error check
+		if (densityGrid == nullptr) { en::Log::Error("No density volume found in vdb file", true); }
+
+		// Get size
+		openvdb::Vec3i boxMin = densityGrid->metaValue<openvdb::Vec3i>("file_bbox_min");
+		openvdb::Vec3i boxMax = densityGrid->metaValue<openvdb::Vec3i>("file_bbox_max");
+		openvdb::Vec3i boxExtent = boxMax - boxMin + openvdb::Vec3i(1);
+		const size_t uniformVoxelCount = boxExtent.x() * boxExtent.y() * boxExtent.z();
+		
+		// Create 3d float array
+		std::vector<std::vector<std::vector<float>>> data(boxExtent.x());
+		for (std::vector<std::vector<float>>& vvf : data)
+		{
+			vvf.resize(boxExtent.y());
+			for (std::vector<float>& vf : vvf) { vf.resize(boxExtent.z()); }
+		}
+
+		// Read data from grid
+		for (auto valIt = densityGrid->cbeginValueOn(); valIt; ++valIt)
+		{
+			openvdb::CoordBBox bBox;
+			valIt.getBoundingBox(bBox);
+			const float value = valIt.getValue();
+			for (auto bBoxIt = bBox.begin(); bBoxIt; ++bBoxIt)
+			{
+				openvdb::Vec3i bBoxItPos = (*bBoxIt).asVec3i() - boxMin;
+				data[bBoxItPos.x()][bBoxItPos.y()][bBoxItPos.z()] = value;
+			}
+		}
+
+		// Return texture
 		return Texture3D(
-			{ {{0}} }, 
+			data, 
 			VK_FILTER_LINEAR, 
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 
 			VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK);
