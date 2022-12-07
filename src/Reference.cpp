@@ -566,7 +566,7 @@ namespace en
 			en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
 
 			// Create reference renderer
-			McHpmRenderer refRenderer(m_Width, m_Height, 32, true, m_RefCameras[0], scene);
+			McHpmRenderer refRenderer(m_Width, m_Height, 64, true, m_RefCameras[0], scene);
 
 			// Create folder
 			std::filesystem::create_directory(referenceDirPath);
@@ -580,7 +580,7 @@ namespace en
 				refRenderer.SetCamera(queue, m_RefCameras[i]);
 
 				// Generate reference image
-				for (size_t frame = 0; frame < 8192; frame++)
+				for (size_t frame = 0; frame < 16384; frame++)
 				{
 					refRenderer.Render(queue);
 					ASSERT_VULKAN(vkQueueWaitIdle(queue));

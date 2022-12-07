@@ -329,7 +329,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
 		// Benchmark
-		if (benchmark && frameCount % 10 == 0) { Benchmark(&camera, queue, frameCount); }
+		if (benchmark && frameCount % 1 == 0) { Benchmark(&camera, queue, frameCount); }
 
 		//
 		frameCount++;
