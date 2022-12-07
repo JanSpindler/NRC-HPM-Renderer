@@ -3,8 +3,6 @@
 
 namespace en
 {
-	std::unordered_map<std::string, std::ofstream> Log::s_LogFiles = {};
-
 	void Log::Info(const std::string& msg)
 	{
 		std::cout << "INFO: \t" << msg << std::endl;
@@ -26,16 +24,5 @@ namespace en
 		std::cout << "Error\t" << msg << ", errno " << res << "\n\t in " << file << ":" << line << std::endl;
 		if (exit)
 			throw std::runtime_error("SkyRenderer ERROR: " + msg);
-	}
-
-	void Log::InfoFile(const std::string& msg, const std::string& fileName)
-	{
-		if (s_LogFiles.find(fileName) == s_LogFiles.end()) { s_LogFiles.insert_or_assign(fileName, std::ofstream(fileName)); }
-		s_LogFiles[fileName] << msg << "\n";
-	}
-
-	void Log::CloseFile(const std::string& fileName)
-	{
-		if (s_LogFiles.find(fileName) != s_LogFiles.end()) { s_LogFiles[fileName].close(); }
 	}
 }

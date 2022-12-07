@@ -549,13 +549,6 @@ namespace en
 	{
 		const uint32_t sceneID = appConfig.scene.id;
 
-		// Create output path if not exists
-		std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
-		if (!std::filesystem::is_directory(outputDirPath) || !std::filesystem::exists(outputDirPath))
-		{
-			std::filesystem::create_directory(outputDirPath);
-		}
-
 		// Create reference folder if not exists
 		std::string referenceDirPath = "reference/" + std::to_string(sceneID) + "/";
 #if __cplusplus >= 201703L

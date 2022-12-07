@@ -20,6 +20,7 @@
 #include <engine/objects/Model.hpp>
 #include <engine/graphics/renderer/SimpleModelRenderer.hpp>
 #include <openvdb/openvdb.h>
+#include <engine/util/LogFile.hpp>
 
 en::Reference* reference = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
@@ -104,11 +105,50 @@ void SwapchainResizeCallback()
 	//en::ImGuiRenderer::SetBackgroundImageView(imageView);
 }
 
-void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount)
+struct ViewBenchmarkStats
+{
+	float mse;
+	glm::vec3 bias;
+};
+
+struct BenchmarkStats
+{
+	size_t frameIndex;
+	float loss;
+	std::array<ViewBenchmarkStats, 6> viewStats;
+
+	std::string ToString() const
+	{
+		std::string str = 
+			std::to_string(frameIndex) + " " +
+			std::to_string(loss) + " ";
+		for (size_t i = 0; i < viewStats.size(); i++)
+		{
+			str += std::to_string(viewStats[i].mse) + " " +
+				std::to_string(viewStats[i].bias.x) + " " +
+				std::to_string(viewStats[i].bias.y) + " " +
+				std::to_string(viewStats[i].bias.z) + " ";
+		}
+
+		return str;
+	}
+};
+
+void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount, BenchmarkStats& stats, en::LogFile& logFile)
 {
 	en::Log::Info("Frame: " + std::to_string(frameCount));
-	reference->CompareNrc(*nrcHpmRenderer, camera, queue);
+	std::array<en::Reference::Result, 6> results = reference->CompareNrc(*nrcHpmRenderer, camera, queue);
+
+	for (size_t i = 0; i < results.size(); i++)
+	{
+		stats.viewStats[i].mse = results[i].mse;
+		stats.viewStats[i].bias.x = results[i].biasX;
+		stats.viewStats[i].bias.y = results[i].biasY;
+		stats.viewStats[i].bias.z = results[i].biasZ;
+	}
 	//reference->CompareMc(*mcHpmRenderer, camera, queue);
+
+	logFile.WriteLine(stats.ToString());
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -204,6 +244,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 	// Main loop
 	en::Log::Info("Starting main loop");
+	BenchmarkStats stats;
+	en::LogFile logFile("output/ " + appConfig.GetName() + "/log.txt");
 	VkResult result;
 	size_t frameCount = 0;
 	bool shutdown = false;
@@ -329,7 +371,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
 		// Benchmark
-		if (benchmark && frameCount % 1 == 0) { Benchmark(&camera, queue, frameCount); }
+		stats.frameIndex = frameCount;
+		stats.loss = nrc.GetLoss();
+		if (benchmark && frameCount % 1 == 0) { Benchmark(&camera, queue, frameCount, stats, logFile); }
 
 		//
 		frameCount++;
@@ -369,8 +413,10 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 int main(int argc, char** argv)
 {
+	// Init openvdb
 	openvdb::initialize();
 
+	// Read arguments for app config
 	std::vector<char*> myargv(argc);
 	std::memcpy(myargv.data(), argv, sizeof(char*) * argc);
 	if (argc == 1)
@@ -386,11 +432,22 @@ int main(int argc, char** argv)
 		};
 	}
 
+	// Create app config
 	en::AppConfig appConfig(myargv);
+
+	// Create output path if not exists
+	std::string outputDirPath = "output/ " + appConfig.GetName() + "/";
+	if (!std::filesystem::is_directory(outputDirPath) || !std::filesystem::exists(outputDirPath))
+	{
+		std::filesystem::create_directory(outputDirPath);
+	}
+
+	// Run
 	bool restartRunConfig;
 	do {
 		restartRunConfig = RunAppConfigInstance(appConfig);
 	} while (restartRunConfig);
 
+	// Exit
 	return 0;
 }
