@@ -23,6 +23,7 @@ namespace en
 		float GetDensityFactor() const;
 		float GetG() const;
 		VkDescriptorSet GetDescriptorSet() const;
+		VkExtent3D GetExtent() const;
 
 	private:
 		static VkDescriptorSetLayout m_DescriptorSetLayout;

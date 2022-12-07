@@ -54,6 +54,9 @@ namespace en
 
 			uint32_t batchSize;
 
+			float volumeSizeX;
+			float volumeSizeY;
+			float volumeSizeZ;
 			float volumeDensityFactor;
 			float volumeG;
 

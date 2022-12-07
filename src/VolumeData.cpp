@@ -106,6 +106,15 @@ namespace en
 		return m_DescriptorSet;
 	}
 
+	VkExtent3D VolumeData::GetExtent() const
+	{
+		return { 
+			m_DensityTex->GetWidth(), 
+			m_DensityTex->GetHeight(), 
+			m_DensityTex->GetDepth()
+		};
+	}
+
 	void VolumeData::UpdateDescriptorSet()
 	{
 		// Density tex

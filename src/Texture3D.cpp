@@ -66,7 +66,7 @@ namespace en::vk
 		// Return texture
 		return Texture3D(
 			data, 
-			VK_FILTER_LINEAR, 
+			VK_FILTER_NEAREST, 
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, 
 			VK_BORDER_COLOR_INT_OPAQUE_BLACK);
 	}

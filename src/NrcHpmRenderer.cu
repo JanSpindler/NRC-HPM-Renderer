@@ -929,6 +929,10 @@ namespace en
 
 	void NrcHpmRenderer::InitSpecializationConstants()
 	{
+		const VkExtent3D volumeSizeUI = m_HpmScene.GetVolumeData()->GetExtent();
+		glm::vec3 volumeSizeF = { volumeSizeUI.width, volumeSizeUI.height, volumeSizeUI.depth };
+		volumeSizeF = glm::normalize(volumeSizeF) * 107.5f;
+
 		// Fill struct
 		m_SpecData.renderWidth = m_RenderWidth;
 		m_SpecData.renderHeight = m_RenderHeight;
@@ -939,6 +943,9 @@ namespace en
 
 		m_SpecData.batchSize = m_Nrc.GetBatchSize();
 
+		m_SpecData.volumeSizeX = volumeSizeF.x;
+		m_SpecData.volumeSizeY = volumeSizeF.y;
+		m_SpecData.volumeSizeZ = volumeSizeF.z;
 		m_SpecData.volumeDensityFactor = m_HpmScene.GetVolumeData()->GetDensityFactor();
 		m_SpecData.volumeG = m_HpmScene.GetVolumeData()->GetG();
 
@@ -982,6 +989,21 @@ namespace en
 		batchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::batchSize);
 		batchSizeEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry volumeSizeXEntry;
+		volumeSizeXEntry.constantID = constantID++;
+		volumeSizeXEntry.offset = offsetof(SpecializationData, SpecializationData::volumeSizeX);
+		volumeSizeXEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry volumeSizeYEntry;
+		volumeSizeYEntry.constantID = constantID++;
+		volumeSizeYEntry.offset = offsetof(SpecializationData, SpecializationData::volumeSizeY);
+		volumeSizeYEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry volumeSizeZEntry;
+		volumeSizeZEntry.constantID = constantID++;
+		volumeSizeZEntry.offset = offsetof(SpecializationData, SpecializationData::volumeSizeZ);
+		volumeSizeZEntry.size = sizeof(float);
+
 		VkSpecializationMapEntry volumeDensityFactorEntry;
 		volumeDensityFactorEntry.constantID = constantID++;
 		volumeDensityFactorEntry.offset = offsetof(SpecializationData, SpecializationData::volumeDensityFactor);
@@ -1005,6 +1027,9 @@ namespace en
 			trainSppEntry,
 			primaryRayLengthEntry,
 			batchSizeEntry,
+			volumeSizeXEntry,
+			volumeSizeYEntry,
+			volumeSizeZEntry,
 			volumeDensityFactorEntry,
 			volumeGEntry,
 			hdrEnvMapStrengthEntry
