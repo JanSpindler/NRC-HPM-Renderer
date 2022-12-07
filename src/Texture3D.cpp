@@ -51,17 +51,22 @@ namespace en::vk
 		}
 
 		// Read data from grid
+		float maxVal = 0.0;
 		for (auto valIt = densityGrid->cbeginValueOn(); valIt; ++valIt)
 		{
+			const float value = valIt.getValue();
+			if (value > maxVal) { maxVal = value; }
+			
 			openvdb::CoordBBox bBox;
 			valIt.getBoundingBox(bBox);
-			const float value = valIt.getValue();
 			for (auto bBoxIt = bBox.begin(); bBoxIt; ++bBoxIt)
 			{
 				openvdb::Vec3i bBoxItPos = (*bBoxIt).asVec3i() - boxMin;
 				data[bBoxItPos.x()][bBoxItPos.y()][bBoxItPos.z()] = value;
 			}
 		}
+
+		if (maxVal != 0.0 && maxVal != 1.0) { Log::Error("VDB is not normalized", true); }
 
 		// Return texture
 		return Texture3D(

@@ -2,12 +2,15 @@ layout(constant_id = 0) const uint RENDER_WIDTH = 1;
 layout(constant_id = 1) const uint RENDER_HEIGHT = 1;
 layout(constant_id = 2) const uint PATH_LENGTH = 1;
 
-layout(constant_id = 3) const float VOLUME_DENSITY_FACTOR = 1.0;
-layout(constant_id = 4) const float VOLUME_G = 0.7;
+layout(constant_id = 3) const float VOLUME_SIZE_X = 1.0;
+layout(constant_id = 4) const float VOLUME_SIZE_Y = 1.0;
+layout(constant_id = 5) const float VOLUME_SIZE_Z = 1.0;
+layout(constant_id = 6) const float VOLUME_DENSITY_FACTOR = 1.0;
+layout(constant_id = 7) const float VOLUME_G = 0.7;
 
-layout(constant_id = 5) const float HDR_ENV_MAP_STRENGTH = 1.0;
+layout(constant_id = 8) const float HDR_ENV_MAP_STRENGTH = 1.0;
 
-const vec3 skySize = vec3(125.0, 85.0, 153.0) / 2.0;
+const vec3 skySize = vec3(VOLUME_SIZE_X, VOLUME_SIZE_Y, VOLUME_SIZE_Z);
 const vec3 skyPos = vec3(0.0);
 
 // TODO: performant?

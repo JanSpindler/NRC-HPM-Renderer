@@ -431,11 +431,18 @@ namespace en
 
 	void McHpmRenderer::InitSpecializationConstants()
 	{
+		const VkExtent3D volumeSizeUI = m_HpmScene.GetVolumeData()->GetExtent();
+		glm::vec3 volumeSizeF = { volumeSizeUI.width, volumeSizeUI.height, volumeSizeUI.depth };
+		volumeSizeF = glm::normalize(volumeSizeF) * 107.5f;
+
 		// Fill struct
 		m_SpecData.renderWidth = m_RenderWidth;
 		m_SpecData.renderHeight = m_RenderHeight;
 		m_SpecData.pathLength = m_PathLength;
 
+		m_SpecData.volumeSizeX = volumeSizeF.x;
+		m_SpecData.volumeSizeY = volumeSizeF.y;
+		m_SpecData.volumeSizeZ = volumeSizeF.z;
 		m_SpecData.volumeDensityFactor = m_HpmScene.GetVolumeData()->GetDensityFactor();
 		m_SpecData.volumeG = m_HpmScene.GetVolumeData()->GetG();
 
@@ -459,6 +466,21 @@ namespace en
 		pathLengthEntry.offset = offsetof(SpecializationData, SpecializationData::pathLength);
 		pathLengthEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry volumeSizeXEntry;
+		volumeSizeXEntry.constantID = mapEntryIndex++;
+		volumeSizeXEntry.offset = offsetof(SpecializationData, SpecializationData::volumeSizeX);
+		volumeSizeXEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry volumeSizeYEntry;
+		volumeSizeYEntry.constantID = mapEntryIndex++;
+		volumeSizeYEntry.offset = offsetof(SpecializationData, SpecializationData::volumeSizeY);
+		volumeSizeYEntry.size = sizeof(float);
+
+		VkSpecializationMapEntry volumeSizeZEntry;
+		volumeSizeZEntry.constantID = mapEntryIndex++;
+		volumeSizeZEntry.offset = offsetof(SpecializationData, SpecializationData::volumeSizeZ);
+		volumeSizeZEntry.size = sizeof(float);
+
 		VkSpecializationMapEntry volumeDensityFactorEntry;
 		volumeDensityFactorEntry.constantID = mapEntryIndex++;
 		volumeDensityFactorEntry.offset = offsetof(SpecializationData, SpecializationData::volumeDensityFactor);
@@ -478,6 +500,9 @@ namespace en
 			renderWidthEntry,
 			renderHeightEntry,
 			pathLengthEntry,
+			volumeSizeXEntry,
+			volumeSizeYEntry,
+			volumeSizeZEntry,
 			volumeDensityFactorEntry,
 			volumeGEntry,
 			hdrEnvMapStrengthEntry

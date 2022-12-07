@@ -37,6 +37,9 @@ namespace en
 			uint32_t renderHeight;
 			uint32_t pathLength;
 
+			float volumeSizeX;
+			float volumeSizeY;
+			float volumeSizeZ;
 			float volumeDensityFactor;
 			float volumeG;
 
