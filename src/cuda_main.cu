@@ -114,6 +114,7 @@ struct ViewBenchmarkStats
 struct BenchmarkStats
 {
 	size_t frameIndex;
+	float frameTimeMS;
 	float loss;
 	std::array<ViewBenchmarkStats, 6> viewStats;
 
@@ -121,6 +122,7 @@ struct BenchmarkStats
 	{
 		std::string str = 
 			std::to_string(frameIndex) + " " +
+			std::to_string(frameTimeMS) + " " +
 			std::to_string(loss) + " ";
 		for (size_t i = 0; i < viewStats.size(); i++)
 		{
@@ -146,7 +148,6 @@ void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount, Bench
 		stats.viewStats[i].bias.y = results[i].biasY;
 		stats.viewStats[i].bias.z = results[i].biasZ;
 	}
-	//reference->CompareMc(*mcHpmRenderer, camera, queue);
 
 	logFile.WriteLine(stats.ToString());
 }
@@ -303,6 +304,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			break;
 		}
 
+		//
+		const float nrcLoss = nrc.GetLoss();
+
 		// Imgui
 		if (en::Window::IsSupported())
 		{
@@ -312,7 +316,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			ImGui::Text((std::string("Framecount ") + std::to_string(frameCount)).c_str());
 			ImGui::Text("DeltaTime %f", deltaTime);
 			ImGui::Text("FPS %d", fps);
-			ImGui::Text("NRC Loss %f", nrc.GetLoss());
+			ImGui::Text("NRC Loss %f", nrcLoss);
 			ImGui::End();
 
 			ImGui::Begin("Controls");
@@ -372,8 +376,16 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 		// Benchmark
 		stats.frameIndex = frameCount;
+		stats.frameTimeMS = nrcHpmRenderer->GetFrameTimeMS();
 		stats.loss = nrc.GetLoss();
 		if (benchmark && frameCount % 1 == 0) { Benchmark(&camera, queue, frameCount, stats, logFile); }
+
+		// Exit if loss is invalid
+		if (std::isnan(nrcLoss) || std::isinf(nrcLoss))
+		{
+			en::Log::Error("NRC Loss is " + std::to_string(nrcLoss), false);
+			break;
+		}
 
 		//
 		frameCount++;
@@ -425,9 +437,9 @@ int main(int argc, char** argv)
 		myargv = { 
 			"NRC-HPM-Renderer", 
 			"RelativeL2", "Adam", "0.001", "0.99",
-			"2", "0", 
+			"2", "1", 
 			"64", "6", "15", 
-			"0", 
+			"1", 
 			"0.05", "1", "2"
 		};
 	}

@@ -33,11 +33,11 @@ namespace en
 		void ExportOutputImageToFile(VkQueue queue, const std::string& filePath) const;
 		void EvaluateTimestampQueries();
 		void RenderImGui();
-		float CompareReferenceMSE(VkQueue queue, const float* referenceData) const;
 
 		VkImage GetImage() const;
 		VkImageView GetImageView() const;
 		bool IsBlending() const;
+		float GetFrameTimeMS() const;
 
 		void SetCamera(VkQueue queue, const Camera* camera);
 		void SetBlend(bool blend);
