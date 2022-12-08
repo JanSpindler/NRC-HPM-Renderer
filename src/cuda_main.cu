@@ -189,9 +189,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		0.1f,
 		100.0f);
 
-	en::Model dragonModel("dragon.obj", true);
-	en::ModelInstance dragonModelInstance(&dragonModel, glm::mat4(1.0f));
-
 	// Init reference
 	reference = new en::Reference(width, height, appConfig, hpmScene, queue);
 
@@ -205,8 +202,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	}
 
 	en::SimpleModelRenderer modelRenderer(width, height, &camera);
-	modelRenderer.AddModelInstance(&dragonModelInstance);
-
+	
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width,
 		height,
@@ -411,8 +407,6 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	reference->Destroy();
 	delete reference; 
 
-	dragonModelInstance.Destroy();
-	dragonModel.Destroy();
 	camera.Destroy();
 	hpmScene.Destroy();
 	nrc.Destroy();

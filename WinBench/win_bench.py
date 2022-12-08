@@ -18,7 +18,8 @@ def update_files():
             shutil.copy2(dll_file, ".")
 
     # Copy data dir
-    shutil.rmtree("./data")
+    if os.path.isdir("./data"):
+        shutil.rmtree("./data")
     shutil.copytree("../data", "./data")
 
     # Copy imgui file
@@ -28,40 +29,49 @@ def update_files():
     if not os.path.exists("output"):
         os.makedirs("output")
 
+    # Copy reference folder
+    if os.path.isdir("./reference"):
+        shutil.rmtree("./reference")
+    shutil.copytree("../reference", "./reference")
 
-def generate_configs():
+
+def generate_stage1_configs():
     print("Generating app configs for NRC-HPM-Renderer.exe")
 
     loss_fn_options = ["RelativeL2"]
     optimizer_options = ["Adam"]
-    learning_rate_options = ["0.01", "0.001", "0.0001"]
-    encoding_options = ["0"]
+    learning_rate_options = ["0.01", "0.001"] # 10e-4 is not completely bad
+    ema_decay_options = ["0.0", "0.9", "0.99"]
+    pos_encoding_options = ["0", "2"] # 1 is practically useless
+    dir_encoding_options = ["0"] # 1 and 2 cause nan loss
     nn_width_options = ["64", "128"]
-    nn_depth_options = ["2", "6", "10"]
-    log2_batch_size_options = ["12", "14", "16"]
-    scene_options = ["0"]
-    render_width_options = ["1920"]
-    render_height_options = ["1080"]
-    train_sample_ratio_options = ["0.01", "0.02", "0.05", "0.1"]
-    train_spp_options = ["1", "2", "4"]
+    nn_depth_options = ["3", "4", "6", "8"]
+    log2_batch_size_options = ["15", "16"]
+    scene_options = ["1"] # 0 for later
+    train_sample_ratio_options = ["0.025", "0.05"]
+    train_ring_buf_size_options = ["0.0", "1.0"]
+    train_spp_options = ["1", "2"]
+    primary_ray_len_options = ["2", "3", "4"]
     
     arguments_list = list(itertools.product(
         loss_fn_options, 
         optimizer_options, 
         learning_rate_options, 
-        encoding_options, 
+        ema_decay_options,
+        pos_encoding_options,
+        dir_encoding_options,
         nn_width_options, 
         nn_depth_options, 
         log2_batch_size_options, 
         scene_options,
-        render_width_options,
-        render_height_options,
         train_sample_ratio_options,
-        train_spp_options))
+        train_ring_buf_size_options,
+        train_spp_options,
+        primary_ray_len_options))
     arguments_list_len = len(arguments_list)
     print(str(arguments_list_len) + " configs created")
     
-    configs_file = open("configs.csv", "w")
+    configs_file = open("configs.txt", "w")
 
     for index, arguments in enumerate(arguments_list):
         arguments_str = ""
@@ -106,7 +116,7 @@ def evaluate_results():
 def main():
     print("Starting NRC-HPM-Bench")
     update_files()
-    #generate_configs()
+    generate_stage1_configs()
     #execute_configs()
     #evaluate_results()
 
