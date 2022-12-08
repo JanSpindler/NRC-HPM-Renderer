@@ -384,6 +384,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			break;
 		}
 
+		// Exit if 512 frame have been rendered
+		if (frameCount > 512) { break; }
+
 		//
 		frameCount++;
 		continueLoop = en::Window::IsSupported() ? !en::Window::IsClosed() : true;
@@ -435,7 +438,7 @@ int main(int argc, char** argv)
 			"2", "0", 
 			"64", "6", "15", 
 			"1", 
-			"0.05", "1.0", "1", "2"
+			"0.05", "1.0", "1", "3"
 		};
 	}
 
