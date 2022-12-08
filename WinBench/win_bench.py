@@ -2,57 +2,31 @@ import os
 import shutil
 import itertools
 import time
+import glob
 
 
-def remove_old_copies():
-    print("Removing old copies of executable file and data directory")
-    
-    if os.path.exists("./NRC-HPM-Renderer.exe"):
-        os.remove("./NRC-HPM-Renderer.exe")
-    
-    if os.path.exists("./glfw3.dll"):
-        os.remove("./glfw3.dll")
-    
-    if os.path.exists("./imgui.ini"):
-        os.remove("./imgui.ini")
+def update_files():
+    print("Updating files")
 
-    if os.path.exists("./data"):
-        shutil.rmtree("./data")
-
-
-def copy_executable_file():
-    print("Copying NRC-HPM-Renderer.exe")
+    # Copy executable
     shutil.copy("../Debug/NRC-HPM-Renderer.exe", ".")
 
+    # Copy dll files
+    dll_files = glob.iglob(os.path.join("../Debug/", "*.dll"))
+    for dll_file in dll_files:
+        if os.path.isfile(dll_file):
+            shutil.copy2(dll_file, ".")
 
-def copy_dlls():
-    print("Copying glfw3.dll")
-    shutil.copy("../Debug/glfw3.dll", ".")
-
-
-def copy_data_dir():
-    print("Copying data/")
+    # Copy data dir
+    shutil.rmtree("./data")
     shutil.copytree("../data", "./data")
 
-
-def copy_imgui_file():
-    print("Copying imgui.ini")
+    # Copy imgui file
     shutil.copy("../imgui.ini", ".")
 
-
-def create_output_dir():
-    print("Creating output folder")
+    # Create output directory
     if not os.path.exists("output"):
         os.makedirs("output")
-
-
-def update_file_hierarchy():
-    remove_old_copies()
-    copy_executable_file()
-    copy_dlls()
-    copy_imgui_file()
-    copy_data_dir()
-    create_output_dir()
 
 
 def generate_configs():
@@ -60,7 +34,7 @@ def generate_configs():
 
     loss_fn_options = ["RelativeL2"]
     optimizer_options = ["Adam"]
-    learning_rate_options = ["0.01", "0.001", "0.0001", "0.00001"]
+    learning_rate_options = ["0.01", "0.001", "0.0001"]
     encoding_options = ["0"]
     nn_width_options = ["64", "128"]
     nn_depth_options = ["2", "6", "10"]
@@ -131,10 +105,10 @@ def evaluate_results():
 
 def main():
     print("Starting NRC-HPM-Bench")
-    update_file_hierarchy()
-    generate_configs()
-    execute_configs()
-    evaluate_results()
+    update_files()
+    #generate_configs()
+    #execute_configs()
+    #evaluate_results()
 
 
 if __name__ == "__main__":
