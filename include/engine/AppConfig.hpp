@@ -48,6 +48,7 @@ namespace en
 
 		// renderer
 		float trainSampleRatio;
+		float trainRingBufSize;
 		uint32_t trainSpp;
 		uint32_t primaryRayLength;
 

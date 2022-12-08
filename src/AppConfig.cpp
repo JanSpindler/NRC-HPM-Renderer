@@ -36,7 +36,7 @@ namespace en
 			posEncoding = {
 				{"otype", "TriangleWave"},
 				{"n_dims_to_encode", 3},
-				{"n_frequencies", 16}
+				{"n_frequencies", 12}
 			};
 			break;
 		default:
@@ -110,7 +110,7 @@ namespace en
 
 	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argv.size() != 14) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 15) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
@@ -130,6 +130,7 @@ namespace en
 		scene = HpmSceneConfig(std::stoi(argv[index++]));
 
 		trainSampleRatio = std::stof(argv[index++]);
+		trainRingBufSize = std::stof(argv[index++]);
 		trainSpp = std::stoi(argv[index++]);
 		primaryRayLength = std::stoi(argv[index++]);
 	}
@@ -140,6 +141,7 @@ namespace en
 		str += lossFn + "_";
 		str += optimizer + "_";
 		str += std::to_string(learningRate) + "_";
+		str += std::to_string(emaDecay) + "_";
 		str += std::to_string(encoding.posID) + "_";
 		str += std::to_string(encoding.dirID) + "_";
 		str += std::to_string(nnWidth) + "_";
@@ -147,7 +149,8 @@ namespace en
 		str += std::to_string(log2BatchSize) + "_";
 		str += std::to_string(scene.id) + "_";
 		str += std::to_string(trainSampleRatio) + "_";
-		str += std::to_string(trainSpp);
+		str += std::to_string(trainRingBufSize) + "_";
+		str += std::to_string(trainSpp) + "_";
 		str += std::to_string(primaryRayLength);
 		return str;
 	}
@@ -165,6 +168,7 @@ namespace en
 		ImGui::Text("Log2 batch size %d", log2BatchSize);
 		ImGui::Text("Scene %d", scene.id);
 		ImGui::Text("Train sample ratio %f", trainSampleRatio);
+		ImGui::Text("Train ring buffer size %f", trainRingBufSize);
 		ImGui::Text("Train spp %d", trainSpp);
 		ImGui::Text("Primary ray length %d", primaryRayLength);
 		ImGui::End();
