@@ -4,16 +4,17 @@ layout(constant_id = 2) const uint TRAIN_WIDTH = 1;
 layout(constant_id = 3) const uint TRAIN_HEIGHT = 1;
 layout(constant_id = 4) const uint TRAIN_SPP = 1;
 layout(constant_id = 5) const uint PRIMARY_RAY_LENGTH = 2;
+layout(constant_id = 6) const uint TRAIN_RING_BUF_SIZE = 1;
 
-layout(constant_id = 6) const uint BATCH_SIZE = 1;
+layout(constant_id = 7) const uint BATCH_SIZE = 1;
 
-layout(constant_id = 7) const float VOLUME_SIZE_X = 1.0;
-layout(constant_id = 8) const float VOLUME_SIZE_Y = 1.0;
-layout(constant_id = 9) const float VOLUME_SIZE_Z = 1.0;
-layout(constant_id = 10) const float VOLUME_DENSITY_FACTOR = 1.0;
-layout(constant_id = 11) const float VOLUME_G = 0.7;
+layout(constant_id = 8) const float VOLUME_SIZE_X = 1.0;
+layout(constant_id = 9) const float VOLUME_SIZE_Y = 1.0;
+layout(constant_id = 10) const float VOLUME_SIZE_Z = 1.0;
+layout(constant_id = 11) const float VOLUME_DENSITY_FACTOR = 1.0;
+layout(constant_id = 12) const float VOLUME_G = 0.7;
 
-layout(constant_id = 12) const float HDR_ENV_MAP_STRENGTH = 1.0;
+layout(constant_id = 13) const float HDR_ENV_MAP_STRENGTH = 1.0;
 
 const vec3 skySize = vec3(VOLUME_SIZE_X, VOLUME_SIZE_Y, VOLUME_SIZE_Z);
 const vec3 skyPos = vec3(0.0);

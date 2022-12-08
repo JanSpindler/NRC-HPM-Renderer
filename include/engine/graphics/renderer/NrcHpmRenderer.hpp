@@ -22,6 +22,7 @@ namespace en
 			float trainSampleRatio,
 			uint32_t trainSpp,
 			uint32_t primaryRayLength,
+			float trainRingBufSize,
 			bool blend,
 			const Camera* camera,
 			const HpmScene& hpmScene,
@@ -51,6 +52,7 @@ namespace en
 			uint32_t trainHeight;
 			uint32_t trainSpp;
 			uint32_t primaryRayLength;
+			uint32_t trainRingBufSize;
 
 			uint32_t batchSize;
 
@@ -79,6 +81,7 @@ namespace en
 		uint32_t m_TrainHeight;
 		uint32_t m_TrainSpp;
 		uint32_t m_PrimaryRayLength;
+		uint32_t m_TrainRingBufSize;
 
 		bool m_ShouldBlend = false;
 		uint32_t m_BlendIndex = 1;

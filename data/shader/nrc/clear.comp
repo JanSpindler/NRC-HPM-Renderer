@@ -4,6 +4,6 @@
 
 void main()
 {
-	nrcTrainRingHead %= TRAIN_SAMPLE_COUNT;
-	nrcTrainRingTail %= TRAIN_SAMPLE_COUNT;
+	nrcTrainRingHead %= TRAIN_RING_BUF_SIZE;
+	nrcTrainRingTail %= TRAIN_RING_BUF_SIZE;
 }

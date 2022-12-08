@@ -213,6 +213,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		appConfig.trainSampleRatio,
 		appConfig.trainSpp,
 		appConfig.primaryRayLength,
+		appConfig.trainRingBufSize,
 		false,
 		&camera,
 		hpmScene,

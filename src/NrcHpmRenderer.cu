@@ -213,6 +213,7 @@ namespace en
 		float trainSampleRatio,
 		uint32_t trainSpp,
 		uint32_t primaryRayLength,
+		float trainRingBufSize,
 		bool blend,
 		const Camera* camera,
 		const HpmScene& hpmScene,
@@ -246,6 +247,9 @@ namespace en
 		m_TrainHeight = sqrtTrainSampleRatio * m_RenderHeight;
 		m_TrainWidth -= m_TrainWidth % 16;
 		m_TrainHeight -= m_TrainHeight % 16;
+
+		// Calc train ring buffer size
+		m_TrainRingBufSize = static_cast<uint32_t>(trainRingBufSize * static_cast<float>(m_TrainWidth * m_TrainHeight));
 
 		// Init components
 		VkDevice device = VulkanAPI::GetDevice();
@@ -867,6 +871,7 @@ namespace en
 		m_SpecData.trainHeight = m_TrainHeight;
 		m_SpecData.trainSpp = m_TrainSpp;
 		m_SpecData.primaryRayLength = m_PrimaryRayLength;
+		m_SpecData.trainRingBufSize = m_TrainRingBufSize;
 
 		m_SpecData.batchSize = m_Nrc.GetBatchSize();
 
@@ -911,6 +916,11 @@ namespace en
 		primaryRayLengthEntry.offset = offsetof(SpecializationData, SpecializationData::primaryRayLength);
 		primaryRayLengthEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry trainRingBufSizeEntry = {};
+		trainRingBufSizeEntry.constantID = constantID++;
+		trainRingBufSizeEntry.offset = offsetof(SpecializationData, SpecializationData::trainRingBufSize);
+		trainRingBufSizeEntry.size = sizeof(uint32_t);
+
 		VkSpecializationMapEntry batchSizeEntry;
 		batchSizeEntry.constantID = constantID++;
 		batchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::batchSize);
@@ -953,6 +963,7 @@ namespace en
 			trainHeightEntry,
 			trainSppEntry,
 			primaryRayLengthEntry,
+			trainRingBufSizeEntry,
 			batchSizeEntry,
 			volumeSizeXEntry,
 			volumeSizeYEntry,

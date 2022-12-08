@@ -5,8 +5,8 @@
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 void StoreInRingBuffer(const vec3 pos, const vec3 dir)
-{	
-	const uint prevHead = atomicAdd(nrcTrainRingHead, 1) % TRAIN_SAMPLE_COUNT;
+{
+	const uint prevHead = atomicAdd(nrcTrainRingHead, 1) % TRAIN_RING_BUF_SIZE;
 	
 	nrcTrainRingBuffer[prevHead].posX = pos.x;
 	nrcTrainRingBuffer[prevHead].posY = pos.y;
@@ -19,7 +19,7 @@ void StoreInRingBuffer(const vec3 pos, const vec3 dir)
 
 void LoadFromRingBuffer(out vec3 pos, out vec3 dir)
 {
-	const uint prevTail = atomicAdd(nrcTrainRingTail, 1) % TRAIN_SAMPLE_COUNT;
+	const uint prevTail = atomicAdd(nrcTrainRingTail, 1) % TRAIN_RING_BUF_SIZE;
 
 	pos.x = nrcTrainRingBuffer[prevTail].posX;
 	pos.y = nrcTrainRingBuffer[prevTail].posY;
@@ -146,7 +146,7 @@ void main()
 		rayOrigin = imageLoad(nrcRayOriginImage, renderImageCoord).xyz;
 		rayDir = imageLoad(nrcRayDirImage, renderImageCoord).xyz;
 	}
-	else // Load randomly from reservoir
+	else if(TRAIN_RING_BUF_SIZE > 0) // Load randomly from reservoir
 	{
 		LoadFromRingBuffer(rayOrigin, rayDir);
 	}
@@ -157,5 +157,8 @@ void main()
 	target /= float(TRAIN_SPP);
 
 	// Store train data
-	StoreNrcTrainData(trainImageCoord, rayOrigin, rayDir, target, didScatter);
+	if (TRAIN_RING_BUF_SIZE > 0)
+	{
+		StoreNrcTrainData(trainImageCoord, rayOrigin, rayDir, target, didScatter);
+	}
 }
