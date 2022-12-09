@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/graphics/Common.hpp>
+#include <engine/graphics/common.hpp>
 #include <engine/graphics/vulkan/Shader.hpp>
 #include <engine/graphics/vulkan/CommandPool.hpp>
 #include <engine/objects/Model.hpp>

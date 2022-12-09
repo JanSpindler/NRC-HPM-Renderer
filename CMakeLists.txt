@@ -64,7 +64,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-
 
 # TBB
 find_package(TBB CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+if (MSVC)
+	target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+elseif (UNIX)
+	target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc)
+endif()
 
 # OPENVDB
 if (MSVC)
@@ -73,6 +77,5 @@ if (MSVC)
 	target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")
 elseif (UNIX)
 	target_include_directories(${PROJECT_NAME} PRIVATE "openvdb-linux/include")
-	find_package(OpenVDB CONFIG REQUIRED)
 	target_link_libraries(${PROJECT_NAME} PRIVATE "openvdb-linux/libopenvdb.a")
 endif()

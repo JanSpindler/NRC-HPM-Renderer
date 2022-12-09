@@ -1,6 +1,6 @@
 #pragma once
 
-#include <engine/graphics/Common.hpp>
+#include <engine/graphics/common.hpp>
 #include <glm/glm.hpp>
 #include <array>
 
