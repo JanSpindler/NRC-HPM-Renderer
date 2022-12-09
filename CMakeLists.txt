@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 
 # Some cuda stuff
 set(CMAKE_CUDA_ARCHITECTURES 86)
-if (UNIX)
-	set(CMAKE_CUDA_COMPILER /usr/local/cuda-11.8/bin/nvcc)
-endif()
 
 # Project
 project(NRC-HPM-Renderer CXX CUDA)
@@ -70,6 +67,12 @@ find_package(TBB CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
 
 # OPENVDB
-target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
-find_package(OpenVDB CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")
+if (MSVC)
+	target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
+	find_package(OpenVDB CONFIG REQUIRED)
+	target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")
+elseif (UNIX)
+	target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
+	find_package(OpenVDB CONFIG REQUIRED)
+	target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")
+endif()
