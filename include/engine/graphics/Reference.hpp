@@ -16,12 +16,15 @@ namespace en
 	public:
 		struct Result
 		{
-			float mse;
-			float biasX;
-			float biasY;
-			float biasZ;
+			float mse; // MSE of "not reference" to reference
+			float refMean; // Mean or reference image
+			float ownMean; // Mean of "not reference" image
+			float ownVar; // Variance of "not reference" image
+			uint32_t validPixelCount; // Number of valid pixels
 
-			void Norm(uint32_t width, uint32_t height);
+			float GetBias() const;
+			float GetRelBias() const;
+			float GetCV() const;
 		};
 
 		Reference(
@@ -57,8 +60,15 @@ namespace en
 		VkSpecializationInfo m_SpecInfo;
 
 		VkPipelineLayout m_PipelineLayout;
-		vk::Shader m_CmpShader;
-		VkPipeline m_CmpPipeline;
+		
+		vk::Shader m_Cmp1Shader;
+		VkPipeline m_Cmp1Pipeline = VK_NULL_HANDLE;
+
+		vk::Shader m_NormShader;
+		VkPipeline m_NormPipeline = VK_NULL_HANDLE;
+
+		vk::Shader m_Cmp2Shader;
+		VkPipeline m_Cmp2Pipeline = VK_NULL_HANDLE;
 
 		std::array<en::Camera*, 6> m_RefCameras = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 		std::array<VkImage, 6> m_RefImages = {};
@@ -73,7 +83,9 @@ namespace en
 
 		void InitSpecInfo();
 		void CreatePipelineLayout();
-		void CreateCmpPipeline();
+		void CreateCmp1Pipeline();
+		void CreateNormPipeline();
+		void CreateCmp2Pipeline();
 
 		void RecordCmpCmdBuf();
 

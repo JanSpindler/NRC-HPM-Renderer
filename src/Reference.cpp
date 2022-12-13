@@ -3,16 +3,23 @@
 #include <engine/graphics/renderer/McHpmRenderer.hpp>
 #include <engine/graphics/VulkanAPI.hpp>
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
+#include <tinyexr.h>
 
 namespace en
 {
-	void Reference::Result::Norm(uint32_t width, uint32_t height)
+	float Reference::Result::GetBias() const
 	{
-		const float normFactor = 1.0f / static_cast<float>(width * height);
-		mse *= normFactor;
-		biasX *= normFactor;
-		biasY *= normFactor;
-		biasZ *= normFactor;
+		return ownMean - refMean;
+	}
+
+	float Reference::Result::GetRelBias() const
+	{
+		return GetBias() / refMean;
+	}
+
+	float Reference::Result::GetCV() const
+	{
+		return std::sqrt(ownVar) / ownMean;
 	}
 
 	Reference::Reference(
@@ -25,7 +32,9 @@ namespace en
 		m_Width(width),
 		m_Height(height),
 		m_CmdPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, VulkanAPI::GetGraphicsQFI()),
-		m_CmpShader("ref/cmp.comp", false),
+		m_Cmp1Shader("ref/cmp1.comp", false),
+		m_NormShader("ref/norm.comp", false),
+		m_Cmp2Shader("ref/cmp2.comp", false),
 		m_ResultStagingBuffer(
 			sizeof(Reference::Result), 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
@@ -44,7 +53,9 @@ namespace en
 
 		InitSpecInfo();
 		CreatePipelineLayout();
-		CreateCmpPipeline();
+		CreateCmp1Pipeline();
+		CreateNormPipeline();
+		CreateCmp2Pipeline();
 
 		CreateRefCameras();
 		CreateRefImages(queue);
@@ -83,15 +94,14 @@ namespace en
 			// Sync result buffer to host
 			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
 			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
-			results[i].Norm(m_Width, m_Height);
 
 			// Eval results
-			Log::Info(
-				"MSE: " + std::to_string(results[i].mse) +
-				" | Bias: (" + std::to_string(results[i].biasX) + 
-				", " + std::to_string(results[i].biasY) + 
-				", " + std::to_string(results[i].biasZ) + 
-				")");
+//			Log::Info(
+//				"MSE: " + std::to_string(results[i].mse) +
+//				" | Bias: (" + std::to_string(results[i].biasX) + 
+//				", " + std::to_string(results[i].biasY) + 
+//				", " + std::to_string(results[i].biasZ) + 
+//				")");
 		}
 
 		renderer.SetCamera(queue, oldCamera);
@@ -131,15 +141,14 @@ namespace en
 			// Sync result buffer to host
 			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
 			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
-			results[i].Norm(m_Width, m_Height);
 
 			// Eval results
-			Log::Info(
-				"MSE: " + std::to_string(results[i].mse) +
-				" | Bias: (" + std::to_string(results[i].biasX) +
-				", " + std::to_string(results[i].biasY) +
-				", " + std::to_string(results[i].biasZ) +
-				")");
+//			Log::Info(
+//				"MSE: " + std::to_string(results[i].mse) +
+//				" | Bias: (" + std::to_string(results[i].biasX) +
+//				", " + std::to_string(results[i].biasY) +
+//				", " + std::to_string(results[i].biasZ) +
+//				")");
 		}
 
 		renderer.SetCamera(queue, oldCamera);
@@ -161,8 +170,15 @@ namespace en
 			vkDestroyImage(device, m_RefImages[i], nullptr);
 		}
 
-		vkDestroyPipeline(device, m_CmpPipeline, nullptr);
-		m_CmpShader.Destroy();
+		vkDestroyPipeline(device, m_Cmp2Pipeline, nullptr);
+		m_Cmp2Shader.Destroy();
+
+		vkDestroyPipeline(device, m_NormPipeline, nullptr);
+		m_NormShader.Destroy();
+
+		vkDestroyPipeline(device, m_Cmp1Pipeline, nullptr);
+		m_Cmp1Shader.Destroy();
+
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 
 		vkDestroyDescriptorPool(device, m_DescPool, nullptr);
@@ -339,14 +355,14 @@ namespace en
 		ASSERT_VULKAN(vkCreatePipelineLayout(VulkanAPI::GetDevice(), &layoutCI, nullptr, &m_PipelineLayout));
 	}
 
-	void Reference::CreateCmpPipeline()
+	void Reference::CreateCmp1Pipeline()
 	{
 		VkPipelineShaderStageCreateInfo stageCI = {};
 		stageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stageCI.pNext = nullptr;
 		stageCI.flags = 0;
 		stageCI.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		stageCI.module = m_CmpShader.GetVulkanModule();
+		stageCI.module = m_Cmp1Shader.GetVulkanModule();
 		stageCI.pName = "main";
 		stageCI.pSpecializationInfo = &m_SpecInfo;
 
@@ -358,7 +374,51 @@ namespace en
 		pipelineCI.layout = m_PipelineLayout;
 		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineCI.basePipelineIndex = 0;
-		ASSERT_VULKAN(vkCreateComputePipelines(VulkanAPI::GetDevice(), VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_CmpPipeline));
+		ASSERT_VULKAN(vkCreateComputePipelines(VulkanAPI::GetDevice(), VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_Cmp1Pipeline));
+	}
+
+	void Reference::CreateNormPipeline()
+	{
+		VkPipelineShaderStageCreateInfo stageCI = {};
+		stageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stageCI.pNext = nullptr;
+		stageCI.flags = 0;
+		stageCI.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		stageCI.module = m_NormShader.GetVulkanModule();
+		stageCI.pName = "main";
+		stageCI.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI = {};
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = stageCI;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+		ASSERT_VULKAN(vkCreateComputePipelines(VulkanAPI::GetDevice(), VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_NormPipeline));
+	}
+
+	void Reference::CreateCmp2Pipeline()
+	{
+		VkPipelineShaderStageCreateInfo stageCI = {};
+		stageCI.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stageCI.pNext = nullptr;
+		stageCI.flags = 0;
+		stageCI.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		stageCI.module = m_Cmp2Shader.GetVulkanModule();
+		stageCI.pName = "main";
+		stageCI.pSpecializationInfo = &m_SpecInfo;
+
+		VkComputePipelineCreateInfo pipelineCI = {};
+		pipelineCI.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCI.pNext = nullptr;
+		pipelineCI.flags = 0;
+		pipelineCI.stage = stageCI;
+		pipelineCI.layout = m_PipelineLayout;
+		pipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCI.basePipelineIndex = 0;
+		ASSERT_VULKAN(vkCreateComputePipelines(VulkanAPI::GetDevice(), VK_NULL_HANDLE, 1, &pipelineCI, nullptr, &m_Cmp2Pipeline));
 	}
 
 	void Reference::RecordCmpCmdBuf()
@@ -373,7 +433,14 @@ namespace en
 		vkCmdFillBuffer(m_CmdBuf, m_ResultBuffer.GetVulkanHandle(), 0, sizeof(Result), 0);
 
 		vkCmdBindDescriptorSets(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &m_DescSet, 0, nullptr);
-		vkCmdBindPipeline(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_CmpPipeline);
+
+		vkCmdBindPipeline(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_Cmp1Pipeline);
+		vkCmdDispatch(m_CmdBuf, m_Width / 32, m_Height, 1);
+
+		vkCmdBindPipeline(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_NormPipeline);
+		vkCmdDispatch(m_CmdBuf, 1, 1, 1);
+
+		vkCmdBindPipeline(m_CmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_Cmp2Pipeline);
 		vkCmdDispatch(m_CmdBuf, m_Width / 32, m_Height, 1);
 
 		ASSERT_VULKAN(vkEndCommandBuffer(m_CmdBuf));
@@ -554,6 +621,7 @@ namespace en
 #if __cplusplus >= 201703L
 		en::Log::Warn("C++ version lower then 17. Cant create reference data");
 #else
+		// If reference image folder does not exists create reference images
 		if (!std::filesystem::is_directory(referenceDirPath) || !std::filesystem::exists(referenceDirPath))
 		{
 			en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
@@ -583,12 +651,77 @@ namespace en
 				refRenderer.ExportOutputImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
 
 				// Copy to ref image for faster comparison
-				CopyToRefImage(i, refRenderer.GetImage(), queue);
+				//CopyToRefImage(i, refRenderer.GetImage(), queue);
 			}
 
 			refRenderer.Destroy();
 		}
 #endif
+
+		// Load reference images from path
+		const size_t imageBufferSize = 4 * sizeof(float) * m_Width * m_Height;
+		vk::Buffer stagingBuffer(
+			imageBufferSize,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			{});
+
+		for (size_t i = 0; i < m_RefImages.size(); i++)
+		{
+			const std::string refImagePath = referenceDirPath + std::to_string(i) + ".exr";
+
+			// Load exr to memory
+			float* rgba = nullptr;
+			int width = -1;
+			int height = -1;
+			if (TINYEXR_SUCCESS != LoadEXR(&rgba, &width, &height, refImagePath.c_str(), nullptr))
+			{
+				Log::Error("TinyEXR failed to load " + refImagePath, true);
+			}
+			if (width != m_Width || height != m_Height) { Log::Error(refImagePath + " has wrong resolution", true); }
+
+			// Load to staging buffer
+			stagingBuffer.SetData(imageBufferSize, rgba, 0, 0);
+			free(rgba);
+
+			// Load to gpu
+			VkCommandBufferBeginInfo beginInfo = {};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.pNext = nullptr;
+			beginInfo.flags = 0;
+			beginInfo.pInheritanceInfo = nullptr;
+			ASSERT_VULKAN(vkBeginCommandBuffer(m_CmdBuf, &beginInfo));
+
+			VkBufferImageCopy bufferImageCopy = {};
+			bufferImageCopy.bufferOffset = 0;
+			bufferImageCopy.bufferRowLength = m_Width;
+			bufferImageCopy.bufferImageHeight = m_Height;
+			bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			bufferImageCopy.imageSubresource.mipLevel = 0;
+			bufferImageCopy.imageSubresource.baseArrayLayer = 0;
+			bufferImageCopy.imageSubresource.layerCount = 1;
+			bufferImageCopy.imageOffset = { 0, 0, 0 };
+			bufferImageCopy.imageExtent = { m_Width, m_Height, 1 };
+
+			vkCmdCopyBufferToImage(m_CmdBuf, stagingBuffer.GetVulkanHandle(), m_RefImages[i], VK_IMAGE_LAYOUT_GENERAL, 1, &bufferImageCopy);
+
+			ASSERT_VULKAN(vkEndCommandBuffer(m_CmdBuf));
+
+			VkSubmitInfo submitInfo = {};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.pNext = nullptr;
+			submitInfo.waitSemaphoreCount = 0;
+			submitInfo.pWaitSemaphores = nullptr;
+			submitInfo.pWaitDstStageMask = nullptr;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &m_CmdBuf;
+			submitInfo.signalSemaphoreCount = 0;
+			submitInfo.pSignalSemaphores = nullptr;
+			ASSERT_VULKAN(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+			ASSERT_VULKAN(vkQueueWaitIdle(queue));
+		}
+
+		stagingBuffer.Destroy();
 	}
 
 	void Reference::CopyToRefImage(uint32_t imageIdx, VkImage srcImage, VkQueue queue)

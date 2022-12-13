@@ -1,0 +1,41 @@
+#version 460
+
+#extension GL_EXT_shader_atomic_float : enable
+
+layout(constant_id = 0) const uint WIDTH = 1;
+layout(constant_id = 1) const uint HEIGHT = 1;
+
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, rgba32f) uniform readonly image2D refImage;
+
+layout(set = 0, binding = 1, rgba32f) uniform readonly image2D cmpImage;
+
+layout(std430, set = 0, binding = 2) buffer Result
+{
+	float mse; // MSE of "not reference" to reference
+	float refMean; // Mean or reference image
+	float ownMean; // Mean of "not reference" image
+	float ownVar; // Variance of "not reference" image
+	uint validPixelCount; // Number of valid pixels
+};
+
+void main()
+{
+	const uint x = gl_GlobalInvocationID.x;
+	const uint y = gl_GlobalInvocationID.y;
+	const ivec2 imageCoord = ivec2(x, y);
+
+	const vec4 refColor = imageLoad(refImage, imageCoord);
+	const vec4 cmpColor = imageLoad(cmpImage, imageCoord);
+
+	if (refColor.xyz == vec3(0.0)) { return; }
+
+	const vec3 errorVec = cmpColor.xyz - refColor.xyz;
+	const float errSumSq = dot(errorVec, errorVec);
+
+	atomicAdd(mse, errSumSq / 3.0);
+	atomicAdd(refMean, (refColor.x + refColor.y + refColor.z) / 3.0);
+	atomicAdd(ownMean, (cmpColor.x + cmpColor.y + cmpColor.z) / 3.0);
+	atomicAdd(validPixelCount, 1);
+}

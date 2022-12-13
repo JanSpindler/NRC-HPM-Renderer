@@ -144,9 +144,9 @@ void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount, Bench
 	for (size_t i = 0; i < results.size(); i++)
 	{
 		stats.viewStats[i].mse = results[i].mse;
-		stats.viewStats[i].bias.x = results[i].biasX;
-		stats.viewStats[i].bias.y = results[i].biasY;
-		stats.viewStats[i].bias.z = results[i].biasZ;
+		stats.viewStats[i].bias.x = 0.0f;//results[i].biasX;
+		stats.viewStats[i].bias.y = 0.0f;//results[i].biasY;
+		stats.viewStats[i].bias.z = 0.0f;//results[i].biasZ;
 	}
 
 	logFile.WriteLine(stats.ToString());
