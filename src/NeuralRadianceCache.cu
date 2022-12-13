@@ -135,7 +135,7 @@ namespace en
 	{
 		for (size_t i = 0; i < m_InferInputBatches.size(); i++)
 		{
-			if (inferFilter[i] > 0)
+			if (inferFilter[i] > 0) // TODO: filter bugs when benchmarking
 			{
 				const tcnn::GPUMatrix<float>& inputBatch = m_InferInputBatches[i];
 				tcnn::GPUMatrix<float>& outputBatch = m_InferOutputBatches[i];

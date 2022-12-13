@@ -97,7 +97,7 @@ def execute_config(index, arguments):
 def execute_configs():
     print("Executing app configs")
 
-    config_file = open("configs.csv", "r")
+    config_file = open("configs.txt", "r")
     arguments_list = config_file.readlines()
     config_file.close()
 
@@ -117,8 +117,8 @@ def main():
     print("Starting NRC-HPM-Bench")
     update_files()
     generate_stage1_configs()
-    #execute_configs()
-    #evaluate_results()
+    execute_configs()
+    evaluate_results()
 
 
 if __name__ == "__main__":

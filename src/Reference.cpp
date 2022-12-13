@@ -96,12 +96,10 @@ namespace en
 			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
 
 			// Eval results
-//			Log::Info(
-//				"MSE: " + std::to_string(results[i].mse) +
-//				" | Bias: (" + std::to_string(results[i].biasX) + 
-//				", " + std::to_string(results[i].biasY) + 
-//				", " + std::to_string(results[i].biasZ) + 
-//				")");
+			Log::Info(
+				"MSE: " + std::to_string(results[i].mse) +
+				" | rBias: " + std::to_string(results[i].GetRelBias()) +
+				" | Var: " + std::to_string(results[i].ownVar));
 		}
 
 		renderer.SetCamera(queue, oldCamera);

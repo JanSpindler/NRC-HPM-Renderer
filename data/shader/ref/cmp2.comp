@@ -29,10 +29,10 @@ void main()
 	const vec4 refColor = imageLoad(refImage, imageCoord);
 	const vec4 cmpColor = imageLoad(cmpImage, imageCoord);
 
-	if (refColor.xyz == vec3(0.0)) { return; }
+	if (refColor.w == 0.0) { return; }
 
 	const vec3 distToOwnMean = cmpColor.xyz - vec3(ownMean);
 	const float pixelVar = dot(distToOwnMean, distToOwnMean) / 3.0;
 
-	atomicAdd(ownVar, pixelVar);
+	atomicAdd(ownVar, pixelVar / float(validPixelCount));
 }

@@ -29,7 +29,7 @@ void main()
 	const vec4 refColor = imageLoad(refImage, imageCoord);
 	const vec4 cmpColor = imageLoad(cmpImage, imageCoord);
 
-	if (refColor.xyz == vec3(0.0)) { return; }
+	if (refColor.w == 0.0) { return; }
 
 	const vec3 errorVec = cmpColor.xyz - refColor.xyz;
 	const float errSumSq = dot(errorVec, errorVec);
