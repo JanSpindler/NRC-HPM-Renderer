@@ -90,14 +90,14 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 		if (density > 0.0)
 		{
 			// Get scene lighting
-			const vec3 sceneLighting = TraceScene(currentPoint, currentDir);
+			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) / pow(2.0, float(i));
 
 			// Phase factor
 			const float phase = 1.0; // Importance sampling
 
 			// Transmittance calculation
 			const vec3 s_int = density * sceneLighting * phase;
-			const float t_r = RatioTrack(lastPoint, currentPoint);
+			const float t_r = 1.0; // Importance sampling (delta tracking)
 
 			scatteredLight += transmittance * s_int;
 			transmittance *= t_r;

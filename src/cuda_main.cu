@@ -385,7 +385,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		}
 
 		// Exit if 512 frame have been rendered
-		if (frameCount > 512) { break; }
+		//if (frameCount > 512) { break; }
 
 		//
 		frameCount++;
@@ -434,10 +434,10 @@ int main(int argc, char** argv)
 		en::Log::Info("No arguments found. Loading defaults");
 		myargv = { 
 			"NRC-HPM-Renderer", 
-			"RelativeL2", "Adam", "0.001", "0.99",
+			"RelativeL2", "Adam", "0.0025", "0.99",
 			"2", "0", 
 			"64", "6", "15", 
-			"1", 
+			"0", 
 			"0.05", "1.0", "1", "3"
 		};
 	}

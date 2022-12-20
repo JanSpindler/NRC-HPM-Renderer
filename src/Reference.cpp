@@ -103,7 +103,7 @@ namespace en
 		}
 
 		renderer.SetCamera(queue, oldCamera);
-
+		// TODO: remove image 3 for high variance
 		return results;
 	}
 
