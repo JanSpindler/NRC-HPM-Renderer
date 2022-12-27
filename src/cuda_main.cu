@@ -206,12 +206,9 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	nrcHpmRenderer = new en::NrcHpmRenderer(
 		width,
 		height,
-		appConfig.trainSampleRatio,
-		appConfig.trainSpp,
-		appConfig.primaryRayLength,
-		appConfig.trainRingBufSize,
 		false,
 		&camera,
+		appConfig,
 		hpmScene,
 		nrc);
 
@@ -436,9 +433,9 @@ int main(int argc, char** argv)
 			"NRC-HPM-Renderer", 
 			"RelativeL2Luminance", "Adam", "0.01", "0.99",
 			"0", "0", 
-			"64", "3", "15", 
+			"64", "3", "18", "14", "4",
 			"0", 
-			"0.05", "1.0", "1", "2"
+			"1.0", "1", "2"
 		};
 	}
 

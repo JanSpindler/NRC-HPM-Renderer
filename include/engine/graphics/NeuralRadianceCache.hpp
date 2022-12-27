@@ -14,7 +14,6 @@ namespace en
 
 		void Init(
 			uint32_t inferCount,
-			uint32_t trainCount,
 			float* dCuInferInput, 
 			float* dCuInferOutput, 
 			float* dCuTrainInput, 
@@ -29,13 +28,16 @@ namespace en
 		float GetLoss() const;
 		size_t GetInferBatchCount() const;
 		size_t GetTrainBatchCount() const;
-		uint32_t GetBatchSize() const;
+		uint32_t GetInferBatchSize() const;
+		uint32_t GetTrainBatchSize() const;
 
 	private:
 		static const uint32_t sc_InputCount;
 		static const uint32_t sc_OutputCount;
 
-		const uint32_t m_BatchSize;
+		const uint32_t m_InferBatchSize = 0;
+		const uint32_t m_TrainBatchSize = 0;
+		const uint32_t m_TrainBatchCount = 0;
 
 		tcnn::TrainableModel m_Model;
 		std::vector<tcnn::GPUMatrix<float>> m_InferInputBatches;

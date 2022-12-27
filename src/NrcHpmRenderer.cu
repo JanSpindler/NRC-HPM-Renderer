@@ -5,6 +5,8 @@
 #include <engine/graphics/vulkan/CommandRecorder.hpp>
 #include <glm/gtc/random.hpp>
 #include <imgui.h>
+#include <chrono>
+#include <thread>
 
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
@@ -210,19 +212,16 @@ namespace en
 	NrcHpmRenderer::NrcHpmRenderer(
 		uint32_t width,
 		uint32_t height,
-		float trainSampleRatio,
-		uint32_t trainSpp,
-		uint32_t primaryRayLength,
-		float trainRingBufSize,
 		bool blend,
 		const Camera* camera,
+		const AppConfig& appConfig,
 		const HpmScene& hpmScene,
 		NeuralRadianceCache& nrc)
 		:
 		m_RenderWidth(width),
 		m_RenderHeight(height),
-		m_TrainSpp(trainSpp),
-		m_PrimaryRayLength(primaryRayLength),
+		m_TrainSpp(appConfig.trainSpp),
+		m_PrimaryRayLength(appConfig.primaryRayLength),
 		m_ShouldBlend(blend),
 		m_ClearShader("nrc/clear.comp", false),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
@@ -241,15 +240,13 @@ namespace en
 	{
 		Log::Info("Creating NrcHpmRenderer");
 
-		// Calc train sample extent
-		float sqrtTrainSampleRatio = std::sqrt(trainSampleRatio);
-		m_TrainWidth = sqrtTrainSampleRatio * m_RenderWidth;
-		m_TrainHeight = sqrtTrainSampleRatio * m_RenderHeight;
-		m_TrainWidth -= m_TrainWidth % 16;
-		m_TrainHeight -= m_TrainHeight % 16;
+
+		// Calc train subset
+		const uint32_t trainPixelCount = appConfig.trainBatchCount * m_Nrc.GetTrainBatchSize();
+		CalcTrainSubset(trainPixelCount);
 
 		// Calc train ring buffer size
-		m_TrainRingBufSize = static_cast<uint32_t>(trainRingBufSize * static_cast<float>(m_TrainWidth * m_TrainHeight));
+		m_TrainRingBufSize = static_cast<uint32_t>(appConfig.trainRingBufSize * static_cast<float>(m_TrainWidth * m_TrainHeight));
 
 		// Init components
 		VkDevice device = VulkanAPI::GetDevice();
@@ -258,8 +255,7 @@ namespace en
 
 		CreateNrcBuffers();
 		m_Nrc.Init(
-			m_RenderWidth * m_RenderHeight, 
-			m_TrainWidth * m_TrainHeight,
+			m_RenderWidth * m_RenderHeight,
 			reinterpret_cast<float*>(m_NrcInferInputDCuBuffer),
 			reinterpret_cast<float*>(m_NrcInferOutputDCuBuffer),
 			reinterpret_cast<float*>(m_NrcTrainInputDCuBuffer),
@@ -337,7 +333,7 @@ namespace en
 
 		// Cuda
 		m_Nrc.InferAndTrain(reinterpret_cast<uint32_t*>(m_NrcInferFilterData), train);
-		
+
 		// Post cuda
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
@@ -426,6 +422,7 @@ namespace en
 		delete m_NrcInferInputBuffer;
 		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcInferInputCuExtMem));
 
+		vkDestroyFence(device, m_PostCudaFence, nullptr);
 		vkDestroyFence(device, m_PreCudaFence, nullptr);
 
 		vkDestroySemaphore(device, m_CudaFinishedSemaphore, nullptr);
@@ -610,6 +607,38 @@ namespace en
 		m_BlendIndex = 1;
 	}
 
+	void NrcHpmRenderer::CalcTrainSubset(uint32_t trainPixelCount)
+	{
+		const uint32_t sqrt = std::sqrt(trainPixelCount);
+		for (uint32_t factor = sqrt; factor >= 2; factor--)
+		{
+			if (trainPixelCount % factor == 0)
+			{
+				const uint32_t otherFactor = trainPixelCount / factor;
+				const uint32_t biggerFactor = std::max(factor, otherFactor);
+				const uint32_t smallerFactor = std::min(factor, otherFactor);
+				
+				if (m_RenderWidth > m_RenderHeight)
+				{
+					m_TrainWidth = biggerFactor;
+					m_TrainHeight = smallerFactor;
+				}
+				else
+				{
+					m_TrainWidth = smallerFactor;
+					m_TrainHeight = biggerFactor;
+				}
+
+				m_TrainXDist = m_RenderWidth / m_TrainWidth;
+				m_TrainYDist = m_RenderHeight / m_TrainHeight;
+
+				return;
+			}
+		}
+
+		en::Log::Error("Could not find suitable division of trainPixelCount", true);
+	}
+
 	void NrcHpmRenderer::CreateSyncObjects(VkDevice device)
 	{
 		Log::Info("NrcHpmRenderer: Creating sync objects");
@@ -663,6 +692,7 @@ namespace en
 		fenceCI.pNext = nullptr;
 		fenceCI.flags = 0;
 		ASSERT_VULKAN(vkCreateFence(device, &fenceCI, nullptr, &m_PreCudaFence));
+		ASSERT_VULKAN(vkCreateFence(device, &fenceCI, nullptr, &m_PostCudaFence));
 	}
 
 	void NrcHpmRenderer::CreateNrcBuffers()
@@ -880,11 +910,14 @@ namespace en
 		m_SpecData.renderHeight = m_RenderHeight;
 		m_SpecData.trainWidth = m_TrainWidth;
 		m_SpecData.trainHeight = m_TrainHeight;
+		m_SpecData.trainXDist = m_TrainXDist;
+		m_SpecData.trainYDist = m_TrainYDist;
 		m_SpecData.trainSpp = m_TrainSpp;
 		m_SpecData.primaryRayLength = m_PrimaryRayLength;
 		m_SpecData.trainRingBufSize = m_TrainRingBufSize;
 
-		m_SpecData.batchSize = m_Nrc.GetBatchSize();
+		m_SpecData.inferBatchSize = m_Nrc.GetInferBatchSize();
+		m_SpecData.trainBatchSize = m_Nrc.GetTrainBatchSize();
 
 		m_SpecData.volumeSizeX = volumeSizeF.x;
 		m_SpecData.volumeSizeY = volumeSizeF.y;
@@ -917,6 +950,16 @@ namespace en
 		trainHeightEntry.offset = offsetof(SpecializationData, SpecializationData::trainHeight);
 		trainHeightEntry.size = sizeof(uint32_t);
 
+		VkSpecializationMapEntry trainXDistEntry{};
+		trainXDistEntry.constantID = constantID++;
+		trainXDistEntry.offset = offsetof(SpecializationData, SpecializationData::trainXDist);
+		trainXDistEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry trainYDistEntry{};
+		trainYDistEntry.constantID = constantID++;
+		trainYDistEntry.offset = offsetof(SpecializationData, SpecializationData::trainXDist);
+		trainYDistEntry.size = sizeof(uint32_t);
+
 		VkSpecializationMapEntry trainSppEntry;
 		trainSppEntry.constantID = constantID++;
 		trainSppEntry.offset = offsetof(SpecializationData, SpecializationData::trainSpp);
@@ -932,10 +975,15 @@ namespace en
 		trainRingBufSizeEntry.offset = offsetof(SpecializationData, SpecializationData::trainRingBufSize);
 		trainRingBufSizeEntry.size = sizeof(uint32_t);
 
-		VkSpecializationMapEntry batchSizeEntry;
-		batchSizeEntry.constantID = constantID++;
-		batchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::batchSize);
-		batchSizeEntry.size = sizeof(uint32_t);
+		VkSpecializationMapEntry inferBatchSizeEntry{};
+		inferBatchSizeEntry.constantID = constantID++;
+		inferBatchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::inferBatchSize);
+		inferBatchSizeEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry trainBatchSizeEntry;
+		trainBatchSizeEntry.constantID = constantID++;
+		trainBatchSizeEntry.offset = offsetof(SpecializationData, SpecializationData::trainBatchSize);
+		trainBatchSizeEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry volumeSizeXEntry;
 		volumeSizeXEntry.constantID = constantID++;
@@ -972,10 +1020,13 @@ namespace en
 			renderHeightEntry,
 			trainWidthEntry,
 			trainHeightEntry,
+			trainXDistEntry,
+			trainYDistEntry,
 			trainSppEntry,
 			primaryRayLengthEntry,
 			trainRingBufSizeEntry,
-			batchSizeEntry,
+			inferBatchSizeEntry,
+			trainBatchSizeEntry,
 			volumeSizeXEntry,
 			volumeSizeYEntry,
 			volumeSizeZEntry,

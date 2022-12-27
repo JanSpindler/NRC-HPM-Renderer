@@ -36,21 +36,22 @@ namespace en
 		// nn
 		std::string lossFn;
 		std::string optimizer;
-		float learningRate;
-		float emaDecay;
+		float learningRate = 0.0f;
+		float emaDecay = 0.0f;
 		NNEncodingConfig encoding;
-		uint32_t nnWidth;
-		uint32_t nnDepth;
-		uint32_t log2BatchSize;
+		uint32_t nnWidth = 0;
+		uint32_t nnDepth = 0;
+		uint32_t log2InferBatchSize = 0;
+		uint32_t log2TrainBatchSize = 0;
+		uint32_t trainBatchCount = 0;
 
 		// scene
 		HpmSceneConfig scene;
 
 		// renderer
-		float trainSampleRatio;
-		float trainRingBufSize;
-		uint32_t trainSpp;
-		uint32_t primaryRayLength;
+		float trainRingBufSize = 0.0f;
+		uint32_t trainSpp = 0;
+		uint32_t primaryRayLength = 0;
 
 		AppConfig();
 		AppConfig(const std::vector<char*>& argv);

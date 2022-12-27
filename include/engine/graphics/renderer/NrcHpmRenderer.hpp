@@ -19,12 +19,9 @@ namespace en
 		NrcHpmRenderer(
 			uint32_t width,
 			uint32_t height,
-			float trainSampleRatio,
-			uint32_t trainSpp,
-			uint32_t primaryRayLength,
-			float trainRingBufSize,
 			bool blend,
 			const Camera* camera,
+			const AppConfig& appConfig,
 			const HpmScene& hpmScene,
 			NeuralRadianceCache& nrc);
 
@@ -50,11 +47,14 @@ namespace en
 			uint32_t renderHeight;
 			uint32_t trainWidth;
 			uint32_t trainHeight;
+			uint32_t trainXDist;
+			uint32_t trainYDist;
 			uint32_t trainSpp;
 			uint32_t primaryRayLength;
 			uint32_t trainRingBufSize;
 
-			uint32_t batchSize;
+			uint32_t inferBatchSize;
+			uint32_t trainBatchSize;
 
 			float volumeSizeX;
 			float volumeSizeY;
@@ -75,13 +75,15 @@ namespace en
 		static VkDescriptorSetLayout m_DescSetLayout;
 		static VkDescriptorPool m_DescPool;
 
-		uint32_t m_RenderWidth;
-		uint32_t m_RenderHeight;
-		uint32_t m_TrainWidth;
-		uint32_t m_TrainHeight;
-		uint32_t m_TrainSpp;
-		uint32_t m_PrimaryRayLength;
-		uint32_t m_TrainRingBufSize;
+		uint32_t m_RenderWidth = 0;
+		uint32_t m_RenderHeight = 0;
+		uint32_t m_TrainWidth = 0;
+		uint32_t m_TrainHeight = 0;
+		uint32_t m_TrainXDist = 0;
+		uint32_t m_TrainYDist = 0;
+		uint32_t m_TrainSpp = 0;
+		uint32_t m_PrimaryRayLength = 0;
+		uint32_t m_TrainRingBufSize = 0;
 
 		bool m_ShouldBlend = false;
 		uint32_t m_BlendIndex = 1;
@@ -97,6 +99,7 @@ namespace en
 		cudaExternalSemaphore_t m_CuExtCudaFinishedSemaphore;
 
 		VkFence m_PreCudaFence = VK_NULL_HANDLE;
+		VkFence m_PostCudaFence = VK_NULL_HANDLE;
 
 		VkDeviceSize m_NrcInferInputBufferSize;
 		vk::Buffer* m_NrcInferInputBuffer = nullptr;
@@ -182,6 +185,8 @@ namespace en
 		VkCommandBuffer m_PreCudaCommandBuffer;
 		VkCommandBuffer m_PostCudaCommandBuffer;
 		VkCommandBuffer m_RandomTasksCmdBuf;
+
+		void CalcTrainSubset(uint32_t trainPixelCount);
 
 		void CreateSyncObjects(VkDevice device);
 

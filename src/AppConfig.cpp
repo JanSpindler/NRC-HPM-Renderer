@@ -110,7 +110,7 @@ namespace en
 
 	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argv.size() != 15) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 16) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
@@ -125,11 +125,12 @@ namespace en
 		
 		nnWidth = std::stoi(argv[index++]);
 		nnDepth = std::stoi(argv[index++]);
-		log2BatchSize = std::stoi(argv[index++]);
+		log2InferBatchSize = std::stoi(argv[index++]);
+		log2TrainBatchSize = std::stoi(argv[index++]);
+		trainBatchCount = std::stoi(argv[index++]);
 
 		scene = HpmSceneConfig(std::stoi(argv[index++]));
 
-		trainSampleRatio = std::stof(argv[index++]);
 		trainRingBufSize = std::stof(argv[index++]);
 		trainSpp = std::stoi(argv[index++]);
 		primaryRayLength = std::stoi(argv[index++]);
@@ -146,9 +147,10 @@ namespace en
 		str += std::to_string(encoding.dirID) + "_";
 		str += std::to_string(nnWidth) + "_";
 		str += std::to_string(nnDepth) + "_";
-		str += std::to_string(log2BatchSize) + "_";
+		str += std::to_string(log2InferBatchSize) + "_";
+		str += std::to_string(log2TrainBatchSize) + "_";
+		str += std::to_string(trainBatchCount) + "_";
 		str += std::to_string(scene.id) + "_";
-		str += std::to_string(trainSampleRatio) + "_";
 		str += std::to_string(trainRingBufSize) + "_";
 		str += std::to_string(trainSpp) + "_";
 		str += std::to_string(primaryRayLength);
@@ -165,9 +167,9 @@ namespace en
 		ImGui::Text("Encoding (%d, %d)", encoding.posID, encoding.dirID);
 		ImGui::Text("NN Width %d", nnWidth);
 		ImGui::Text("NN Depth %d", nnDepth);
-		ImGui::Text("Log2 batch size %d", log2BatchSize);
+		ImGui::Text("Batch Sizes (%d, %d)", log2InferBatchSize, log2TrainBatchSize);
+		ImGui::Text("Train Batch Count %d", trainBatchCount);
 		ImGui::Text("Scene %d", scene.id);
-		ImGui::Text("Train sample ratio %f", trainSampleRatio);
 		ImGui::Text("Train ring buffer size %f", trainRingBufSize);
 		ImGui::Text("Train spp %d", trainSpp);
 		ImGui::Text("Primary ray length %d", primaryRayLength);

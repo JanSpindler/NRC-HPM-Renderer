@@ -17,11 +17,13 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
+	float factor = 1.0;
+
 	didScatter = false;
 	bool volumeExit = false;
 	for (uint i = 0; i < PATH_LENGTH; i++)
 	{
-		if (volumeExit) { break; }
+		factor *= 0.5;
 
 		const float density = getDensity(currentPoint);
 
@@ -34,7 +36,7 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 			}
 
 			// Get scene lighting
-			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) / pow(2.0, float(i));
+			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
 
 			// Phase factor
 			const float phase = 1.0; // Importance sampling

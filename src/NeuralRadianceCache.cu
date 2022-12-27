@@ -9,7 +9,9 @@ namespace en
 	const uint32_t NeuralRadianceCache::sc_OutputCount = 3;
 
 	NeuralRadianceCache::NeuralRadianceCache(const AppConfig& appConfig) :
-		m_BatchSize(2 << (appConfig.log2BatchSize - 1))
+		m_InferBatchSize(2 << (appConfig.log2InferBatchSize - 1)),
+		m_TrainBatchSize(2 << (appConfig.log2TrainBatchSize - 1)),
+		m_TrainBatchCount(appConfig.trainBatchCount)
 	{
 		nlohmann::json modelConfig = {
 			{"loss", {
@@ -39,7 +41,6 @@ namespace en
 
 	void NeuralRadianceCache::Init(
 		uint32_t inferCount,
-		uint32_t trainCount,
 		float* dCuInferInput,
 		float* dCuInferOutput,
 		float* dCuTrainInput,
@@ -49,15 +50,14 @@ namespace en
 	{
 		// Check if sample counts are compatible
 		if (inferCount % 16 != 0) { en::Log::Error("NRC requires inferCount to be a multiple of 16", true); }
-		if (trainCount % 16 != 0) { en::Log::Error("NRC required trainCount to be a multiple of 16", true); }
 
 		// Init members
 		m_CudaStartSemaphore = cudaStartSemaphore;
 		m_CudaFinishedSemaphore = cudaFinishedSemaphore;
 
 		// Init infer buffers
-		uint32_t inferBatchCount = inferCount / m_BatchSize;
-		uint32_t inferLastBatchSize = inferCount - (inferBatchCount * m_BatchSize);
+		uint32_t inferBatchCount = inferCount / m_InferBatchSize;
+		uint32_t inferLastBatchSize = inferCount - (inferBatchCount * m_InferBatchSize);
 		m_InferInputBatches.resize(inferBatchCount);
 		m_InferOutputBatches.resize(inferBatchCount);
 		
@@ -65,10 +65,10 @@ namespace en
 		size_t floatOutputOffset = 0;
 		for (uint32_t i = 0; i < inferBatchCount; i++)
 		{
-			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), sc_InputCount, m_BatchSize);
-			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), sc_OutputCount, m_BatchSize);
-			floatInputOffset += m_BatchSize * sc_InputCount;
-			floatOutputOffset += m_BatchSize * sc_OutputCount;
+			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), sc_InputCount, m_InferBatchSize);
+			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), sc_OutputCount, m_InferBatchSize);
+			floatInputOffset += m_InferBatchSize * sc_InputCount;
+			floatOutputOffset += m_InferBatchSize * sc_OutputCount;
 		}
 
 		if (inferLastBatchSize > 0)
@@ -78,25 +78,17 @@ namespace en
 		}
 
 		// Init train buffers
-		uint32_t trainBatchCount = trainCount / m_BatchSize;
-		uint32_t trainLastBatchSize = trainCount - (trainBatchCount * m_BatchSize);
-		m_TrainInputBatches.resize(trainBatchCount);
-		m_TrainTargetBatches.resize(trainBatchCount);
+		m_TrainInputBatches.resize(m_TrainBatchCount);
+		m_TrainTargetBatches.resize(m_TrainBatchCount);
 
 		floatInputOffset = 0;
 		floatOutputOffset = 0;
-		for (uint32_t i = 0; i < trainBatchCount; i++)
+		for (uint32_t i = 0; i < m_TrainBatchCount; i++)
 		{
-			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), sc_InputCount, m_BatchSize);
-			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), sc_OutputCount, m_BatchSize);
-			floatInputOffset += m_BatchSize * sc_InputCount;
-			floatOutputOffset += m_BatchSize * sc_OutputCount;
-		}
-
-		if (trainLastBatchSize > 0)
-		{
-			m_TrainInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), sc_InputCount, trainLastBatchSize));
-			m_TrainTargetBatches.push_back(tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), sc_OutputCount, trainLastBatchSize));
+			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), sc_InputCount, m_TrainBatchSize);
+			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), sc_OutputCount, m_TrainBatchSize);
+			floatInputOffset += m_TrainBatchSize * sc_InputCount;
+			floatOutputOffset += m_TrainBatchSize * sc_OutputCount;
 		}
 	}
 
@@ -127,16 +119,21 @@ namespace en
 		return m_TrainInputBatches.size();
 	}
 
-	uint32_t NeuralRadianceCache::GetBatchSize() const
+	uint32_t NeuralRadianceCache::GetInferBatchSize() const
 	{
-		return m_BatchSize;
+		return m_InferBatchSize;
+	}
+
+	uint32_t NeuralRadianceCache::GetTrainBatchSize() const
+	{
+		return m_TrainBatchSize;
 	}
 
 	void NeuralRadianceCache::Inference(const uint32_t* inferFilter)
 	{
 		for (size_t i = 0; i < m_InferInputBatches.size(); i++)
 		{
-			if (inferFilter[i] > 0) // TODO: filter bugs when benchmarking
+			if (inferFilter[i] > 0)
 			{
 				const tcnn::GPUMatrix<float>& inputBatch = m_InferInputBatches[i];
 				tcnn::GPUMatrix<float>& outputBatch = m_InferOutputBatches[i];
