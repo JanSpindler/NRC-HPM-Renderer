@@ -80,17 +80,19 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 	float randTerm = 1.0;
 
+	float factor = 1.0;
+
 	bool volumeExit = false;
 	for (uint i = 0; i < 32; i++)
 	{
-		if (volumeExit) { break; }
+		factor *= 0.5;
 
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
 		{
 			// Get scene lighting
-			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) / pow(2.0, float(i));
+			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
 
 			// Phase factor
 			const float phase = 1.0; // Importance sampling
@@ -111,10 +113,9 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 		}
 
 		// Russian roulette
-		if (i > 8)
+		if (i > 4)
 		{
-			if (RandFloat(1.0) > randTerm) { break; }
-			randTerm *= 0.75;
+			if (RandFloat(1.0) > 0.75) { break; }
 		}
 		
 		// Generate new point
@@ -130,7 +131,7 @@ void main()
 	const uint x = gl_GlobalInvocationID.x;
 	const uint y = gl_GlobalInvocationID.y;
 	const ivec2 trainImageCoord = ivec2(x, y);
-	const ivec2 renderImageCoord = trainImageCoord * ivec2(RENDER_OVER_TRAIN_WIDTH, RENDER_OVER_TRAIN_HEIGHT);
+	const ivec2 renderImageCoord = trainImageCoord * ivec2(TRAIN_X_DIST, TRAIN_Y_DIST);
 	const vec2 fragUV = vec2(float(x) * ONE_OVER_RENDER_WIDTH, float(y) * ONE_OVER_RENDER_HEIGHT);
 
 	// Setup random
@@ -146,7 +147,7 @@ void main()
 		rayOrigin = imageLoad(nrcRayOriginImage, renderImageCoord).xyz;
 		rayDir = imageLoad(nrcRayDirImage, renderImageCoord).xyz;
 	}
-	else if(TRAIN_RING_BUF_SIZE > 0) // Load randomly from reservoir
+	else if(TRAIN_RING_BUF_SIZE > 0) // Load from ring buffer
 	{
 		LoadFromRingBuffer(rayOrigin, rayDir);
 	}

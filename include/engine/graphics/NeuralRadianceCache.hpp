@@ -40,6 +40,12 @@ namespace en
 		const uint32_t m_TrainBatchCount = 0;
 
 		tcnn::TrainableModel m_Model;
+
+		tcnn::GPUMatrix<float> m_InferInput;
+		tcnn::GPUMatrix<float> m_InferOutput;
+		tcnn::GPUMatrix<float> m_TrainInput;
+		tcnn::GPUMatrix<float> m_TrainTarget;
+
 		std::vector<tcnn::GPUMatrix<float>> m_InferInputBatches;
 		std::vector<tcnn::GPUMatrix<float>> m_InferOutputBatches;
 		std::vector<tcnn::GPUMatrix<float>> m_TrainInputBatches;

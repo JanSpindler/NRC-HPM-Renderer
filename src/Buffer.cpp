@@ -116,14 +116,16 @@ namespace en::vk
 
 		// Allocate Memory
 		void* allocateInfoPnext = nullptr;
-		VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR = {};
+		VkExportMemoryAllocateInfoKHR vulkanExportMemoryAllocateInfoKHR{};
+
+		SECURITY_ATTRIBUTES winSecurityAttributes{};
+		VkExportMemoryWin32HandleInfoKHR vulkanExportMemoryWin32HandleInfoKHR{};
 
 #ifdef _WIN64
 		if (extMemType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT)
 		{
-			SECURITY_ATTRIBUTES winSecurityAttributes{};
+			winSecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
 
-			VkExportMemoryWin32HandleInfoKHR vulkanExportMemoryWin32HandleInfoKHR = {};
 			vulkanExportMemoryWin32HandleInfoKHR.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
 			vulkanExportMemoryWin32HandleInfoKHR.pNext = NULL;
 			vulkanExportMemoryWin32HandleInfoKHR.pAttributes = &winSecurityAttributes;
