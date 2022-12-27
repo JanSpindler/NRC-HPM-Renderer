@@ -15,7 +15,7 @@ vec3 LoadNrcInferOutput(const ivec2 imageCoord)
 	color.y = nrcInferOutput[linearPixelIndex].g;
 	color.z = nrcInferOutput[linearPixelIndex].b;
 
-	color = exp(color) - vec3(1.0);
+	//color = exp(color) - vec3(1.0);
 	 
 	return max(vec3(0.0), color);
 }

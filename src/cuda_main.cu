@@ -215,7 +215,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, false, &camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 64, false, &camera, hpmScene);
 
 	if (en::Window::IsSupported())
 	{
@@ -437,7 +437,7 @@ int main(int argc, char** argv)
 			"RelativeL2Luminance", "Adam", "0.001", "0.99",
 			"0", "0", 
 			"64", "6", "15", 
-			"0", 
+			"1", 
 			"0.05", "1.0", "1", "3"
 		};
 	}

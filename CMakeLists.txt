@@ -24,7 +24,6 @@ list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_17)
 target_compile_options(${PROJECT_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 # Dependencies
 
@@ -32,6 +31,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_
 find_package(Vulkan REQUIRED)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
+
+# CUDA
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 # GLFW
 find_package(glfw3 CONFIG REQUIRED)
