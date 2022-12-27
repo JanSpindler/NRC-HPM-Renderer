@@ -434,11 +434,11 @@ int main(int argc, char** argv)
 		en::Log::Info("No arguments found. Loading defaults");
 		myargv = { 
 			"NRC-HPM-Renderer", 
-			"RelativeL2Luminance", "Adam", "0.001", "0.99",
+			"RelativeL2Luminance", "Adam", "0.01", "0.99",
 			"0", "0", 
 			"64", "3", "15", 
 			"0", 
-			"0.05", "1.0", "1", "3"
+			"0.05", "1.0", "1", "2"
 		};
 	}
 

@@ -17,10 +17,14 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 	vec3 currentDir = rayDir;
 	vec3 lastDir = vec3(0.0);
 
+	float factor = 1.0;
+
 	didScatter = false;
 	bool volumeExit = false;
 	for (int i = 0; i < PRIMARY_RAY_LENGTH; i++)
 	{
+		factor *= 0.5;
+
 		const float density = getDensity(currentPoint);
 
 		if (density > 0.0)
@@ -28,7 +32,7 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 			didScatter = true;
 
 			// Get scene lighting
-			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) / pow(2.0, float(i));
+			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
 
 			// Phase factor
 			const float phase = 1.0; // Importance sampling
@@ -58,7 +62,7 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 	imageStore(nrcRayDirImage, imageCoord, vec4(currentDir, 0.0));
 
 	// Return prematurly terminated ray color
-	return vec4(scatteredLight, transmittance);
+	return vec4(scatteredLight, transmittance * factor);
 }
 
 void main()

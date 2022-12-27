@@ -89,7 +89,7 @@ namespace en
 		switch (id)
 		{
 		case 0:
-			dirLightStrength = 6.0f;
+			dirLightStrength = 16.0f;
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0f;
