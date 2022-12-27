@@ -327,11 +327,13 @@ namespace en
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &m_CudaStartSemaphore;
 
-		VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+		VkResult result = vkQueueSubmit(queue, 1, &submitInfo, m_PreCudaFence);
 		ASSERT_VULKAN(result);
 
 		// Sync infer filter
+		ASSERT_VULKAN(vkWaitForFences(VulkanAPI::GetDevice(), 1, &m_PreCudaFence, VK_TRUE, UINT64_MAX));
 		m_NrcInferFilterStagingBuffer->GetData(m_NrcInferFilterBufferSize, m_NrcInferFilterData, 0, 0);
+		ASSERT_VULKAN(vkResetFences(VulkanAPI::GetDevice(), 1, &m_PreCudaFence));
 
 		// Cuda
 		m_Nrc.InferAndTrain(reinterpret_cast<uint32_t*>(m_NrcInferFilterData), train);
@@ -423,6 +425,8 @@ namespace en
 		m_NrcInferInputBuffer->Destroy();
 		delete m_NrcInferInputBuffer;
 		ASSERT_CUDA(cudaDestroyExternalMemory(m_NrcInferInputCuExtMem));
+
+		vkDestroyFence(device, m_PreCudaFence, nullptr);
 
 		vkDestroySemaphore(device, m_CudaFinishedSemaphore, nullptr);
 		ASSERT_CUDA(cudaDestroyExternalSemaphore(m_CuExtCudaFinishedSemaphore));
@@ -652,6 +656,13 @@ namespace en
 		extCudaSemaphoreHD.handle.fd= GetSemaphoreHandle(device, m_CudaFinishedSemaphore);
 		ASSERT_CUDA(cudaImportExternalSemaphore(&m_CuExtCudaFinishedSemaphore, &extCudaSemaphoreHD));
 #endif
+	
+		// Create fence
+		VkFenceCreateInfo fenceCI{};
+		fenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCI.pNext = nullptr;
+		fenceCI.flags = 0;
+		ASSERT_VULKAN(vkCreateFence(device, &fenceCI, nullptr, &m_PreCudaFence));
 	}
 
 	void NrcHpmRenderer::CreateNrcBuffers()

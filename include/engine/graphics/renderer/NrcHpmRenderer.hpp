@@ -96,6 +96,8 @@ namespace en
 		VkSemaphore m_CudaFinishedSemaphore;
 		cudaExternalSemaphore_t m_CuExtCudaFinishedSemaphore;
 
+		VkFence m_PreCudaFence = VK_NULL_HANDLE;
+
 		VkDeviceSize m_NrcInferInputBufferSize;
 		vk::Buffer* m_NrcInferInputBuffer = nullptr;
 		cudaExternalMemory_t m_NrcInferInputCuExtMem;
