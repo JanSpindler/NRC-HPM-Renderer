@@ -436,8 +436,8 @@ int main(int argc, char** argv)
 			"NRC-HPM-Renderer", 
 			"RelativeL2Luminance", "Adam", "0.001", "0.99",
 			"0", "0", 
-			"64", "6", "15", 
-			"1", 
+			"64", "3", "15", 
+			"0", 
 			"0.05", "1.0", "1", "3"
 		};
 	}

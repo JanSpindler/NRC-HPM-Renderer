@@ -395,6 +395,7 @@ namespace en
 			VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
 			VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
 			VK_KHR_RAY_QUERY_EXTENSION_NAME,
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 #ifdef _WIN64
 			VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
 			VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
@@ -418,10 +419,18 @@ namespace en
 		// Features 1.0
 		VkPhysicalDeviceFeatures features10{};
 
+		// Descriptor indexing
+		VkPhysicalDeviceDescriptorIndexingFeatures descIndexingFeatures{};
+		descIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+		descIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		descIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+		descIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+		descIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+
 		// Atomic float
 		VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures;
 		atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-		atomicFloatFeatures.pNext = nullptr;
+		atomicFloatFeatures.pNext = &descIndexingFeatures;
 		atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
 		atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
 		atomicFloatFeatures.shaderBufferFloat64Atomics = VK_FALSE;
