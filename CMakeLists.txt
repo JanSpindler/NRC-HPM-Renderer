@@ -29,6 +29,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_
 
 # Vulkan
 find_package(Vulkan REQUIRED)
+#if (MSVC)
+#	target_include_directories(${PROJECT_NAME} PRIVATE "C:/VulkanSDK/1.3.236.0/Include")
+#endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 
