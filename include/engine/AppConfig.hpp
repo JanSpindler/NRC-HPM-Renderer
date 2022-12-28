@@ -28,6 +28,7 @@ namespace en
 			float pointLightStrength;
 			std::string hdrEnvMapPath;
 			float hdrEnvMapStrength;
+			float density;
 
 			HpmSceneConfig();
 			HpmSceneConfig(uint32_t id);

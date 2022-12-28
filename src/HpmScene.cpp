@@ -40,7 +40,7 @@ namespace en
 
 		// Load data
 		m_Density3DTex = new vk::Texture3D(vk::Texture3D::FromVDB("data/volume/wdas_cloud_quarter.vdb"));
-		m_VolumeData = new VolumeData(m_Density3DTex, 0.25f, 0.8f);
+		m_VolumeData = new VolumeData(m_Density3DTex, appConfig.scene.density, 0.8f);
 
 		// Store desc sets
 		m_DescSets = {

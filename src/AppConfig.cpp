@@ -93,18 +93,21 @@ namespace en
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0f;
+			density = 0.8f;
 			break;
 		case 1:
 			dirLightStrength = 0.0f;
 			pointLightStrength = 32.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0f;
+			0.8f;
 			break;
 		case 2:
-			dirLightStrength = 0.0f;
+			dirLightStrength = 16.0f;
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
-			hdrEnvMapStrength = 1.0;
+			hdrEnvMapStrength = 0.0;
+			density = 0.25f;
 			break;
 		default:
 			Log::Error("HpmSceneConfig ID is invalid", true);

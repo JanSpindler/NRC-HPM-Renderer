@@ -434,7 +434,7 @@ int main(int argc, char** argv)
 			"RelativeL2Luminance", "Adam", "0.01", "0.99",
 			"0", "0", 
 			"64", "3", "21", "14", "4",
-			"0", 
+			"2", 
 			"1.0", "1", "2"
 		};
 	}
