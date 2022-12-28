@@ -190,7 +190,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		100.0f);
 
 	// Init reference
-	reference = new en::Reference(width, height, appConfig, hpmScene, queue);
+	//reference = new en::Reference(width, height, appConfig, hpmScene, queue);
 
 	// Init rendering pipeline
 	en::Log::Info("Initializing renderers");
@@ -245,7 +245,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	size_t frameCount = 0;
 	bool shutdown = false;
 	bool restartAfterClose = false;
-	bool benchmark = true;
+	bool benchmark = false;
 	bool continueLoop = en::Window::IsSupported() ? !en::Window::IsClosed() : true;
 	while (continueLoop && !shutdown)
 	{
@@ -404,8 +404,8 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 	modelRenderer.Destroy();
 
-	reference->Destroy();
-	delete reference; 
+	//reference->Destroy();
+	//delete reference; 
 
 	camera.Destroy();
 	hpmScene.Destroy();
@@ -433,9 +433,9 @@ int main(int argc, char** argv)
 			"NRC-HPM-Renderer", 
 			"RelativeL2Luminance", "Adam", "0.01", "0.99",
 			"0", "0", 
-			"64", "3", "21", "14", "8",
+			"64", "3", "21", "14", "4",
 			"0", 
-			"1.0", "1", "3"
+			"1.0", "1", "2"
 		};
 	}
 

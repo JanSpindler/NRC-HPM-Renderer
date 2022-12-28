@@ -15,6 +15,7 @@
 /x64
 /SOURCES
 /RelWithDebInfo
+/output
 
 CMakeCache.txt
 cmake_install.cmake

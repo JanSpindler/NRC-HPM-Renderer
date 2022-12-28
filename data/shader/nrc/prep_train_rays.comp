@@ -68,61 +68,35 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 {
 	vec3 scatteredLight = vec3(0.0);
-	float transmittance = 1.0;
 
 	const vec3 entry = find_entry_exit(rayOrigin, rayDir)[0];
 	
 	vec3 currentPoint = entry;
-	vec3 lastPoint = entry;
-	
 	vec3 currentDir = rayDir;
-	vec3 lastDir = vec3(0.0);
-
-	float randTerm = 1.0;
-
+	
 	float factor = 1.0;
 
 	bool volumeExit = false;
-	for (uint i = 0; i < 32; i++)
+
+	for (int i = 0; i < PRIMARY_RAY_LENGTH; i++)
 	{
-		factor *= 0.5;
-
-		const float density = getDensity(currentPoint);
-
-		if (density > 0.0)
-		{
-			// Get scene lighting
-			const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
-
-			// Phase factor
-			const float phase = 1.0; // Importance sampling
-
-			// Transmittance calculation
-			const vec3 s_int = density * sceneLighting * phase;
-			const float t_r = 1.0; // Importance sampling (delta tracking)
-
-			scatteredLight += transmittance * s_int;
-			transmittance *= t_r;
-
-			// Update last
-			lastPoint = currentPoint;
-			lastDir = currentDir;
-
-			// Generate new direction
-			currentDir = NewRayDir(currentDir, true);
-		}
-
-		// Russian roulette
-		if (i > 4)
-		{
-			if (RandFloat(1.0) > 0.75) { break; }
-		}
-		
-		// Generate new point
+		// Find new point
 		currentPoint = DeltaTrack(currentPoint, currentDir, volumeExit);
+		if (volumeExit) { break; }
+		
+		// Proper weighting of light
+		factor *= 0.5; // * 0.5 because L_s is being approximated by 2 samples
+
+		// Lighting
+		const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
+		const float density = getDensity(currentPoint);
+		scatteredLight += density * sceneLighting; // Phase and transmittance are IS
+
+		// Find new dir by IS the PF
+		currentDir = NewRayDir(currentDir, true);
 	}
 
-	return vec4(scatteredLight, transmittance);
+	return vec4(scatteredLight, factor);
 }
 
 void main()

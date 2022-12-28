@@ -25,6 +25,9 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 		if (volumeExit) { break; }
 		didScatter = true;
 
+		// Proper weighting of light
+		factor *= 0.5; // * 0.5 because L_s is being approximated by 2 samples
+
 		// Lighting
 		const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
 		const float density = getDensity(currentPoint);
@@ -32,9 +35,6 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 
 		// Find new dir by IS the PF
 		currentDir = NewRayDir(currentDir, true);
-	
-		// Proper weighting of light
-		factor *= 0.5; // * 0.5 because L_s is being approximated by 2 samples
 	}
 
 	// Store nrc ray info
