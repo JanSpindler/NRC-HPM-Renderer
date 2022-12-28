@@ -51,6 +51,7 @@ namespace en
 			uint32_t trainYDist;
 			uint32_t trainSpp;
 			uint32_t primaryRayLength;
+			float primaryRayProb;
 			uint32_t trainRingBufSize;
 
 			uint32_t inferBatchSize;
@@ -83,6 +84,7 @@ namespace en
 		uint32_t m_TrainYDist = 0;
 		uint32_t m_TrainSpp = 0;
 		uint32_t m_PrimaryRayLength = 0;
+		float m_PrimaryRayProb = 0.0f;
 		uint32_t m_TrainRingBufSize = 0;
 
 		bool m_ShouldBlend = false;

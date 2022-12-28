@@ -22,13 +22,14 @@ namespace en
 
 		struct HpmSceneConfig
 		{
-			uint32_t id;
+			uint32_t id = UINT32_MAX;
 
-			float dirLightStrength;
-			float pointLightStrength;
+			float dirLightStrength = 0.0f;
+			float pointLightStrength = 0.0f;
 			std::string hdrEnvMapPath;
-			float hdrEnvMapStrength;
-			float density;
+			float hdrEnvMapStrength = 0.0f;
+			float density = 0.0f;
+			bool dynamic = false;
 
 			HpmSceneConfig();
 			HpmSceneConfig(uint32_t id);
@@ -53,6 +54,7 @@ namespace en
 		float trainRingBufSize = 0.0f;
 		uint32_t trainSpp = 0;
 		uint32_t primaryRayLength = 0;
+		float primaryRayProb = 0.0f;
 
 		AppConfig();
 		AppConfig(const std::vector<char*>& argv);

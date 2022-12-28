@@ -17,16 +17,20 @@ namespace en
 		
 		HpmScene(const AppConfig& appConfig);
 		
-		void Update(bool renderImgui);
+		void Update(bool renderImgui, float deltaTime);
 
 		void Destroy();
 
+		bool IsDynamic() const;
 		const std::vector<VkDescriptorSet>& GetDescriptorSets() const;
 		const VolumeData* GetVolumeData() const;
 		const HdrEnvMap* GetHdrEnvMap() const;
 
 	private:
 		static std::vector<VkDescriptorSetLayout> s_DescriptorSetLayout;
+
+		const uint32_t m_ID = UINT32_MAX;
+		const bool m_Dynamic = false;
 
 		DirLight* m_DirLight = nullptr;
 		PointLight* m_PointLight = nullptr;

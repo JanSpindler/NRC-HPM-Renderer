@@ -127,6 +127,16 @@ namespace en
 		m_UniformBuffer.Destroy();
 	}
 
+	float DirLight::GetZenith() const
+	{
+		return m_DirLightData.m_Zenith;
+	}
+
+	float DirLight::GetAzimuth() const
+	{
+		return m_DirLightData.m_Azimuth;
+	}
+
 	void DirLight::SetZenith(float z)
 	{
 		m_DirLightData.m_Zenith = z;

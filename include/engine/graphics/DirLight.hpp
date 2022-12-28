@@ -26,6 +26,9 @@ namespace en
 
 		void Destroy();
 
+		float GetZenith() const;
+		float GetAzimuth() const;
+
 		void SetZenith(float z);
 		void SetAzimuth(float a);
 		void SetColor(glm::vec3 c);

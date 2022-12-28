@@ -20,7 +20,9 @@ namespace en
 		return s_DescriptorSetLayout;
 	}
 
-	HpmScene::HpmScene(const AppConfig& appConfig)
+	HpmScene::HpmScene(const AppConfig& appConfig) :
+		m_ID(appConfig.scene.id),
+		m_Dynamic(appConfig.scene.dynamic)
 	{
 		// Lighting
 		m_DirLight = new DirLight(-1.57f, 0.0f, glm::vec3(1.0f), appConfig.scene.dirLightStrength);
@@ -51,13 +53,25 @@ namespace en
 		};
 	}
 
-	void HpmScene::Update(bool renderImgui)
+	void HpmScene::Update(bool renderImgui, float deltaTime)
 	{
 		if (renderImgui)
 		{
 			m_VolumeData->RenderImGui();
 			m_DirLight->RenderImgui();
 			m_PointLight->RenderImGui();
+		}
+
+		if (!m_Dynamic) { return; }
+		switch (m_ID)
+		{
+		case 3:
+			m_DirLight->SetAzimuth(std::fmod(m_DirLight->GetAzimuth() + (deltaTime * 0.5f), 2.0f * 3.141));
+			break;
+		case 4:
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -77,6 +91,11 @@ namespace en
 
 		m_DirLight->Destroy();
 		delete m_DirLight;
+	}
+
+	bool HpmScene::IsDynamic() const
+	{
+		return m_Dynamic;
 	}
 
 	const std::vector<VkDescriptorSet>& HpmScene::GetDescriptorSets() const

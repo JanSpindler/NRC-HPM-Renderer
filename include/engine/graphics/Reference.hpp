@@ -34,8 +34,8 @@ namespace en
 			const HpmScene& scene,
 			VkQueue queue);
 
-		std::array<Result, 6> CompareNrc(NrcHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue);
-		std::array<Result, 6> CompareMc(McHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue);
+		Result CompareNrc(NrcHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue);
+		Result CompareMc(McHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue);
 		void Destroy();
 
 	private:
@@ -70,10 +70,10 @@ namespace en
 		vk::Shader m_Cmp2Shader;
 		VkPipeline m_Cmp2Pipeline = VK_NULL_HANDLE;
 
-		std::array<en::Camera*, 6> m_RefCameras = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-		std::array<VkImage, 6> m_RefImages = {};
-		std::array<VkDeviceMemory, 6> m_RefImageMemories = {};
-		std::array<VkImageView, 6> m_RefImageViews = {};
+		en::Camera* m_RefCamera = nullptr;
+		VkImage m_RefImage = VK_NULL_HANDLE;
+		VkDeviceMemory m_RefImageMemory = VK_NULL_HANDLE;
+		VkImageView m_RefImageView = VK_NULL_HANDLE;
 
 		vk::Buffer m_ResultStagingBuffer;
 		vk::Buffer m_ResultBuffer;

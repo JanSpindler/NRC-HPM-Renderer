@@ -18,7 +18,7 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 	didScatter = false;
 	bool volumeExit = false;
 
-	for (int i = 0; i < PRIMARY_RAY_LENGTH; i++)
+	for (int i = 0; true; i++)
 	{
 		// Find new point
 		currentPoint = DeltaTrack(currentPoint, currentDir, volumeExit);
@@ -35,6 +35,12 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 
 		// Find new dir by IS the PF
 		currentDir = NewRayDir(currentDir, true);
+
+		// Terminate probabilisticly
+		if (i >= PRIMARY_RAY_LENGTH)
+		{
+			if (RandFloat(1.0) < PRIMARY_RAY_PROB) { break; }
+		}
 	}
 
 	// Store nrc ray info

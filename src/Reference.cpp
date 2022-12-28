@@ -62,19 +62,17 @@ namespace en
 		GenRefImages(appConfig, scene, queue);
 	}
 
-	std::array<Reference::Result, 6> Reference::CompareNrc(NrcHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue)
+	Reference::Result Reference::CompareNrc(NrcHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue)
 	{
-		std::array<Result, 6> results = {};
-
-		for (size_t i = 0; i < m_RefCameras.size(); i++)
+		Result result{};
 		{
 			// Render on noisy renderer
-			renderer.SetCamera(queue, m_RefCameras[i]);
+			renderer.SetCamera(queue, m_RefCamera);
 			renderer.Render(queue, false);
 			ASSERT_VULKAN(vkQueueWaitIdle(queue));
 
 			// Update
-			UpdateDescriptor(m_RefImageViews[i], renderer.GetImageView());
+			UpdateDescriptor(m_RefImageView, renderer.GetImageView());
 			RecordCmpCmdBuf();
 
 			// Submit comparision
@@ -93,33 +91,30 @@ namespace en
 
 			// Sync result buffer to host
 			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
-			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
+			m_ResultStagingBuffer.GetData(sizeof(Result), &result, 0, 0);
 
 			// Eval results
 			Log::Info(
-				"MSE: " + std::to_string(results[i].mse) +
-				" | rBias: " + std::to_string(results[i].GetRelBias()) +
-				" | Var: " + std::to_string(results[i].ownVar));
+				"MSE: " + std::to_string(result.mse) +
+				" | rBias: " + std::to_string(result.GetRelBias()) +
+				" | CV: " + std::to_string(result.GetCV()));
 		}
 
 		renderer.SetCamera(queue, oldCamera);
-		// TODO: remove image 3 for high variance
-		return results;
+		return result;
 	}
 
-	std::array<Reference::Result, 6> Reference::CompareMc(McHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue)
+	Reference::Result Reference::CompareMc(McHpmRenderer& renderer, const Camera* oldCamera, VkQueue queue)
 	{
-		std::array<Result, 6> results = {};
-
-		for (size_t i = 0; i < m_RefCameras.size(); i++)
+		Result result{};
 		{
 			// Render on noisy renderer
-			renderer.SetCamera(queue, m_RefCameras[i]);
+			renderer.SetCamera(queue, m_RefCamera);
 			renderer.Render(queue);
 			ASSERT_VULKAN(vkQueueWaitIdle(queue));
 
 			// Update
-			UpdateDescriptor(m_RefImageViews[i], renderer.GetImageView());
+			UpdateDescriptor(m_RefImageView, renderer.GetImageView());
 			RecordCmpCmdBuf();
 
 			// Submit comparision
@@ -138,35 +133,29 @@ namespace en
 
 			// Sync result buffer to host
 			vk::Buffer::Copy(&m_ResultBuffer, &m_ResultStagingBuffer, sizeof(Result));
-			m_ResultStagingBuffer.GetData(sizeof(Result), &results[i], 0, 0);
+			m_ResultStagingBuffer.GetData(sizeof(Result), &result, 0, 0);
 
 			// Eval results
-//			Log::Info(
-//				"MSE: " + std::to_string(results[i].mse) +
-//				" | Bias: (" + std::to_string(results[i].biasX) +
-//				", " + std::to_string(results[i].biasY) +
-//				", " + std::to_string(results[i].biasZ) +
-//				")");
+			Log::Info(
+				"MSE: " + std::to_string(result.mse) +
+				" | rBias: " + std::to_string(result.GetRelBias()) +
+				" | Var: " + std::to_string(result.ownVar));
 		}
 
 		renderer.SetCamera(queue, oldCamera);
-
-		return results;
+		return result;
 	}
 
 	void Reference::Destroy()
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
-		for (size_t i = 0; i < m_RefCameras.size(); i++)
-		{
-			m_RefCameras[i]->Destroy();
-			delete m_RefCameras[i];
+		m_RefCamera->Destroy();
+		delete m_RefCamera;
 
-			vkDestroyImageView(device, m_RefImageViews[i], nullptr);
-			vkFreeMemory(device, m_RefImageMemories[i], nullptr);
-			vkDestroyImage(device, m_RefImages[i], nullptr);
-		}
+		vkDestroyImageView(device, m_RefImageView, nullptr);
+		vkFreeMemory(device, m_RefImageMemory, nullptr);
+		vkDestroyImage(device, m_RefImage, nullptr);
 
 		vkDestroyPipeline(device, m_Cmp2Pipeline, nullptr);
 		m_Cmp2Shader.Destroy();
@@ -448,63 +437,20 @@ namespace en
 	{
 		const float aspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
 
-		m_RefCameras = {
-			new en::Camera(
-				glm::vec3(64.0f, 0.0f, 0.0f),
-				glm::vec3(-1.0f, 0.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new	en::Camera(
-				glm::vec3(-64.0f, 0.0f, 0.0f),
-				glm::vec3(1.0f, 0.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, 64.0f, 0.0f),
-				glm::vec3(0.0f, -1.0f, 0.0f),
-				glm::vec3(1.0f, 0.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, -64.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				glm::vec3(1.0f, 0.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, 0.0f, 64.0f),
-				glm::vec3(0.0f, 0.0f, -1.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f),
-			new en::Camera(
-				glm::vec3(0.0f, 0.0f, -64.0f),
-				glm::vec3(0.0f, 0.0f, 1.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				aspectRatio,
-				glm::radians(60.0f),
-				0.1f,
-				100.0f)
-		};
+		m_RefCamera = new en::Camera(
+			glm::vec3(64.0f, 0.0f, 0.0f),
+			glm::vec3(-1.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			aspectRatio,
+			glm::radians(60.0f),
+			0.1f,
+			100.0f);
 	}
 
 	void Reference::CreateRefImages(VkQueue queue)
 	{
 		VkDevice device = VulkanAPI::GetDevice();
 
-		for (size_t i = 0; i < m_RefImages.size(); i++)
 		{
 			VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
@@ -526,12 +472,12 @@ namespace en
 			imageCI.pQueueFamilyIndices = nullptr;
 			imageCI.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-			VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_RefImages[i]);
+			VkResult result = vkCreateImage(device, &imageCI, nullptr, &m_RefImage);
 			ASSERT_VULKAN(result);
 
 			// Image Memory
 			VkMemoryRequirements memoryRequirements;
-			vkGetImageMemoryRequirements(device, m_RefImages[i], &memoryRequirements);
+			vkGetImageMemoryRequirements(device, m_RefImage, &memoryRequirements);
 
 			VkMemoryAllocateInfo allocateInfo;
 			allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -541,10 +487,10 @@ namespace en
 				memoryRequirements.memoryTypeBits,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-			result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_RefImageMemories[i]);
+			result = vkAllocateMemory(device, &allocateInfo, nullptr, &m_RefImageMemory);
 			ASSERT_VULKAN(result);
 
-			result = vkBindImageMemory(device, m_RefImages[i], m_RefImageMemories[i], 0);
+			result = vkBindImageMemory(device, m_RefImage, m_RefImageMemory, 0);
 			ASSERT_VULKAN(result);
 
 			// Create image view
@@ -552,7 +498,7 @@ namespace en
 			imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			imageViewCI.pNext = nullptr;
 			imageViewCI.flags = 0;
-			imageViewCI.image = m_RefImages[i];
+			imageViewCI.image = m_RefImage;
 			imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			imageViewCI.format = format;
 			imageViewCI.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -565,7 +511,7 @@ namespace en
 			imageViewCI.subresourceRange.baseArrayLayer = 0;
 			imageViewCI.subresourceRange.layerCount = 1;
 
-			result = vkCreateImageView(device, &imageViewCI, nullptr, &m_RefImageViews[i]);
+			result = vkCreateImageView(device, &imageViewCI, nullptr, &m_RefImageView);
 			ASSERT_VULKAN(result);
 
 			// Change image layout
@@ -580,7 +526,7 @@ namespace en
 
 			vk::CommandRecorder::ImageLayoutTransfer(
 				m_CmdBuf,
-				m_RefImages[i],
+				m_RefImage,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				VK_ACCESS_NONE,
@@ -625,28 +571,24 @@ namespace en
 			en::Log::Info("Reference folder for scene " + std::to_string(sceneID) + " was not found. Creating reference images");
 
 			// Create reference renderer
-			McHpmRenderer refRenderer(m_Width, m_Height, 64, true, m_RefCameras[0], scene);
+			McHpmRenderer refRenderer(m_Width, m_Height, 64, true, m_RefCamera, scene);
 
 			// Create folder
 			std::filesystem::create_directory(referenceDirPath);
 
 			// Generate reference data
-			for (size_t i = 0; i < m_RefCameras.size(); i++)
 			{
-				en::Log::Info("Generating reference image " + std::to_string(i));
-
-				// Set new camera
-				refRenderer.SetCamera(queue, m_RefCameras[i]);
+				en::Log::Info("Generating reference image " + std::to_string(0));
 
 				// Generate reference image
-				for (size_t frame = 0; frame < 16384; frame++)
+				for (size_t frame = 0; frame < 8192; frame++)
 				{
 					refRenderer.Render(queue);
 					ASSERT_VULKAN(vkQueueWaitIdle(queue));
 				}
 
 				// Export reference image
-				refRenderer.ExportOutputImageToFile(queue, referenceDirPath + std::to_string(i) + ".exr");
+				refRenderer.ExportOutputImageToFile(queue, referenceDirPath + std::to_string(0) + ".exr");
 
 				// Copy to ref image for faster comparison
 				//CopyToRefImage(i, refRenderer.GetImage(), queue);
@@ -664,9 +606,8 @@ namespace en
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			{});
 
-		for (size_t i = 0; i < m_RefImages.size(); i++)
 		{
-			const std::string refImagePath = referenceDirPath + std::to_string(i) + ".exr";
+			const std::string refImagePath = referenceDirPath + std::to_string(0) + ".exr";
 
 			// Load exr to memory
 			float* rgba = nullptr;
@@ -701,7 +642,7 @@ namespace en
 			bufferImageCopy.imageOffset = { 0, 0, 0 };
 			bufferImageCopy.imageExtent = { m_Width, m_Height, 1 };
 
-			vkCmdCopyBufferToImage(m_CmdBuf, stagingBuffer.GetVulkanHandle(), m_RefImages[i], VK_IMAGE_LAYOUT_GENERAL, 1, &bufferImageCopy);
+			vkCmdCopyBufferToImage(m_CmdBuf, stagingBuffer.GetVulkanHandle(), m_RefImage, VK_IMAGE_LAYOUT_GENERAL, 1, &bufferImageCopy);
 
 			ASSERT_VULKAN(vkEndCommandBuffer(m_CmdBuf));
 
@@ -747,7 +688,7 @@ namespace en
 			m_CmdBuf, 
 			srcImage, 
 			VK_IMAGE_LAYOUT_GENERAL, 
-			m_RefImages[imageIdx], 
+			m_RefImage, 
 			VK_IMAGE_LAYOUT_GENERAL, 
 			1, 
 			&imageCopy);

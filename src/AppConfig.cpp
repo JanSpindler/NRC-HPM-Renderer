@@ -19,7 +19,7 @@ namespace en
 			posEncoding = {
 				{"otype", "HashGrid"},
 				{"n_dims_to_encode", 3},
-				{"n_levels", 12},
+				{"n_levels", 8},
 				{"n_features_per_level", 2},
 				{"log2_hashmap_size", 19},
 				{"base_resolution", 16},
@@ -36,7 +36,14 @@ namespace en
 			posEncoding = {
 				{"otype", "TriangleWave"},
 				{"n_dims_to_encode", 3},
-				{"n_frequencies", 12}
+				{"n_frequencies", 2}
+			};
+			break;
+		case 3:
+			posEncoding = {
+				{"otype", "Frequency"},
+				{"n_dims_to_encode", 3},
+				{"n_frequencies", 12},
 			};
 			break;
 		default:
@@ -51,7 +58,7 @@ namespace en
 			dirEncoding = {
 				{"otype", "OneBlob"},
 				{"n_dims_to_encode", 2},
-				{"n_bins", 4},
+				{"n_bins", 16},
 			};
 			break;
 		case 1:
@@ -93,14 +100,16 @@ namespace en
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0f;
-			density = 0.8f;
+			density = 0.6f;
+			dynamic = false;
 			break;
 		case 1:
 			dirLightStrength = 0.0f;
-			pointLightStrength = 32.0f;
+			pointLightStrength = 64.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0f;
-			0.8f;
+			density = 0.6f;
+			dynamic = false;
 			break;
 		case 2:
 			dirLightStrength = 16.0f;
@@ -108,6 +117,31 @@ namespace en
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0;
 			density = 0.25f;
+			dynamic = false;
+			break;
+		case 3:
+			dirLightStrength = 16.0f;
+			pointLightStrength = 0.0f;
+			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapStrength = 0.0;
+			density = 0.8f;
+			dynamic = true;
+			break;
+		case 4:
+			dirLightStrength = 0.0f;
+			pointLightStrength = 64.0f;
+			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapStrength = 0.0;
+			density = 0.8f;
+			dynamic = true;
+			break;
+		case 5:
+			dirLightStrength = 0.0f;
+			pointLightStrength = 0.0f;
+			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapStrength = 1.0f;
+			density = 0.8f;
+			dynamic = false;
 			break;
 		default:
 			Log::Error("HpmSceneConfig ID is invalid", true);
@@ -119,7 +153,7 @@ namespace en
 
 	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argv.size() != 16) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 17) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
@@ -143,6 +177,7 @@ namespace en
 		trainRingBufSize = std::stof(argv[index++]);
 		trainSpp = std::stoi(argv[index++]);
 		primaryRayLength = std::stoi(argv[index++]);
+		primaryRayProb = std::stof(argv[index++]);
 	}
 
 	std::string AppConfig::GetName() const
@@ -162,7 +197,8 @@ namespace en
 		str += std::to_string(scene.id) + "_";
 		str += std::to_string(trainRingBufSize) + "_";
 		str += std::to_string(trainSpp) + "_";
-		str += std::to_string(primaryRayLength);
+		str += std::to_string(primaryRayLength) + "_";
+		str += std::to_string(primaryRayProb);
 		return str;
 	}
 
@@ -182,6 +218,7 @@ namespace en
 		ImGui::Text("Train ring buffer size %f", trainRingBufSize);
 		ImGui::Text("Train spp %d", trainSpp);
 		ImGui::Text("Primary ray length %d", primaryRayLength);
+		ImGui::Text("Primary ray prob %f", primaryRayProb);
 		ImGui::End();
 	}
 }

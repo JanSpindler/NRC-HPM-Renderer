@@ -139,17 +139,12 @@ struct BenchmarkStats
 void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount, BenchmarkStats& stats, en::LogFile& logFile)
 {
 	en::Log::Info("Frame: " + std::to_string(frameCount));
-	std::array<en::Reference::Result, 6> results = reference->CompareNrc(*nrcHpmRenderer, camera, queue);
-
-	for (size_t i = 0; i < results.size(); i++)
-	{
-		stats.viewStats[i].mse = results[i].mse;
-		stats.viewStats[i].bias.x = 0.0f;//results[i].biasX;
-		stats.viewStats[i].bias.y = 0.0f;//results[i].biasY;
-		stats.viewStats[i].bias.z = 0.0f;//results[i].biasZ;
-	}
-
-	logFile.WriteLine(stats.ToString());
+	en::Reference::Result result = reference->CompareNrc(*nrcHpmRenderer, camera, queue);
+	logFile.WriteLine(
+		std::to_string(frameCount) + " " + 
+		std::to_string(result.mse) + " " + 
+		std::to_string(result.GetRelBias()) + " " +
+		std::to_string(result.GetCV()));
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -190,7 +185,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		100.0f);
 
 	// Init reference
-	//reference = new en::Reference(width, height, appConfig, hpmScene, queue);
+	if (!hpmScene.IsDynamic()) { reference = new en::Reference(width, height, appConfig, hpmScene, queue); }
 
 	// Init rendering pipeline
 	en::Log::Info("Initializing renderers");
@@ -212,7 +207,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 64, false, &camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 8, false, &camera, hpmScene);
 
 	if (en::Window::IsSupported())
 	{
@@ -245,7 +240,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	size_t frameCount = 0;
 	bool shutdown = false;
 	bool restartAfterClose = false;
-	bool benchmark = false;
+	bool benchmark = true;
 	bool continueLoop = en::Window::IsSupported() ? !en::Window::IsClosed() : true;
 	while (continueLoop && !shutdown)
 	{
@@ -356,7 +351,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			mcHpmRenderer->RenderImGui();
 			nrcHpmRenderer->RenderImGui();
 
-			hpmScene.Update(true);
+			hpmScene.Update(true, deltaTime);
 
 			appConfig.RenderImGui();
 
@@ -372,7 +367,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		stats.frameIndex = frameCount;
 		stats.frameTimeMS = nrcHpmRenderer->GetFrameTimeMS();
 		stats.loss = nrc.GetLoss();
-		if (benchmark && frameCount % 1 == 0) { Benchmark(&camera, queue, frameCount, stats, logFile); }
+		if (benchmark && !hpmScene.IsDynamic() && frameCount % 1 == 0) { Benchmark(&camera, queue, frameCount, stats, logFile); }
 
 		// Exit if loss is invalid
 		if (std::isnan(nrcLoss) || std::isinf(nrcLoss))
@@ -381,8 +376,12 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			break;
 		}
 
-		// Exit if 512 frame have been rendered
-		//if (frameCount > 512) { break; }
+		//Exit if 512 frame have been rendered
+		//if (frameCount > 256)
+		//{ 
+		//	nrcHpmRenderer->ExportOutputImageToFile(queue, "output/ " + appConfig.GetName() + "/256-spp.exr");
+		//	break; 
+		//}
 
 		//
 		frameCount++;
@@ -404,8 +403,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 
 	modelRenderer.Destroy();
 
-	//reference->Destroy();
-	//delete reference; 
+	if (!hpmScene.IsDynamic()) { reference->Destroy(); delete reference; }
 
 	camera.Destroy();
 	hpmScene.Destroy();
@@ -432,10 +430,10 @@ int main(int argc, char** argv)
 		myargv = { 
 			"NRC-HPM-Renderer", 
 			"RelativeL2Luminance", "Adam", "0.01", "0.99",
-			"0", "0", 
+			"2", "0", 
 			"64", "3", "21", "14", "4",
-			"2", 
-			"1.0", "1", "2"
+			"0", 
+			"1.0", "1", "2", "1.0"
 		};
 	}
 
