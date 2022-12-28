@@ -700,10 +700,14 @@ namespace en
 		Log::Info("NrcHpmRenderer: Creating nrc buffers");
 
 		// Calculate sizes
-		m_NrcInferInputBufferSize = m_RenderWidth * m_RenderHeight * 5 * sizeof(float);
-		m_NrcInferOutputBufferSize = m_RenderWidth * m_RenderHeight * 3 * sizeof(float);
-		m_NrcTrainInputBufferSize = m_TrainWidth * m_TrainHeight * 5 * sizeof(float);
-		m_NrcTrainTargetBufferSize = m_TrainWidth * m_TrainHeight * 3 * sizeof(float);
+		const size_t inferCount = m_RenderWidth * m_RenderHeight;
+		//inferCount += m_Nrc.GetInferBatchSize() - (inferCount % m_Nrc.GetTrainBatchSize());
+		const size_t trainCount = m_TrainWidth * m_TrainHeight;
+
+		m_NrcInferInputBufferSize = inferCount * 5 * sizeof(float);
+		m_NrcInferOutputBufferSize = inferCount * 3 * sizeof(float);
+		m_NrcTrainInputBufferSize = trainCount * 5 * sizeof(float);
+		m_NrcTrainTargetBufferSize = trainCount * 3 * sizeof(float);
 
 		// Create buffers
 #ifdef _WIN64

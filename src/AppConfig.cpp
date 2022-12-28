@@ -19,7 +19,7 @@ namespace en
 			posEncoding = {
 				{"otype", "HashGrid"},
 				{"n_dims_to_encode", 3},
-				{"n_levels", 16},
+				{"n_levels", 12},
 				{"n_features_per_level", 2},
 				{"log2_hashmap_size", 19},
 				{"base_resolution", 16},

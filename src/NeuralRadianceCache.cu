@@ -55,40 +55,40 @@ namespace en
 		m_CudaStartSemaphore = cudaStartSemaphore;
 		m_CudaFinishedSemaphore = cudaFinishedSemaphore;
 
+		// Init big buffer
+		const uint32_t trainCount = m_TrainBatchCount * m_TrainBatchSize;
+
+		m_InferInput = tcnn::GPUMatrix<float>(dCuInferInput, sc_InputCount, inferCount);
+		m_InferOutput = tcnn::GPUMatrix<float>(dCuInferOutput, sc_OutputCount, inferCount);
+		m_TrainInput = tcnn::GPUMatrix<float>(dCuTrainInput, sc_InputCount, trainCount);
+		m_TrainTarget = tcnn::GPUMatrix<float>(dCuTrainTarget, sc_OutputCount, trainCount);
+
 		// Init infer buffers
-		uint32_t inferBatchCount = inferCount / m_InferBatchSize;
-		uint32_t inferLastBatchSize = inferCount - (inferBatchCount * m_InferBatchSize);
+		const uint32_t inferBatchCount = inferCount / m_InferBatchSize;
+		const uint32_t inferLastBatchSize = inferCount - (inferBatchCount * m_InferBatchSize);
 		m_InferInputBatches.resize(inferBatchCount);
 		m_InferOutputBatches.resize(inferBatchCount);
 		
-		size_t floatInputOffset = 0;
-		size_t floatOutputOffset = 0;
 		for (uint32_t i = 0; i < inferBatchCount; i++)
 		{
-			m_InferInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), sc_InputCount, m_InferBatchSize);
-			m_InferOutputBatches[i] = tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), sc_OutputCount, m_InferBatchSize);
-			floatInputOffset += m_InferBatchSize * sc_InputCount;
-			floatOutputOffset += m_InferBatchSize * sc_OutputCount;
+			m_InferInputBatches[i] = m_InferInput.slice_cols(i * m_InferBatchSize, m_InferBatchSize);
+			m_InferOutputBatches[i] = m_InferOutput.slice_cols(i * m_InferBatchSize, m_InferBatchSize);
 		}
 
 		if (inferLastBatchSize > 0)
 		{
-			m_InferInputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferInput[floatInputOffset]), sc_InputCount, inferLastBatchSize));
-			m_InferOutputBatches.push_back(tcnn::GPUMatrix<float>(&(dCuInferOutput[floatOutputOffset]), sc_OutputCount, inferLastBatchSize));
+			m_InferInputBatches.push_back(m_InferInput.slice_cols(inferBatchCount * m_InferBatchSize, inferLastBatchSize));
+			m_InferOutputBatches.push_back(m_InferOutput.slice_cols(inferBatchCount * m_InferBatchSize, inferLastBatchSize));
 		}
 
 		// Init train buffers
 		m_TrainInputBatches.resize(m_TrainBatchCount);
 		m_TrainTargetBatches.resize(m_TrainBatchCount);
 
-		floatInputOffset = 0;
-		floatOutputOffset = 0;
 		for (uint32_t i = 0; i < m_TrainBatchCount; i++)
 		{
-			m_TrainInputBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainInput[floatInputOffset]), sc_InputCount, m_TrainBatchSize);
-			m_TrainTargetBatches[i] = tcnn::GPUMatrix<float>(&(dCuTrainTarget[floatOutputOffset]), sc_OutputCount, m_TrainBatchSize);
-			floatInputOffset += m_TrainBatchSize * sc_InputCount;
-			floatOutputOffset += m_TrainBatchSize * sc_OutputCount;
+			m_TrainInputBatches[i] = m_TrainInput.slice_cols(i * m_TrainBatchSize, m_TrainBatchSize);
+			m_TrainTargetBatches[i] = m_TrainTarget.slice_cols(i * m_TrainBatchSize, m_TrainBatchSize);
 		}
 	}
 
@@ -133,8 +133,7 @@ namespace en
 	{
 		for (size_t i = 0; i < m_InferInputBatches.size(); i++)
 		{
-			if (true)
-			//if (inferFilter[i] > 0)
+			if (inferFilter[i] > 0)
 			{
 				const tcnn::GPUMatrix<float>& inputBatch = m_InferInputBatches[i];
 				tcnn::GPUMatrix<float>& outputBatch = m_InferOutputBatches[i];
