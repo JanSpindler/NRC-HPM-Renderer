@@ -55,7 +55,7 @@ void StoreNrcTrainData(const ivec2 trainImageCoord, const vec3 pos, const vec3 d
 
 	// Store train target
 	//target = log(vec3(1.0) + target);
-	target = min(vec3(16.0), target);
+	target = min(vec3(8.0), target);
 	
 	nrcTrainTarget[linearPixelIndex].r = target.x;
 	nrcTrainTarget[linearPixelIndex].g = target.y;
@@ -78,7 +78,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 	bool volumeExit = false;
 
-	for (int i = 0; i < PRIMARY_RAY_LENGTH; i++)
+	for (int i = 0; i < TRAIN_RAY_LENGTH; i++)
 	{
 		// Find new point
 		currentPoint = DeltaTrack(currentPoint, currentDir, volumeExit);

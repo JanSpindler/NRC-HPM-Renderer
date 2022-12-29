@@ -118,7 +118,7 @@ namespace en
 					hdrData[linearIndex] = std::min(max, hdrData[linearIndex]);
 
 					// Test overwrite
-					hdrData[linearIndex] = 0.25f;
+					hdrData[linearIndex] = 1.0f;
 				}
 			}
 		}

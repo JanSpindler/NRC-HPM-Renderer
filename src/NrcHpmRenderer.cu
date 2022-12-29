@@ -223,6 +223,7 @@ namespace en
 		m_TrainSpp(appConfig.trainSpp),
 		m_PrimaryRayLength(appConfig.primaryRayLength),
 		m_PrimaryRayProb(appConfig.primaryRayProb),
+		m_TrainRayLength(appConfig.trainRayLength),
 		m_ShouldBlend(blend),
 		m_ClearShader("nrc/clear.comp", false),
 		m_GenRaysShader("nrc/gen_rays.comp", false),
@@ -921,6 +922,7 @@ namespace en
 		m_SpecData.primaryRayLength = m_PrimaryRayLength;
 		m_SpecData.primaryRayProb = m_PrimaryRayProb;
 		m_SpecData.trainRingBufSize = m_TrainRingBufSize;
+		m_SpecData.trainRayLength = m_TrainRayLength;
 
 		m_SpecData.inferBatchSize = m_Nrc.GetInferBatchSize();
 		m_SpecData.trainBatchSize = m_Nrc.GetTrainBatchSize();
@@ -985,6 +987,11 @@ namespace en
 		trainRingBufSizeEntry.constantID = constantID++;
 		trainRingBufSizeEntry.offset = offsetof(SpecializationData, SpecializationData::trainRingBufSize);
 		trainRingBufSizeEntry.size = sizeof(uint32_t);
+
+		VkSpecializationMapEntry trainRayLengthEntry{};
+		trainRayLengthEntry.constantID = constantID++;
+		trainRayLengthEntry.offset = offsetof(SpecializationData, SpecializationData::trainRayLength);
+		trainRayLengthEntry.size = sizeof(uint32_t);
 
 		VkSpecializationMapEntry inferBatchSizeEntry{};
 		inferBatchSizeEntry.constantID = constantID++;

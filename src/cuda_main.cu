@@ -242,6 +242,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 	bool restartAfterClose = false;
 	bool benchmark = true;
 	bool continueLoop = en::Window::IsSupported() ? !en::Window::IsClosed() : true;
+	bool pause = false;
 	while (continueLoop && !shutdown)
 	{
 		// Update
@@ -270,27 +271,30 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		camera.UpdateUniformBuffer();
 
 		// Render
-		switch (rendererId)
+		if (!pause)
 		{
-		case 0: // MC
-			mcHpmRenderer->Render(queue);
-			result = vkQueueWaitIdle(queue);
-			ASSERT_VULKAN(result);
-			mcHpmRenderer->EvaluateTimestampQueries();
-			break;
-		case 1: // NRC
-			nrcHpmRenderer->Render(queue, true);
-			result = vkQueueWaitIdle(queue);
-			ASSERT_VULKAN(result);
-			nrcHpmRenderer->EvaluateTimestampQueries();
-			break;
-		case 2: // Model
-			modelRenderer.Render(queue);
-			ASSERT_VULKAN(vkQueueWaitIdle(queue));
-			break;
-		default: // Error
-			en::Log::Error("Renderer ID is invalid", true);
-			break;
+			switch (rendererId)
+			{
+			case 0: // MC
+				mcHpmRenderer->Render(queue);
+				result = vkQueueWaitIdle(queue);
+				ASSERT_VULKAN(result);
+				mcHpmRenderer->EvaluateTimestampQueries();
+				break;
+			case 1: // NRC
+				nrcHpmRenderer->Render(queue, true);
+				result = vkQueueWaitIdle(queue);
+				ASSERT_VULKAN(result);
+				nrcHpmRenderer->EvaluateTimestampQueries();
+				break;
+			case 2: // Model
+				modelRenderer.Render(queue);
+				ASSERT_VULKAN(vkQueueWaitIdle(queue));
+				break;
+			default: // Error
+				en::Log::Error("Renderer ID is invalid", true);
+				break;
+			}
 		}
 
 		//
@@ -312,6 +316,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			shutdown = ImGui::Button("Shutdown");
 			ImGui::Checkbox("Restart after shutdown", &restartAfterClose);
 			ImGui::Checkbox("Benchmark", &benchmark);
+			ImGui::Checkbox("Pause", &pause);
 
 			if (ImGui::BeginCombo("##combo", currentRendererMenuItem))
 			{
@@ -361,7 +366,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		}
 
 		// Display
-		if (en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
+		if (!pause && en::Window::IsSupported()) { swapchain->DrawAndPresent(VK_NULL_HANDLE, VK_NULL_HANDLE); }
 
 		// Benchmark
 		stats.frameIndex = frameCount;
@@ -376,12 +381,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 			break;
 		}
 
-		//Exit if 512 frame have been rendered
-		//if (frameCount > 256)
-		//{ 
-		//	nrcHpmRenderer->ExportOutputImageToFile(queue, "output/ " + appConfig.GetName() + "/256-spp.exr");
-		//	break; 
-		//}
+		// Exit
 
 		//
 		frameCount++;
@@ -431,9 +431,9 @@ int main(int argc, char** argv)
 			"NRC-HPM-Renderer", 
 			"RelativeL2Luminance", "Adam", "0.01", "0.99",
 			"2", "0", 
-			"64", "3", "21", "14", "4",
+			"64", "6", "21", "14", "4",
 			"0", 
-			"1.0", "1", "2", "1.0"
+			"4.0", "1", "2", "0.0", "8",
 		};
 	}
 

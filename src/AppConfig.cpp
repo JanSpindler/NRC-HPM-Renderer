@@ -36,7 +36,7 @@ namespace en
 			posEncoding = {
 				{"otype", "TriangleWave"},
 				{"n_dims_to_encode", 3},
-				{"n_frequencies", 2}
+				{"n_frequencies", 12}
 			};
 			break;
 		case 3:
@@ -58,7 +58,7 @@ namespace en
 			dirEncoding = {
 				{"otype", "OneBlob"},
 				{"n_dims_to_encode", 2},
-				{"n_bins", 16},
+				{"n_bins", 4},
 			};
 			break;
 		case 1:
@@ -153,7 +153,7 @@ namespace en
 
 	AppConfig::AppConfig(const std::vector<char*>& argv)
 	{
-		if (argv.size() != 17) { Log::Error("Argument count does not match requirements for AppConfig", true); }
+		if (argv.size() != 18) { Log::Error("Argument count does not match requirements for AppConfig", true); }
 
 		size_t index = 1;
 
@@ -178,6 +178,7 @@ namespace en
 		trainSpp = std::stoi(argv[index++]);
 		primaryRayLength = std::stoi(argv[index++]);
 		primaryRayProb = std::stof(argv[index++]);
+		trainRayLength = std::stoi(argv[index++]);
 	}
 
 	std::string AppConfig::GetName() const
@@ -198,7 +199,8 @@ namespace en
 		str += std::to_string(trainRingBufSize) + "_";
 		str += std::to_string(trainSpp) + "_";
 		str += std::to_string(primaryRayLength) + "_";
-		str += std::to_string(primaryRayProb);
+		str += std::to_string(primaryRayProb) + "_";
+		str += std::to_string(trainRayLength);
 		return str;
 	}
 
@@ -219,6 +221,7 @@ namespace en
 		ImGui::Text("Train spp %d", trainSpp);
 		ImGui::Text("Primary ray length %d", primaryRayLength);
 		ImGui::Text("Primary ray prob %f", primaryRayProb);
+		ImGui::Text("Train ray length %d", trainRayLength);
 		ImGui::End();
 	}
 }

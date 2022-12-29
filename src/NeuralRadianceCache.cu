@@ -90,6 +90,8 @@ namespace en
 			m_TrainInputBatches[i] = m_TrainInput.slice_cols(i * m_TrainBatchSize, m_TrainBatchSize);
 			m_TrainTargetBatches[i] = m_TrainTarget.slice_cols(i * m_TrainBatchSize, m_TrainBatchSize);
 		}
+
+		en::Log::Info("Infer batch count: " + std::to_string(m_InferInputBatches.size()));
 	}
 
 	void NeuralRadianceCache::InferAndTrain(const uint32_t* inferFilter, bool train)

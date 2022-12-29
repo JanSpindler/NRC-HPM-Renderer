@@ -55,6 +55,7 @@ namespace en
 		uint32_t trainSpp = 0;
 		uint32_t primaryRayLength = 0;
 		float primaryRayProb = 0.0f;
+		uint32_t trainRayLength = 0;
 
 		AppConfig();
 		AppConfig(const std::vector<char*>& argv);

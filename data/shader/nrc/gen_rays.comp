@@ -39,7 +39,7 @@ vec4 TracePath(const ivec2 imageCoord, const vec3 rayOrigin, const vec3 rayDir, 
 		// Terminate probabilisticly
 		if (i >= PRIMARY_RAY_LENGTH)
 		{
-			if (RandFloat(1.0) < PRIMARY_RAY_PROB) { break; }
+			if (RandFloat(1.0) >= PRIMARY_RAY_PROB || i == 128) { break; }
 		}
 	}
 
