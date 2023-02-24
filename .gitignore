@@ -4,6 +4,7 @@
 *.sln
 *.exe
 *.pdb
+*.log
 
 /.vs
 /.vscode

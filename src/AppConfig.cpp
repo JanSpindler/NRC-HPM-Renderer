@@ -19,7 +19,7 @@ namespace en
 			posEncoding = {
 				{"otype", "HashGrid"},
 				{"n_dims_to_encode", 3},
-				{"n_levels", 8},
+				{"n_levels", 16},
 				{"n_features_per_level", 2},
 				{"log2_hashmap_size", 19},
 				{"base_resolution", 16},
@@ -112,11 +112,11 @@ namespace en
 			dynamic = false;
 			break;
 		case 2:
-			dirLightStrength = 16.0f;
-			pointLightStrength = 0.0f;
+			dirLightStrength = 0.0f;
+			pointLightStrength = 128.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0;
-			density = 0.25f;
+			density = 1.0f;
 			dynamic = false;
 			break;
 		case 3:
@@ -124,23 +124,23 @@ namespace en
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 0.0;
-			density = 0.8f;
-			dynamic = true;
+			density = 0.25f;
+			dynamic = false;
 			break;
 		case 4:
-			dirLightStrength = 0.0f;
-			pointLightStrength = 64.0f;
+			dirLightStrength = 8.0f;
+			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
-			hdrEnvMapStrength = 0.0;
-			density = 0.8f;
-			dynamic = true;
+			hdrEnvMapStrength = 0.1;
+			density = 0.6f;
+			dynamic = false;
 			break;
 		case 5:
 			dirLightStrength = 0.0f;
 			pointLightStrength = 0.0f;
 			hdrEnvMapPath = "data/image/mountain.hdr";
 			hdrEnvMapStrength = 1.0f;
-			density = 0.8f;
+			density = 1.6f; // 0.8
 			dynamic = false;
 			break;
 		default:

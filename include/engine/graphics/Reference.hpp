@@ -24,6 +24,7 @@ namespace en
 
 			float GetBias() const;
 			float GetRelBias() const;
+			float GetRelVar() const;
 			float GetCV() const;
 		};
 

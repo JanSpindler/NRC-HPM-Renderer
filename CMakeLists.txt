@@ -18,20 +18,13 @@ add_executable(${PROJECT_NAME} ${PROJECT_INCLUDE} ${PROJECT_SOURCE} ${PROJECT_CU
 target_include_directories(${PROJECT_NAME} PUBLIC "include" ${CUDA_INC_PATH})
 
 # Compile
-list(APPEND CUDA_NVCC_FLAGS "--extended-lambda")
-list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
-
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_features(${PROJECT_NAME} PUBLIC cuda_std_17)
-target_compile_options(${PROJECT_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_NVCC_FLAGS}>)
 
 # Dependencies
 
 # Vulkan
 find_package(Vulkan REQUIRED)
-#if (MSVC)
-#	target_include_directories(${PROJECT_NAME} PRIVATE "C:/VulkanSDK/1.3.236.0/Include")
-#endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 
@@ -63,8 +56,10 @@ find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
 # TCNN
+set(TCNN_BUILD_BENCHMARK OFF)
+set(TCNN_BUILD_EXAMPLES OFF)
 add_subdirectory("dependencies/tiny-cuda-nn")
-target_include_directories(${PROJECT_NAME} PRIVATE "dependencies/tiny-cuda-nn/include" "dependencies/tiny-cuda-nn/dependencies")
+target_include_directories(${PROJECT_NAME} PRIVATE ${TCNN_INCLUDE_DIRECTORIES})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
 
 # TBB
@@ -76,12 +71,5 @@ elseif (UNIX)
 endif()
 
 # OPENVDB
-if (MSVC)
-	target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
-	find_package(OpenVDB CONFIG REQUIRED)
-	target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")
-elseif (UNIX)
-	target_include_directories(${PROJECT_NAME} PRIVATE "openvdb-linux/include")
-	#target_link_libraries(${PROJECT_NAME} PRIVATE "openvdb-linux/libopenvdb.a")
-	target_link_libraries(${PROJECT_NAME} PRIVATE "/p/home/jusers/spindler1/juwels/openvdb/build/openvdb/openvdb/libopenvdb.so.10.0.2")
-endif()
+target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
+target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")

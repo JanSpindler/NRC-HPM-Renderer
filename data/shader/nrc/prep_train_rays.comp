@@ -89,8 +89,7 @@ vec4 TracePath(const vec3 rayOrigin, const vec3 rayDir)
 
 		// Lighting
 		const vec3 sceneLighting = TraceScene(currentPoint, currentDir) * factor;
-		const float density = getDensity(currentPoint);
-		scatteredLight += density * sceneLighting; // Phase and transmittance are IS
+		scatteredLight += sceneLighting; // Phase and transmittance are IS
 
 		// Find new dir by IS the PF
 		currentDir = NewRayDir(currentDir, true);

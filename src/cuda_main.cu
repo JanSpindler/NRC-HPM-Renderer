@@ -19,8 +19,8 @@
 #include <engine/graphics/Reference.hpp>
 #include <engine/objects/Model.hpp>
 #include <engine/graphics/renderer/SimpleModelRenderer.hpp>
-#include <openvdb/openvdb.h>
 #include <engine/util/LogFile.hpp>
+#include <openvdb/openvdb.h>
 
 en::Reference* reference = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
@@ -139,12 +139,13 @@ struct BenchmarkStats
 void Benchmark(const en::Camera* camera, VkQueue queue, size_t frameCount, BenchmarkStats& stats, en::LogFile& logFile)
 {
 	en::Log::Info("Frame: " + std::to_string(frameCount));
-	en::Reference::Result result = reference->CompareNrc(*nrcHpmRenderer, camera, queue);
+	en::Reference::Result nrcResult = reference->CompareNrc(*nrcHpmRenderer, camera, queue);
+	en::Reference::Result mcResult = reference->CompareMc(*mcHpmRenderer, camera, queue);
 	logFile.WriteLine(
 		std::to_string(frameCount) + " " + 
-		std::to_string(result.mse) + " " + 
-		std::to_string(result.GetRelBias()) + " " +
-		std::to_string(result.GetCV()));
+		std::to_string(nrcResult.mse) + " " +
+		std::to_string(nrcResult.GetRelBias()) + " " +
+		std::to_string(nrcResult.GetCV()));
 }
 
 bool RunAppConfigInstance(const en::AppConfig& appConfig)
@@ -207,7 +208,7 @@ bool RunAppConfigInstance(const en::AppConfig& appConfig)
 		hpmScene,
 		nrc);
 
-	mcHpmRenderer = new en::McHpmRenderer(width, height, 8, false, &camera, hpmScene);
+	mcHpmRenderer = new en::McHpmRenderer(width, height, 32, false, &camera, hpmScene);
 
 	if (en::Window::IsSupported())
 	{
@@ -430,10 +431,10 @@ int main(int argc, char** argv)
 		myargv = { 
 			"NRC-HPM-Renderer", 
 			"RelativeL2Luminance", "Adam", "0.01", "0.99",
-			"2", "0", 
+			"0", "0", 
 			"64", "6", "21", "14", "4",
 			"0", 
-			"4.0", "1", "2", "0.0", "8",
+			"1.0", "1", "1", "0.0", "32",
 		};
 	}
 

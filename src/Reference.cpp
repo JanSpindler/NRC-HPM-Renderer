@@ -17,10 +17,17 @@ namespace en
 		return GetBias() / refMean;
 	}
 
+	float Reference::Result::GetRelVar() const
+	{
+		return ownVar / refMean;
+	}
+
 	float Reference::Result::GetCV() const
 	{
 		return std::sqrt(ownVar) / ownMean;
 	}
+
+
 
 	Reference::Reference(
 		uint32_t width, 
@@ -97,7 +104,7 @@ namespace en
 			Log::Info(
 				"MSE: " + std::to_string(result.mse) +
 				" | rBias: " + std::to_string(result.GetRelBias()) +
-				" | CV: " + std::to_string(result.GetCV()));
+				" | rVar: " + std::to_string(result.GetRelVar()));
 		}
 
 		renderer.SetCamera(queue, oldCamera);
@@ -139,7 +146,7 @@ namespace en
 			Log::Info(
 				"MSE: " + std::to_string(result.mse) +
 				" | rBias: " + std::to_string(result.GetRelBias()) +
-				" | Var: " + std::to_string(result.ownVar));
+				" | rVar: " + std::to_string(result.GetRelVar()));
 		}
 
 		renderer.SetCamera(queue, oldCamera);
