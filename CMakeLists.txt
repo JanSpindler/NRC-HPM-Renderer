@@ -71,5 +71,10 @@ elseif (UNIX)
 endif()
 
 # OPENVDB
-target_include_directories(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/include")
-target_link_libraries(${PROJECT_NAME} PRIVATE "C:/Program Files/OpenVDB/lib/openvdb.lib")
+if (OFF)
+	find_package(OpenVDB CONFIG REQUIRED)
+	target_link_libraries(${PROJECT_NAME} PRIVATE OpenVDB::openvdb)
+else() # First variant causes error when compiled with cuda -> manual install of OpenVDB
+	target_include_directories(${PROJECT_NAME} PRIVATE "C:/usr/openvdb/include")
+	target_link_libraries(${PROJECT_NAME} PRIVATE "C:/usr/openvdb/lib/openvdb.lib")
+endif()
