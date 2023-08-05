@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 
+execute_process(COMMAND "cp openvdb-install/bin/openvdb.dll ./${CMAKE_BUILD_TYPE}/")
+
 # Some cuda stuff
 set(CMAKE_CUDA_ARCHITECTURES 86)
 
@@ -55,13 +57,21 @@ target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::tinyexr::tinyexr)
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
+# ZLIB
+find_package(ZLIB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
+
+# TBB
+find_package(TBB CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
+
+# OPENVDB
+target_include_directories(${PROJECT_NAME} PRIVATE "openvdb-install/include")
+target_link_libraries(${PROJECT_NAME} PRIVATE "openvdb-install/lib/openvdb")
+
 # TCNN
 set(TCNN_BUILD_BENCHMARK OFF)
 set(TCNN_BUILD_EXAMPLES OFF)
 add_subdirectory("tiny-cuda-nn")
 target_include_directories(${PROJECT_NAME} PRIVATE ${TCNN_INCLUDE_DIRECTORIES})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
-
-# OPENVDB
-find_package(OpenVDB CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenVDB::openvdb)
