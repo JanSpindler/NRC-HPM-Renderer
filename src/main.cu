@@ -21,6 +21,7 @@
 #include <engine/graphics/renderer/SimpleModelRenderer.hpp>
 #include <engine/util/LogFile.hpp>
 #include <openvdb/openvdb.h>
+#include <filesystem>
 
 en::Reference* reference = nullptr;
 en::NrcHpmRenderer* nrcHpmRenderer = nullptr;
