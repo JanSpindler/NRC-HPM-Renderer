@@ -58,7 +58,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 # TCNN
 set(TCNN_BUILD_BENCHMARK OFF)
 set(TCNN_BUILD_EXAMPLES OFF)
-add_subdirectory("dependencies/tiny-cuda-nn")
+add_subdirectory("tiny-cuda-nn")
 target_include_directories(${PROJECT_NAME} PRIVATE ${TCNN_INCLUDE_DIRECTORIES})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDA_LIBRARIES} cuda cublas tiny-cuda-nn)
 
