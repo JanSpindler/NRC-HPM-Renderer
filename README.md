@@ -10,8 +10,9 @@ The thesis can be found in the "doc" folder.
 @thesis{nrc-hpm,
 	author = {Spindler, Jan},
 	month = {31},
+	year = {2022},
 	title = {Real-time Neural Radiance Caching in Heterogeneous Participating Media},
 	url = {https://github.com/JanSpindler/NRC-HPM-Renderer.git},
-	year = {2022}
+	type = {bathesis}
 }
 ```
