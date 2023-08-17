@@ -1,12 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 
-execute_process(COMMAND "cp openvdb-install/bin/openvdb.dll ./${CMAKE_BUILD_TYPE}/")
-
-# Some cuda stuff
-set(CMAKE_CUDA_ARCHITECTURES 86)
-
 # Project
 project(NRC-HPM-Renderer CXX CUDA)
+set(CMAKE_CUDA_ARCHITECTURES 86)
 
 if (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")

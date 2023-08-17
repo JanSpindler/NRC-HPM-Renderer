@@ -10,9 +10,7 @@
 /.vscode
 /build
 /CMakeFiles
-/Debug
 /NRC-HPM-Renderer.dir
-/Release
 /x64
 /SOURCES
 /RelWithDebInfo
