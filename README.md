@@ -13,6 +13,7 @@ The thesis can be found in the "doc" folder.
 	year = {2022},
 	title = {Real-time Neural Radiance Caching in Heterogeneous Participating Media},
 	url = {https://github.com/JanSpindler/NRC-HPM-Renderer.git},
-	type = {bathesis}
+	type = {bathesis},
+	institution = {Institute of Computer Science II - University of Bonn}
 }
 ```
