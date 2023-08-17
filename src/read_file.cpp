@@ -81,6 +81,15 @@ namespace en
 
 	std::vector<float> ReadFileHdr4f(const std::string& fileName, int& width, int& height, float max)
 	{
+		// Check if file is valid
+		if (fileName.empty())
+		{
+			width = 1;
+			height = 1;
+			return { 0.0f, 0.0f, 0.0f, 0.0f };
+		}
+
+		//
 		int channel;
 		stbi_set_flip_vertically_on_load(true);
 		float* data = stbi_loadf(fileName.c_str(), &width, &height, &channel, 4);

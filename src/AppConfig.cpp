@@ -98,7 +98,7 @@ namespace en
 		case 0:
 			dirLightStrength = 16.0f;
 			pointLightStrength = 0.0f;
-			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapPath = "";
 			hdrEnvMapStrength = 0.0f;
 			density = 0.6f;
 			dynamic = false;
@@ -106,7 +106,7 @@ namespace en
 		case 1:
 			dirLightStrength = 0.0f;
 			pointLightStrength = 64.0f;
-			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapPath = "";
 			hdrEnvMapStrength = 0.0f;
 			density = 0.6f;
 			dynamic = false;
@@ -114,7 +114,7 @@ namespace en
 		case 2:
 			dirLightStrength = 0.0f;
 			pointLightStrength = 128.0f;
-			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapPath = "";
 			hdrEnvMapStrength = 0.0;
 			density = 1.0f;
 			dynamic = false;
@@ -122,7 +122,7 @@ namespace en
 		case 3:
 			dirLightStrength = 16.0f;
 			pointLightStrength = 0.0f;
-			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapPath = "";
 			hdrEnvMapStrength = 0.0;
 			density = 0.25f;
 			dynamic = false;
@@ -130,7 +130,7 @@ namespace en
 		case 4:
 			dirLightStrength = 8.0f;
 			pointLightStrength = 0.0f;
-			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapPath = "";
 			hdrEnvMapStrength = 0.1;
 			density = 0.6f;
 			dynamic = false;
@@ -138,7 +138,7 @@ namespace en
 		case 5:
 			dirLightStrength = 0.0f;
 			pointLightStrength = 0.0f;
-			hdrEnvMapPath = "data/image/mountain.hdr";
+			hdrEnvMapPath = "";
 			hdrEnvMapStrength = 1.0f;
 			density = 1.6f; // 0.8
 			dynamic = false;

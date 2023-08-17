@@ -5,11 +5,16 @@
 #include <engine/graphics/vulkan/Buffer.hpp>
 #include <array>
 #include <openvdb/openvdb.h>
+#include <filesystem>
 
 namespace en::vk
 {
 	Texture3D Texture3D::FromVDB(const std::string& fileName)
 	{
+		// Check if file exists
+		if (!std::filesystem::exists(fileName))
+			Log::Error(fileName + " does not exist", true);
+
 		// Load grids from file
 		Log::Info("Opening density VDB file");
 		openvdb::io::File file(fileName);
