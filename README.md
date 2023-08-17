@@ -1,6 +1,6 @@
 # NRC-HPM-Renderer
 
-This project is the implementation of my bachelor thesis "Real-time Neural Radiance Caching in Heterogeneous Participating Media". A MLP is used to approximate the 5D radiance distribution within a participating medium. In rendering a path is terminated into the MLP which returns the approximated radiance.
+This project is the implementation of my bachelor thesis "Real-time Neural Radiance Caching in Heterogeneous Participating Media". A volumetric path tracer is augmented by terminating paths early and approximating the remaining radiance using a multi layer perception. This MLP is called the Neural Radiance Cache.
 
 The thesis can be found in the "doc" folder.
 
