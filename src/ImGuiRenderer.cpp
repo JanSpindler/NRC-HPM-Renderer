@@ -717,7 +717,7 @@ namespace en
 		VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		ASSERT_VULKAN(result);
 
-		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+		ImGui_ImplVulkan_CreateFontsTexture(/*commandBuffer*/);
 
 		result = vkEndCommandBuffer(commandBuffer);
 		ASSERT_VULKAN(result);
