@@ -8,12 +8,13 @@ Further information can be found in the [thesis](doc/bachelor_thesis_german.pdf)
 
 ```bibtex
 @thesis{nrc-hpm,
-	author = {Spindler, Jan},
-	month = {31},
-	year = {2022},
-	title = {Real-time Neural Radiance Caching in Heterogeneous Participating Media},
-	url = {https://github.com/JanSpindler/NRC-HPM-Renderer.git},
-	type = {bathesis},
-	institution = {Institute of Computer Science II - University of Bonn}
+  author       = {Jan Spindler},
+  title        = {Real-time Neural Radiance Caching in Heterogeneous Participating Media},
+  school       = {Institute of Computer Science II - University of Bonn},
+  year         = {2022},
+  type         = {Bachelor's thesis},
+  address      = {Bonn, Germany},
+  month        = {December},
+  url          = {https://github.com/JanSpindler/NRC-HPM-Renderer.git}
 }
 ```
